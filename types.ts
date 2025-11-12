@@ -1,0 +1,265 @@
+export interface Theme {
+  from: string;
+  to: string;
+  light: string;
+  text: string;
+  ring: string;
+  border: string;
+  hoverText: string;
+}
+
+export interface Themes {
+  [key:string]: Theme;
+}
+
+export interface Reaction {
+  name: string;
+  emoji: string;
+  color: string;
+}
+
+export interface Achievement {
+  id: string;
+  icon: string;
+  name: string;
+  description: string;
+}
+
+export interface Link {
+  id: number;
+  title: string;
+  url: string;
+}
+
+export interface PrivacySettings {
+  profilePublic: boolean;
+  showOnlineStatus: boolean;
+  allowTagging: boolean;
+  showActivity: boolean;
+  privateAccount: boolean;
+  suggestAccount: boolean;
+  activityStatus: boolean;
+}
+
+export interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+}
+
+export type ThemeColor = 'orange' | 'blue' | 'green' | 'pink';
+
+export interface UserListItem {
+  id: number;
+  name: string;
+  username: string;
+  avatar: string;
+  followedByYou: boolean;
+}
+
+export interface Comment {
+  id: number;
+  userId: number;
+  username: string;
+  avatar: string;
+  text: string;
+  time: string;
+  likes: number;
+  isLiked: boolean;
+  replyTo?: string;
+  edited?: boolean;
+}
+
+export interface Post {
+  id: number;
+  userId: number;
+  user: string;
+  username: string;
+  avatar: string;
+  content: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  time: string;
+  reactions: { [key:string]: number };
+  userReaction: string | null;
+  bookmarked: boolean;
+  views: number;
+  media?: MediaItem[];
+  type?: 'post' | 'poll';
+  pollOptions?: { id: number; text: string; votes: number }[];
+  totalVotes?: number;
+  userVoted?: number | null;
+  commentsData?: Comment[];
+  isSponsored?: boolean;
+  postFormat?: 'standard' | 'reel';
+  category?: string;
+  location?: string;
+}
+
+export interface Profile {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  bio: string;
+  avatar: string;
+  coverPhoto?: string;
+  wallpaper?: string;
+  followers: number;
+  following: number;
+  posts: number;
+  badges: string[];
+  streak: number;
+  online: boolean;
+  verified: boolean;
+  pronouns?: string;
+  showPronouns?: boolean;
+  links?: Link[];
+  location?: string;
+  website?: string;
+  work?: string;
+  education?: string;
+  privacySettings: PrivacySettings;
+  notificationSettings: {
+    push: boolean;
+    email: boolean;
+  };
+  contentPreferences: {
+    favoriteTopics: string[];
+    hiddenWords: string[];
+    sensitiveContent: 'allow' | 'blur' | 'hide';
+  };
+  category?: string;
+  featuredHashtags?: string[];
+  language: string;
+  twoFactorEnabled: boolean;
+  mutedAccounts: UserListItem[];
+  restrictedAccounts: UserListItem[];
+  blockedAccounts: UserListItem[];
+  unlockedAchievements: string[];
+  searchHistory?: string[];
+}
+
+export interface Notification {
+  id: number;
+  type: 'like' | 'comment' | 'follow' | 'tag';
+  user: string;
+  username: string;
+  content: string;
+  time: string;
+  read: boolean;
+}
+
+export interface Message {
+  id: number;
+  userId: number;
+  user: string;
+  username: string;
+  avatar: string;
+  lastMessage: string;
+  time: string;
+  unread: boolean;
+  online: boolean;
+  lastMessageType: 'text' | 'image' | 'video' | 'call' | 'file' | 'voice';
+  lastMessageSentByYou: boolean;
+}
+
+export interface GroupChat {
+  id: number;
+  name: string;
+  avatar: string;
+  members: number;
+  lastMessage: string;
+  time: string;
+  unread: number;
+}
+
+export interface PollOption {
+  id: number;
+  text: string;
+  votes: number;
+}
+
+export interface Poll {
+  question: string;
+  options: PollOption[];
+  totalVotes?: number;
+  userVoted?: number | null;
+}
+
+export interface StoryItem {
+  id: number;
+  type: 'image' | 'video';
+  url: string;
+  duration?: number; // in seconds
+  link?: string;
+  poll?: Poll;
+}
+
+
+export interface Story {
+  id: number;
+  user: string;
+  username: string;
+  avatar: string;
+  media: StoryItem[];
+  isYours: boolean;
+  viewed?: boolean;
+  timestamp: string;
+  isLive?: boolean;
+  views?: number;
+}
+
+
+export interface FriendSuggestion {
+  id: number;
+  name: string;
+  username: string;
+  avatar: string;
+  mutualFriends: number;
+  followed: boolean;
+}
+
+export interface TrendingHashtag {
+  tag: string;
+  posts: number;
+}
+
+export interface LiveUser {
+  id: number;
+  name: string;
+  username: string;
+  avatar: string;
+  viewers: number;
+}
+
+export interface CallInfo {
+  type: 'video' | 'voice';
+  duration?: string;
+  status: 'started' | 'ended' | 'missed';
+}
+
+export interface ChatMessage {
+  id: number;
+  text: string;
+  sentBy: number; // user ID
+  time: string;
+  type: 'text' | 'image' | 'video' | 'call' | 'file' | 'voice';
+  url?: string;
+  callInfo?: CallInfo;
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+  replyTo?: number; // The ID of the message being replied to
+  reactions?: { [emoji: string]: string[] }; // emoji -> user IDs
+  isEdited?: boolean;
+  // For files
+  fileName?: string;
+  fileSize?: string;
+  // For voice
+  waveform?: number[];
+  duration?: string;
+}
+
+export type ActiveCall = {
+    type: 'video' | 'voice';
+    user: Message;
+}
