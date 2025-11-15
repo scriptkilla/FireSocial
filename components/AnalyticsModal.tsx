@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 import { X, Users, BarChart3, TrendingUp, Heart, MessageSquare, Share2, Eye } from 'lucide-react';
 import { Profile, Post, Theme, UserListItem } from '../types';
@@ -15,6 +17,19 @@ interface AnalyticsModalProps {
     textSecondary: string;
     borderColor: string;
 }
+
+const StatCard: React.FC<{ icon: React.ElementType, label: string, value: string | number, change?: string, cardBg: string, borderColor: string, textColor: string, textSecondary: string }> = ({ icon: Icon, label, value, change, cardBg, borderColor, textColor, textSecondary }) => (
+    <div className={`${cardBg} backdrop-blur-xl rounded-2xl p-4 border ${borderColor}`}>
+        <div className={`flex items-center gap-3 ${textSecondary} mb-2`}>
+            <Icon size={16} />
+            <span className="text-sm">{label}</span>
+        </div>
+        <div className="flex items-baseline gap-2">
+            <p className={`text-3xl font-bold ${textColor}`}>{value}</p>
+            {change && <p className="text-sm font-semibold text-green-500">{change}</p>}
+        </div>
+    </div>
+);
 
 const AnalyticsModal: React.FC<AnalyticsModalProps> = (props) => {
     const { show, onClose, profile, posts, followers, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
@@ -37,19 +52,6 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = (props) => {
     const followerGrowthData = [4, 6, 5, 8, 7, 9, 12];
     const maxGrowth = Math.max(...followerGrowthData, 1); // Avoid division by zero
 
-    const StatCard: React.FC<{ icon: React.ElementType, label: string, value: string | number, change?: string }> = ({ icon: Icon, label, value, change }) => (
-        <div className={`${cardBg} backdrop-blur-xl rounded-2xl p-4 border ${borderColor}`}>
-            <div className={`flex items-center gap-3 ${textSecondary} mb-2`}>
-                <Icon size={16} />
-                <span className="text-sm">{label}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-                <p className={`text-3xl font-bold ${textColor}`}>{value}</p>
-                {change && <p className="text-sm font-semibold text-green-500">{change}</p>}
-            </div>
-        </div>
-    );
-
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-16">
             <div className={`overflow-y-auto max-h-[90vh] ${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-2xl w-full border ${borderColor} shadow-2xl`}>
@@ -59,10 +61,10 @@ const AnalyticsModal: React.FC<AnalyticsModalProps> = (props) => {
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <StatCard icon={Users} label="Followers" value={profile.followers.toLocaleString()} change="+21" />
-                    <StatCard icon={Eye} label="Profile Views" value="1,284" change="+12%" />
-                    <StatCard icon={TrendingUp} label="Engagement Rate" value={`${engagementRate}%`} />
-                    <StatCard icon={Heart} label="Total Likes" value={totalLikes.toLocaleString()} />
+                    <StatCard icon={Users} label="Followers" value={profile.followers.toLocaleString()} change="+21" {...{cardBg, borderColor, textColor, textSecondary}} />
+                    <StatCard icon={Eye} label="Profile Views" value="1,284" change="+12%" {...{cardBg, borderColor, textColor, textSecondary}} />
+                    <StatCard icon={TrendingUp} label="Engagement Rate" value={`${engagementRate}%`} {...{cardBg, borderColor, textColor, textSecondary}} />
+                    <StatCard icon={Heart} label="Total Likes" value={totalLikes.toLocaleString()} {...{cardBg, borderColor, textColor, textSecondary}} />
                 </div>
 
                 <div className={`${cardBg} backdrop-blur-xl rounded-2xl p-4 border ${borderColor} mb-6`}>

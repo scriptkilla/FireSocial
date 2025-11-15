@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Post, UserListItem, TrendingHashtag, Theme, Profile } from '../types';
 import { Heart, MessageSquare, Copy, Search, Mic, SlidersHorizontal, X } from 'lucide-react';
@@ -23,12 +25,17 @@ interface ExplorePageProps {
     currentTheme: Theme;
 }
 
-interface FilterModalProps extends Omit<ExplorePageProps, 'profile' | 'allUsers' | 'trendingHashtags' | 'onViewPost' | 'onViewProfile' | 'onViewHashtag' | 'following' | 'posts'> {
+interface FilterModalProps {
     show: boolean;
     onClose: () => void;
     activeFilters: { category: string, location: string };
     onApply: (filters: { category: string, location: string }) => void;
     locations: string[];
+    textColor: string;
+    textSecondary: string;
+    cardBg: string;
+    borderColor: string;
+    currentTheme: Theme;
 }
 
 
@@ -193,9 +200,9 @@ const ExplorePage: React.FC<ExplorePageProps> = (props) => {
                     <div className="flex-1 relative">
                         <Search size={20} className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} />
                         <input type="text" placeholder="Search for posts, users, tags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`w-full pl-12 pr-12 py-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`} />
-                        <button className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 ${textSecondary} hover:${textColor}`}><Mic size={20} /></button>
+                        <button aria-label="Voice search" className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 ${textSecondary} hover:${textColor}`}><Mic size={20} /></button>
                     </div>
-                    <button onClick={() => setShowFilters(true)} className={`p-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} hover:scale-105 transition-all`}>
+                    <button aria-label="Open filters" onClick={() => setShowFilters(true)} className={`p-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} hover:scale-105 transition-all`}>
                         <SlidersHorizontal size={20} />
                     </button>
                 </div>

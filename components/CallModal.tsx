@@ -160,17 +160,17 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
             <div className="flex items-center gap-4">
                 {phase === 'active' && (
                     <>
-                        <button onClick={() => setIsMuted(!isMuted)} className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
+                        <button aria-label={isMuted ? "Unmute" : "Mute"} onClick={() => setIsMuted(!isMuted)} className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
                             {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
                         </button>
                         {call.type === 'video' && (
-                            <button onClick={() => setIsCameraOff(!isCameraOff)} className={`p-4 rounded-full transition-colors ${isCameraOff ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
+                            <button aria-label={isCameraOff ? "Turn camera on" : "Turn camera off"} onClick={() => setIsCameraOff(!isCameraOff)} className={`p-4 rounded-full transition-colors ${isCameraOff ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
                                 {isCameraOff ? <VideoOff size={24} /> : <Video size={24} />}
                             </button>
                         )}
                     </>
                 )}
-                <button onClick={handleEndCall} className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors">
+                <button aria-label="End call" onClick={handleEndCall} className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors">
                     <PhoneOff size={24} />
                 </button>
             </div>

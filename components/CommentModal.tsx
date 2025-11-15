@@ -108,7 +108,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
             >
                 <div className="flex justify-between items-center mb-4 flex-shrink-0">
                     <h2 className="text-xl font-bold">Comments on {post.user}'s post</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <button aria-label="Close comments" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
 
                 <div className="flex-grow overflow-y-auto -mr-3 pr-3 space-y-4">
@@ -159,7 +159,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                     {replyingTo && (
                         <div className="text-sm text-gray-400 mb-2 px-2 flex justify-between items-center">
                             <span>Replying to <span className={currentTheme.text}>@{replyingTo}</span></span>
-                            <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={14}/></button>
+                            <button aria-label="Cancel reply" onClick={() => setReplyingTo(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={14}/></button>
                         </div>
                     )}
                     <div className="flex gap-3 items-center">
@@ -172,7 +172,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                             placeholder="Add a comment..."
                             className={`flex-1 px-4 py-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
                         />
-                        <button type="submit" className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`} disabled={!commentInput.trim()}>
+                        <button type="submit" aria-label="Send comment" className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`} disabled={!commentInput.trim()}>
                             <Send size={20} />
                         </button>
                     </div>

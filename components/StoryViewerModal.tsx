@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Story, Profile, Poll, PollOption } from '../types';
 import { X, MoreHorizontal, Trash2, Download, Share2, PlusCircle, ArrowUp, Send, Eye } from 'lucide-react';
@@ -65,7 +67,6 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
     const [votedPolls, setVotedPolls] = useState<Record<number, number>>({});
     
     const touchStartX = useRef(0);
-    // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> to ensure compatibility with browser environments where setTimeout returns a number, resolving the 'Cannot find namespace NodeJS' error.
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const currentUserStory = usersWithStories[currentUserIndex];
@@ -226,7 +227,7 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
                     <div className="flex items-center gap-2">
                         {isOwnStory && (
                             <div className="relative">
-                                <button onClick={(e) => { e.stopPropagation(); setShowOptions(s => !s); }} className="p-2 text-white hover:bg-white/20 rounded-full"><MoreHorizontal size={24} /></button>
+                                <button aria-label="More options" onClick={(e) => { e.stopPropagation(); setShowOptions(s => !s); }} className="p-2 text-white hover:bg-white/20 rounded-full"><MoreHorizontal size={24} /></button>
                                 {showOptions && (
                                     <div className="absolute top-full right-0 mt-2 bg-gray-900/80 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-700 w-48">
                                         <button onClick={() => alert('Downloaded!')} className="flex items-center gap-3 px-4 py-2 text-white hover:bg-white/10 w-full text-left"><Download size={16} /> Download</button>
@@ -237,7 +238,7 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
                                 )}
                             </div>
                         )}
-                        <button onClick={onClose} className="p-2 text-white hover:bg-white/20 rounded-full"><X size={24} /></button>
+                        <button aria-label="Close" onClick={onClose} className="p-2 text-white hover:bg-white/20 rounded-full"><X size={24} /></button>
                     </div>
                 </div>
 
@@ -275,12 +276,12 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
                         ) : (
                              <div className="flex-1 relative">
                                 <input type="text" placeholder="Send message" className="w-full bg-black/30 backdrop-blur-sm text-white placeholder:text-white/70 rounded-full py-3 px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-white/50" />
-                                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2"><Send size={20} className="text-white"/></button>
+                                <button aria-label="Send message" className="absolute right-2 top-1/2 -translate-y-1/2 p-2"><Send size={20} className="text-white"/></button>
                             </div>
                         )}
                         <div className="flex items-center gap-2">
                             {['❤️', '😂', '🔥', '👏'].map(emoji => (
-                                <button key={emoji} onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }} className="text-3xl hover:scale-125 transition-transform">
+                                <button key={emoji} aria-label={`React with ${emoji}`} onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }} className="text-3xl hover:scale-125 transition-transform">
                                     {emoji}
                                 </button>
                             ))}

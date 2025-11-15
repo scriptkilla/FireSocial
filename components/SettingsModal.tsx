@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
 import { THEMES as ThemeConstants } from '../constants';
+import AvatarDisplay from './AvatarDisplay';
 
 // --- HELP CENTER DATA ---
 const HELP_ARTICLES = [
@@ -34,20 +35,6 @@ const HELP_ARTICLES = [
 
 
 // --- HELPER & VIEW COMPONENTS ---
-// These are now defined at the top-level of the file to follow React best practices
-// and to be used by the new View components.
-
-const AvatarDisplay = ({ avatar, size = 'w-10 h-10', fontSize = 'text-xl', className = '' }: { avatar: string; size?: string; fontSize?: string; className?: string; }) => {
-    const isImage = avatar && (avatar.startsWith('data:image') || avatar.startsWith('http'));
-    const isEmoji = !isImage && avatar && avatar.length <= 2;
-
-    return (
-        <div className={`relative rounded-full flex items-center justify-center overflow-hidden bg-gray-200 dark:bg-gray-700 ${size} ${className}`}>
-            {isImage ? <img src={avatar} alt="Avatar" className="w-full h-full object-cover" /> : isEmoji ? <span className={fontSize}>{avatar}</span> : <User className="w-1/2 h/2 text-gray-500" />}
-        </div>
-    );
-};
-
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div>
         <h3 className="px-4 pb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">{title}</h3>
@@ -84,8 +71,6 @@ const FormInput: React.FC<{label: string, type: string, value: string, onChange:
     </div>
 );
 
-
-// --- PROPS FOR VIEW COMPONENTS ---
 type SettingsView = 'main' | 'account' | 'privacy' | 'notifications' | 'content' | 'support' | 'appearance' | 'blocked' | 'language' | 'changePassword' | 'twoFactor' | 'mutedAccounts' | 'restrictedAccounts' | 'favoriteTopics' | 'hiddenWords' | 'sensitiveContent' | 'reportProblem' | 'helpCenter';
 
 interface ViewProps {
@@ -109,7 +94,6 @@ interface ViewProps {
     allUsers: UserListItem[];
 }
 
-// --- VIEW COMPONENTS ---
 const MainView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | 'textSecondary'>> = ({ setView, hoverBg, textSecondary }) => (
     <div className="space-y-6">
         <SettingsItem icon={User} label="Account Settings" onClick={() => setView('account')} hoverBg={hoverBg} textSecondary={textSecondary} />
@@ -347,9 +331,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-16">
             <div className={`overflow-y-auto max-h-[90vh] ${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-lg w-full border ${borderColor} shadow-2xl`}>
                 <div className="flex items-center mb-6">
-                    {view !== 'main' && <button onClick={() => setView('main')} className="p-2 -ml-2 mr-2 hover:bg-white/10 rounded-full"><ChevronLeft size={20} /></button>}
+                    {view !== 'main' && <button aria-label="Back" onClick={() => setView('main')} className="p-2 -ml-2 mr-2 hover:bg-white/10 rounded-full"><ChevronLeft size={20} /></button>}
                     <h2 className="text-2xl font-bold">{getTitle()}</h2>
-                    <button onClick={onClose} className="p-2 ml-auto hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <button aria-label="Close" onClick={onClose} className="p-2 ml-auto hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
                 {renderView()}
                 {showDeactivateConfirm && (

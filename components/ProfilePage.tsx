@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { Profile, Post, Theme, Achievement, Comment } from '../types';
 import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film } from 'lucide-react';
@@ -31,6 +33,66 @@ interface ProfilePageProps {
     borderColor: string;
     currentTheme: Theme;
 }
+
+const PostGridItem: React.FC<{post: Post, cardBg: string, borderColor: string, textColor: string, onViewPost: (post: Post) => void, onViewComments: (post: Post) => void}> = ({ post, cardBg, borderColor, textColor, onViewPost, onViewComments }) => (
+    <div 
+        className={`group aspect-square ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} hover:scale-105 transition-all cursor-pointer relative overflow-hidden`}
+    >
+        {post.media && post.media.length > 0 ? (
+            post.media[0].type === 'image' ? (
+              <img src={post.media[0].url} alt="post media" className="w-full h-full object-cover" />
+            ) : (
+              <video src={post.media[0].url} className="w-full h-full object-cover" />
+            )
+        ) : (
+            <p className={`${textColor} text-sm line-clamp-4 p-4`}>{post.content}</p>
+        )}
+
+        <div 
+            onClick={() => onViewPost(post)}
+            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center text-white p-4"
+        >
+            <div className="flex gap-4">
+                <span className="flex items-center gap-1"><Heart size={16} /> {post.likes}</span>
+                <span className="flex items-center gap-1"><MessageSquare size={16} /> {post.comments}</span>
+            </div>
+            <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onViewComments(post);
+                }}
+                className="mt-4 bg-white/20 px-3 py-1 rounded-full text-xs"
+            >
+                View Comments
+            </button>
+        </div>
+    </div>
+);
+
+const CommentActivityItem: React.FC<{ comment: Comment; post: Post, onViewProfile: (username: string) => void, onViewPost: (post: Post) => void, borderColor: string, textColor: string, textSecondary: string, currentTheme: Theme }> = ({ comment, post, onViewProfile, onViewPost, borderColor, textColor, textSecondary, currentTheme }) => (
+    <div className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}>
+        <p className={`${textSecondary} text-sm mb-2`}>
+            Commented on a post by <button onClick={() => onViewProfile(post.username)} className={`font-semibold ${textColor} hover:underline`}>{post.user}</button>
+        </p>
+        <div className={`p-3 rounded-xl border-l-4 ${borderColor} cursor-pointer bg-black/5 dark:bg-white/5`} onClick={() => onViewPost(post)}>
+            <p className={`${textSecondary} text-sm line-clamp-2`}>{post.content}</p>
+        </div>
+        <div className="mt-3 flex gap-3">
+            <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
+            <div className="flex-1 bg-black/5 dark:bg-white/10 p-3 rounded-xl">
+                 <div className="flex items-center justify-between text-xs mb-1">
+                    <p className={`font-semibold ${textColor}`}>{comment.username}</p>
+                    <p className={textSecondary}>{comment.time}</p>
+                 </div>
+                <p className={`${textColor} text-sm whitespace-pre-wrap`}>
+                    {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
+                    {comment.text}
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
     const { profileToDisplay, isOwnProfile, posts, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks } = props;
@@ -76,65 +138,6 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         )
         .filter(({ comment }) => comment.username === profileToDisplay.username)
         .sort((a, b) => b.comment.id - a.comment.id);
-
-    const PostGridItem: React.FC<{post: Post}> = ({ post }) => (
-        <div 
-            className={`group aspect-square ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} hover:scale-105 transition-all cursor-pointer relative overflow-hidden`}
-        >
-            {post.media && post.media.length > 0 ? (
-                post.media[0].type === 'image' ? (
-                  <img src={post.media[0].url} alt="post media" className="w-full h-full object-cover" />
-                ) : (
-                  <video src={post.media[0].url} className="w-full h-full object-cover" />
-                )
-            ) : (
-                <p className={`${textColor} text-sm line-clamp-4 p-4`}>{post.content}</p>
-            )}
-
-            <div 
-                onClick={() => onViewPost(post)}
-                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center text-white p-4"
-            >
-                <div className="flex gap-4">
-                    <span className="flex items-center gap-1"><Heart size={16} /> {post.likes}</span>
-                    <span className="flex items-center gap-1"><MessageSquare size={16} /> {post.comments}</span>
-                </div>
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onViewComments(post);
-                    }}
-                    className="mt-4 bg-white/20 px-3 py-1 rounded-full text-xs"
-                >
-                    View Comments
-                </button>
-            </div>
-        </div>
-    );
-
-    const CommentActivityItem: React.FC<{ comment: Comment; post: Post }> = ({ comment, post }) => (
-        <div className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}>
-            <p className={`${textSecondary} text-sm mb-2`}>
-                Commented on a post by <button onClick={() => onViewProfile(post.username)} className={`font-semibold ${textColor} hover:underline`}>{post.user}</button>
-            </p>
-            <div className={`p-3 rounded-xl border-l-4 ${borderColor} cursor-pointer bg-black/5 dark:bg-white/5`} onClick={() => onViewPost(post)}>
-                <p className={`${textSecondary} text-sm line-clamp-2`}>{post.content}</p>
-            </div>
-            <div className="mt-3 flex gap-3">
-                <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
-                <div className="flex-1 bg-black/5 dark:bg-white/10 p-3 rounded-xl">
-                     <div className="flex items-center justify-between text-xs mb-1">
-                        <p className={`font-semibold ${textColor}`}>{comment.username}</p>
-                        <p className={textSecondary}>{comment.time}</p>
-                     </div>
-                    <p className={`${textColor} text-sm whitespace-pre-wrap`}>
-                        {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
-                        {comment.text}
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="space-y-6">
@@ -227,10 +230,10 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                     {isOwnProfile && <button onClick={() => onTabChange('bookmarks')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'bookmarks' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Bookmarks</button>}
                 </div>
                 <div>
-                    {activeTab === 'posts' && (userPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{userPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No posts yet.</p>)}
-                    {activeTab === 'comments' && (userComments.length > 0 ? <div className="space-y-4">{userComments.map(({ comment, post }) => (<CommentActivityItem key={comment.id} comment={comment} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No comments yet.</p>)}
-                    {activeTab === 'media' && (mediaPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{mediaPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No media yet.</p>)}
-                    {activeTab === 'bookmarks' && isOwnProfile && (bookmarkedPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{bookmarkedPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No bookmarked posts.</p>)}
+                    {activeTab === 'posts' && (userPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{userPosts.map((post) => (<PostGridItem key={post.id} post={post} cardBg={cardBg} borderColor={borderColor} textColor={textColor} onViewPost={onViewPost} onViewComments={onViewComments} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No posts yet.</p>)}
+                    {activeTab === 'comments' && (userComments.length > 0 ? <div className="space-y-4">{userComments.map(({ comment, post }) => (<CommentActivityItem key={comment.id} comment={comment} post={post} onViewProfile={onViewProfile} onViewPost={onViewPost} borderColor={borderColor} textColor={textColor} textSecondary={textSecondary} currentTheme={currentTheme} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No comments yet.</p>)}
+                    {activeTab === 'media' && (mediaPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{mediaPosts.map((post) => (<PostGridItem key={post.id} post={post} cardBg={cardBg} borderColor={borderColor} textColor={textColor} onViewPost={onViewPost} onViewComments={onViewComments} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No media yet.</p>)}
+                    {activeTab === 'bookmarks' && isOwnProfile && (bookmarkedPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{bookmarkedPosts.map((post) => (<PostGridItem key={post.id} post={post} cardBg={cardBg} borderColor={borderColor} textColor={textColor} onViewPost={onViewPost} onViewComments={onViewComments} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No bookmarked posts.</p>)}
                 </div>
             </div>
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>

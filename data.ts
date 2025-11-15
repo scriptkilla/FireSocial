@@ -11,11 +11,10 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         email: 'yourname@example.com',
         bio: 'CREATOR OF FIRESOCIAL',
         avatar: '👤',
-        wallpaper: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        coverPhoto: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
+        coverPhoto: 'https://uniim1.shutterfly.com/render/00-EfPiueeEFx-hS39eSM3R3y48bm8LC9MiAcZQlFEPEdoUPJu31FN2s7poTgTz5TGAaAUrgnwgvQnZ_1RWb7NZPA?cn=THISLIFE&res=small&ts=1762962264462',
         followers: 2,
         following: 2,
-        posts: 2,
+        posts: 3,
         badges: ['🏆', '⭐', '🔥'],
         streak: 15,
         online: true,
@@ -229,6 +228,24 @@ export const INITIAL_COMMENTS: { [postId: number]: Comment[] } = {
 };
 
 export const INITIAL_POSTS_BASE: Post[] = [
+    {
+        id: 10,
+        userId: 1001,
+        user: 'THOMAS DARROW',
+        username: '@pimpslap',
+        avatar: '👤',
+        content: 'Loving this vibe.',
+        media: [{type: 'image', url: 'https://uniim1.shutterfly.com/render/00-EfPiueeEFx-hS39eSM3R3y48bm8LC9MiAcZQlFEPEdoPeaKVccJk4LjYz60Yyda3aAUrgnwgvQnZ_1RWb7NZPA?cn=THISLIFE&res=small&ts=1762962264462'}],
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        time: 'Just now',
+        reactions: {},
+        userReaction: null,
+        bookmarked: false,
+        views: 0,
+        category: 'Photography'
+    },
     { id: 1, userId: 1002, user: 'Alex Rivera', username: '@alexrivera', avatar: '🎨', content: 'Just launched my new portfolio! Check it out 🚀 #webdev #design #uidesign', likes: 42, comments: 3, shares: 5, time: '2h ago', reactions: { like: 30, love: 8, fire: 4 }, userReaction: null, bookmarked: false, views: 234, commentsData: INITIAL_COMMENTS[1], category: 'Art', location: 'Miami, FL' },
     { id: 2, userId: 1003, user: 'Jordan Lee', username: '@jordanlee', avatar: '🚀', content: 'Beautiful sunset today! Nature is amazing 🌅 #travel #photography #bali', media: [{type: 'image', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}], likes: 128, comments: 3, shares: 12, time: '4h ago', reactions: { like: 100, love: 20, fire: 8 }, userReaction: 'love', bookmarked: true, views: 892, commentsData: INITIAL_COMMENTS[2], category: 'Photography', location: 'Bali, Indonesia' },
     { id: 8, userId: 1002, user: 'Alex Rivera', username: '@alexrivera', avatar: '🎨', content: 'A few snaps from my recent design sprint. Which one is your favorite? #carousel #designprocess', media: [{type: 'image', url: 'https://images.unsplash.com/photo-1558655146-364adaf1fcc9?auto=format&fit=crop&w=800&q=60'}, {type: 'image', url: 'https://images.unsplash.com/photo-1557844352-761f2565b576?auto=format&fit=crop&w=800&q=60'}, {type: 'image', url: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=800&q=60'}], likes: 76, comments: 12, shares: 8, time: '18h ago', reactions: {}, userReaction: null, bookmarked: false, views: 654, category: 'Art' },

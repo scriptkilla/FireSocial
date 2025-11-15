@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Profile, Message, Theme, ChatMessage } from '../types';
 import { Send, Video, Mic, MoreHorizontal, Phone, Check, CheckCheck, Clock, AlertCircle, Paperclip, X, Trash2, Copy, Edit, Reply } from 'lucide-react';
@@ -21,9 +23,21 @@ interface ChatWindowProps {
     borderColor: string;
 }
 
+const StatusIcon: React.FC<{ status: ChatMessage['status'], currentTheme: Theme }> = ({ status, currentTheme }) => {
+    switch (status) {
+        case 'sending': return <Clock size={16} className="text-gray-400" />;
+        case 'sent': return <Check size={16} className="text-gray-400" />;
+        case 'delivered': return <CheckCheck size={16} className="text-gray-400" />;
+        case 'read': return <CheckCheck size={16} className={currentTheme.text} />;
+        case 'failed': return <AlertCircle size={16} className="text-red-500" />;
+        default: return null;
+    }
+};
+
 const ChatMessageBubble: React.FC<{
     message: ChatMessage;
     isOwn: boolean;
+    chatWith: Message;
     currentTheme: Theme;
     textColor: string;
     textSecondary: string;
@@ -33,22 +47,11 @@ const ChatMessageBubble: React.FC<{
     onDelete: () => void;
     onReact: (emoji: string) => void;
     getRepliedMessage: (id: number) => ChatMessage | undefined;
-}> = ({ message, isOwn, currentTheme, textColor, textSecondary, profile, onReply, onEdit, onDelete, onReact, getRepliedMessage }) => {
+}> = ({ message, isOwn, chatWith, currentTheme, textColor, textSecondary, profile, onReply, onEdit, onDelete, onReact, getRepliedMessage }) => {
     
     const [showActions, setShowActions] = useState(false);
     const repliedMessage = message.replyTo ? getRepliedMessage(message.replyTo) : null;
     
-    const StatusIcon = () => {
-        switch (message.status) {
-            case 'sending': return <Clock size={16} className="text-gray-400" />;
-            case 'sent': return <Check size={16} className="text-gray-400" />;
-            case 'delivered': return <CheckCheck size={16} className="text-gray-400" />;
-            case 'read': return <CheckCheck size={16} className={currentTheme.text} />;
-            case 'failed': return <AlertCircle size={16} className="text-red-500" />;
-            default: return null;
-        }
-    };
-
     const renderMessageContent = () => {
         switch (message.type) {
             case 'image': return <img src={message.url} alt="Uploaded content" className="rounded-2xl max-h-64 cursor-pointer" />;
@@ -63,7 +66,7 @@ const ChatMessageBubble: React.FC<{
     
     return (
         <div className={`flex items-end gap-2 group ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            {!isOwn && <AvatarDisplay avatar={message.sentBy === profile.id ? profile.avatar : ''} size="w-8 h-8" />}
+            {!isOwn && <AvatarDisplay avatar={chatWith.avatar} size="w-8 h-8" />}
             <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                 <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex ${isOwn ? 'flex-row-reverse' : ''} gap-1 relative`}>
                     <button onClick={() => onReply(message)} title="Reply" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><Reply size={16}/></button>
@@ -86,7 +89,7 @@ const ChatMessageBubble: React.FC<{
                 <div className={`relative max-w-md my-1 ${isOwn ? 'text-right' : 'text-left'}`}>
                     {repliedMessage && (
                         <div className={`px-3 pt-2 pb-1 text-sm bg-black/5 dark:bg-white/5 rounded-t-xl border-l-2 ${currentTheme.border} opacity-80`}>
-                            <p className="font-semibold">{repliedMessage.sentBy === profile.id ? profile.name : "Them"}</p>
+                            <p className="font-semibold">{repliedMessage.sentBy === profile.id ? profile.name : chatWith.user}</p>
                             <p className={`line-clamp-1 opacity-70`}>{repliedMessage.text}</p>
                         </div>
                     )}
@@ -96,12 +99,10 @@ const ChatMessageBubble: React.FC<{
                     <div className={`text-xs mt-1 px-2 ${isOwn ? 'text-right' : 'text-left'} text-gray-400 flex items-center gap-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                         {message.isEdited && <span>Edited</span>}
                         <span>{message.time}</span>
-                        {isOwn && <StatusIcon />}
+                        {isOwn && <StatusIcon status={message.status} currentTheme={currentTheme} />}
                     </div>
                     {message.reactions && Object.keys(message.reactions).length > 0 && (
                         <div className={`absolute -bottom-3 ${isOwn ? 'right-2' : 'left-2'} flex gap-1`}>
-                            {/* Fix: Refactored from Object.entries to Object.keys to ensure `users` is correctly
-                                inferred as a string array, resolving errors on properties like `.length` and `.includes`. */}
                             {Object.keys(message.reactions).map((emoji) => {
                                 const users = message.reactions![emoji];
                                 return users.length > 0 && (
@@ -143,13 +144,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
         if (!scrollEl) return;
 
         if (prevScrollHeight !== null) {
-            // This block runs after "load more" has added new messages to the top.
-            // We adjust the scroll position to keep the user's view stable.
             scrollEl.scrollTop = scrollEl.scrollHeight - prevScrollHeight;
-            setPrevScrollHeight(null); // Reset after use
+            setPrevScrollHeight(null); 
         } else {
-            // This block runs on initial load, or when a new message is added to the bottom.
-            // Scroll to the bottom to show the latest content.
             scrollEl.scrollTop = scrollEl.scrollHeight;
         }
     }, [visibleMessages]);
@@ -157,7 +154,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
     const handleLoadMore = () => {
         if(isLoadingMore || !hasMore || !scrollContainerRef.current) return;
 
-        // Before adding new items, capture the current scrollHeight.
         setPrevScrollHeight(scrollContainerRef.current.scrollHeight);
         setIsLoadingMore(true);
 
@@ -240,7 +236,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
                         <ChatMessageBubble 
                             key={msg.id} 
                             message={msg} 
-                            isOwn={msg.sentBy === profile.id} 
+                            isOwn={msg.sentBy === profile.id}
+                            chatWith={chatWith}
                             currentTheme={currentTheme} 
                             textColor={textColor}
                             textSecondary={textSecondary}

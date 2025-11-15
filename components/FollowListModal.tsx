@@ -30,7 +30,7 @@ const FollowListModal: React.FC<FollowListModalProps> = ({ listType, onClose, fo
             <div className={`${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-md w-full border ${borderColor} shadow-2xl max-h-[70vh] flex flex-col`}>
                 <div className="flex justify-between items-center mb-6 flex-shrink-0">
                     <h2 className="text-2xl font-bold capitalize">{listType}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <button aria-label="Close" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
                 <div className="space-y-4 overflow-y-auto pr-2 -mr-2">
                     {list.map(user => {

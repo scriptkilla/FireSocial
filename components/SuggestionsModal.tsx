@@ -44,7 +44,7 @@ const SuggestionsModal: React.FC<SuggestionsModalProps> = (props) => {
                             {filteredSuggestions.length}
                         </span>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <button aria-label="Close" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
                 
                 <div className="mb-4 flex-shrink-0 relative">
@@ -75,7 +75,7 @@ const SuggestionsModal: React.FC<SuggestionsModalProps> = (props) => {
                                      <button onClick={() => onFollowToggle(user.id, user.username)} className={`px-4 py-2 ${isFollowingThisUser ? `${cardBg} ${textColor}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`} rounded-2xl text-sm font-semibold hover:scale-105 transition-all w-28 text-center`}>
                                         {isFollowingThisUser ? 'Following' : 'Follow'}
                                     </button>
-                                    <button onClick={() => onDismiss(user.id)} className={`p-2 ${textSecondary} hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                    <button aria-label="Dismiss suggestion" onClick={() => onDismiss(user.id)} className={`p-2 ${textSecondary} hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity`}>
                                         <X size={16} />
                                     </button>
                                 </div>

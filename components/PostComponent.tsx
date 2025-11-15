@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem } from '../types';
 import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye } from 'lucide-react';
@@ -93,6 +94,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         setInlineComment(text);
 
         const cursorPosition = e.target.selectionStart;
+        if (cursorPosition === null) return;
         const textUpToCursor = text.substring(0, cursorPosition);
         const mentionMatch = textUpToCursor.match(/@(\w*)$/);
 
@@ -149,7 +151,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     </div>
                 </div>
                 <div className="relative">
-                    <button onClick={(e) => { e.stopPropagation(); setShowPostOptions(prev => !prev); }} className={`p-2 ${textSecondary} hover:bg-white/10 rounded-full`}>
+                    <button aria-label="Post options" onClick={(e) => { e.stopPropagation(); setShowPostOptions(prev => !prev); }} className={`p-2 ${textSecondary} hover:bg-white/10 rounded-full`}>
                         <MoreHorizontal size={20} />
                     </button>
                     {showPostOptions && (
@@ -215,14 +217,14 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                   </button>
                   {showReactionPicker && (
                     <div className={`absolute bottom-full mb-2 ${cardBg} backdrop-blur-xl rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
-                      {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
+                      {reactions.map(reaction => (<button key={reaction.name} aria-label={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
                     </div>
                   )}
                 </div>
                 <button onClick={() => onViewComments(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><MessageSquare size={20} /><span>{post.comments}</span></button>
                 <button onClick={() => onShare(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><Share2 size={20} /><span>{post.shares}</span></button>
               </div>
-              <button onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
+              <button aria-label={post.bookmarked ? 'Unsave post' : 'Save post'} onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
             </div>
             
             {/* Comment Section */}
@@ -288,7 +290,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             onChange={handleInlineCommentChange}
                             className={`flex-1 px-4 py-2 text-sm bg-black/5 dark:bg-white/5 rounded-full border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-1 ${currentTheme.ring}`}
                         />
-                        <button type="submit" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim()}>
+                        <button type="submit" aria-label="Add comment" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim()}>
                             <Send size={18} />
                         </button>
                     </form>

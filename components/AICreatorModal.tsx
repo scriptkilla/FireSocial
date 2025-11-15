@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Text, Image as ImageIcon, Video, Mic, Code, Bot, Settings, ChevronDown, Sparkles, Wand2, RefreshCw, Download, Copy, ThumbsUp, ThumbsDown, Check, AlertTriangle, KeyRound, UploadCloud, File, Map, Search, BrainCircuit, Play, StopCircle } from 'lucide-react';
 import { Theme } from '../types';
@@ -37,13 +38,18 @@ const decode = (base64: string) => {
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
+  sampleRate: number,
+  numChannels: number,
 ): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length;
-  const buffer = ctx.createBuffer(1, frameCount, 24000);
-  const channelData = buffer.getChannelData(0);
-  for (let i = 0; i < frameCount; i++) {
-    channelData[i] = dataInt16[i] / 32768.0;
+  const frameCount = dataInt16.length / numChannels;
+  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const channelData = buffer.getChannelData(channel);
+    for (let i = 0; i < frameCount; i++) {
+      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    }
   }
   return buffer;
 }
@@ -92,7 +98,7 @@ const ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"];
 type CreationMode = 'generate' | 'edit' | 'analyze';
 type AudioMode = 'tts' | 'transcribe';
 type SourceFile = { file: File, type: 'image' | 'video' | 'audio', url: string, base64: string };
-type GenerationResult = { type: 'text' | 'image' | 'video' | 'audio', content: string | { url: string; sources: GroundingChunk[] } };
+type GenerationResult = { type: 'text' | 'image' | 'video' | 'audio', content: string | { url: string; sources?: GroundingChunk[] } };
 
 // --- Sub-Components ---
 const CreationTabs: React.FC<{ activeTab: string, onTabChange: (tab: string) => void, textColor: string, currentTheme: Theme }> = ({ activeTab, onTabChange, textColor, currentTheme }) => (
@@ -103,6 +109,19 @@ const CreationTabs: React.FC<{ activeTab: string, onTabChange: (tab: string) => 
             </button>
         ))}
     </div>
+);
+
+const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+    <div><label className="block text-sm font-medium text-gray-400 mb-2">{label}</label>{children}</div>
+);
+
+const ToggleItem: React.FC<{ icon: React.ElementType, label: string, checked: boolean, onChange: (c:boolean) => void, disabled?: boolean, currentTheme: Theme }> = ({ icon: Icon, label, checked, onChange, disabled=false, currentTheme }) => (
+    <label className={`flex items-center justify-between p-2 rounded-lg hover:bg-white/10 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed': ''}`}>
+        <div className="flex items-center gap-2 text-sm"><Icon size={16}/>{label}</div>
+        <button onClick={() => !disabled && onChange(!checked)} disabled={disabled} className={`w-10 h-5 rounded-full transition-all ${checked ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
+        </button>
+    </label>
 );
 
 const SettingsPanel: React.FC<{
@@ -120,20 +139,7 @@ const SettingsPanel: React.FC<{
 }> = (props) => {
     const { models, selectedModel, onModelChange, tones, selectedTone, onToneChange, creativity, onCreativityChange, aspectRatios, selectedAspectRatio, onAspectRatioChange, isImagenSelected, useSearch, onUseSearchChange, useMaps, onUseMapsChange, useThinking, onUseThinkingChange, isProModel, cardBg, textColor, textSecondary, borderColor, currentTheme } = props;
     const [dropdown, setDropdown] = useState<'model' | 'tone' | null>(null);
-
-    const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-        <div><label className="block text-sm font-medium text-gray-400 mb-2">{label}</label>{children}</div>
-    );
     
-    const ToggleItem: React.FC<{ icon: React.ElementType, label: string, checked: boolean, onChange: (c:boolean) => void, disabled?: boolean }> = ({ icon: Icon, label, checked, onChange, disabled=false }) => (
-        <label className={`flex items-center justify-between p-2 rounded-lg hover:bg-white/10 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed': ''}`}>
-            <div className="flex items-center gap-2 text-sm"><Icon size={16}/>{label}</div>
-            <button onClick={() => !disabled && onChange(!checked)} disabled={disabled} className={`w-10 h-5 rounded-full transition-all ${checked ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
-                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
-            </button>
-        </label>
-    );
-
     return (
         <aside className={`w-full lg:w-72 flex-shrink-0 p-4 space-y-4 overflow-y-auto rounded-lg bg-black/5 dark:bg-white/5`}>
             <SettingItem label="AI Model">
@@ -149,9 +155,9 @@ const SettingsPanel: React.FC<{
                 </div>
             </SettingItem>
             <div className={`p-3 rounded-lg border ${borderColor} bg-black/5 dark:bg-white/5 space-y-2`}>
-                 <ToggleItem icon={Search} label="Use Google Search" checked={useSearch} onChange={onUseSearchChange} />
-                 <ToggleItem icon={Map} label="Use Google Maps" checked={useMaps} onChange={onUseMapsChange} />
-                 <ToggleItem icon={BrainCircuit} label="Thinking Mode" checked={useThinking} onChange={onUseThinkingChange} disabled={!isProModel} />
+                 <ToggleItem icon={Search} label="Use Google Search" checked={useSearch} onChange={onUseSearchChange} currentTheme={currentTheme} />
+                 <ToggleItem icon={Map} label="Use Google Maps" checked={useMaps} onChange={onUseMapsChange} currentTheme={currentTheme} />
+                 <ToggleItem icon={BrainCircuit} label="Thinking Mode" checked={useThinking} onChange={onUseThinkingChange} disabled={!isProModel} currentTheme={currentTheme} />
             </div>
             <SettingItem label="Tone"><div className="relative">
                 <button onClick={() => setDropdown(d => d === 'tone' ? null : 'tone')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
@@ -186,29 +192,33 @@ const MainWorkspace: React.FC<{
         if (!generationResult) return null;
         const content = generationResult.content;
         const url = typeof content === 'string' ? content : content.url;
+        const sources = typeof content === 'object' ? content.sources : [];
 
-        return <div className="w-full h-full flex flex-col items-center justify-center">
-             {generationResult.type === 'image' && <img src={url} alt="Generated" className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
-             {generationResult.type === 'video' && <video src={url} controls className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
-             {generationResult.type === 'audio' && <audio src={url} controls />}
-             {generationResult.type === 'text' && <div className="self-start w-full overflow-y-auto"><p className="whitespace-pre-wrap p-2">{typeof content === 'string' ? content : content.url}</p></div>}
-        </div>
+        return (
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            {generationResult.type === 'image' && <img src={url} alt="Generated" className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
+            {generationResult.type === 'video' && <video src={url} controls className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
+            {generationResult.type === 'audio' && <audio src={url} controls />}
+            {generationResult.type === 'text' && (
+              <div className="self-start w-full overflow-y-auto">
+                <p className="whitespace-pre-wrap p-2">{url}</p>
+                {sources && sources.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-700">
+                        <h4 className="text-sm font-semibold mb-1">Sources:</h4>
+                        <ul className="text-xs list-disc pl-5 space-y-1">
+                            {sources.map((chunk, index) => (
+                                chunk.web ? <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title}</a></li> :
+                                chunk.maps ? <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title}</a></li> : null
+                            ))}
+                        </ul>
+                    </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
     };
     
-    const renderGroundingSources = () => {
-        if (!generationResult || typeof generationResult.content === 'string' || !generationResult.content.sources || generationResult.content.sources.length === 0) return null;
-        
-        return <div className="mt-2 pt-2 border-t border-gray-700">
-            <h4 className="text-sm font-semibold mb-1">Sources:</h4>
-            <ul className="text-xs list-disc pl-5 space-y-1">
-                {generationResult.content.sources.map((chunk, index) => (
-                    chunk.web ? <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title}</a></li> :
-                    chunk.maps ? <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title}</a></li> : null
-                ))}
-            </ul>
-        </div>
-    };
-
     return (
         <main className="flex-1 flex flex-col p-4 gap-4">
             {['Image', 'Video'].includes(activeTab) && <div className="flex-shrink-0">
@@ -247,7 +257,7 @@ const MainWorkspace: React.FC<{
                             {sourceFile.type === 'image' && <img src={sourceFile.url} className="w-full h-full object-contain rounded-lg" />}
                             {sourceFile.type === 'video' && <video src={sourceFile.url} controls className="w-full h-full object-contain rounded-lg" />}
                             {sourceFile.type === 'audio' && <audio src={sourceFile.url} controls />}
-                            <button onClick={removeFile} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full"><X size={14}/></button>
+                            <button aria-label="Remove file" onClick={removeFile} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full"><X size={14}/></button>
                         </div>
                         : audioMode === 'transcribe' ? 
                             <button onClick={isRecording ? stopRecording : startRecording} className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-colors ${isRecording ? 'bg-red-500 text-white' : `${cardBg} border ${borderColor}`}`}>
@@ -261,7 +271,6 @@ const MainWorkspace: React.FC<{
                         </div>
                     ) : <div className="text-center"><Bot size={48} className={`mx-auto ${textSecondary}`} /><p className={`mt-4 font-semibold ${textColor}`}>Your creation will appear here</p></div>}
                 </div>
-                 {renderGroundingSources()}
             </div>
         </main>
     );
@@ -355,7 +364,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 config.numberOfImages = 1; config.outputMimeType = 'image/jpeg'; config.aspectRatio = selectedAspectRatio;
                 const resp = await ai.models.generateImages({ model: modelName, prompt, config });
                 const b64 = resp.generatedImages?.[0]?.image?.imageBytes;
-                if (b64) setGenerationResult({ type: 'image', content: `data:image/jpeg;base64,${b64}` });
+                if (b64) setGenerationResult({ type: 'image', content: { url: `data:image/jpeg;base64,${b64}` }});
                 else throw new Error("API did not return an image.");
             } else if (modelName.includes('veo')) {
                 config = { numberOfVideos: 1, resolution: '720p', aspectRatio: selectedAspectRatio as any };
@@ -365,122 +374,145 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
 
                 setGenerationStatus('Submitting video request...');
                 let op = await (ai.models as any).generateVideos(payload);
-                setGenerationStatus('Generating video... this can take minutes.');
                 while (!op.done) {
-                    await new Promise(r => setTimeout(r, 10000));
+                    setGenerationStatus(`Processing video... (${op.progress?.percentage || 0}%)`);
+                    await new Promise(resolve => setTimeout(resolve, 5000));
                     op = await (ai.operations as any).getVideosOperation({ operation: op });
                 }
-                const link = op.response?.generatedVideos?.[0]?.video?.uri;
-                if (link) {
-                    setGenerationStatus('Fetching video file...');
-                    const videoResp = await fetch(`${link}&key=${process.env.API_KEY}`);
+                const videoUrl = op.response?.generatedVideos?.[0]?.video?.uri;
+                if (videoUrl) {
+                    const videoResp = await fetch(`${videoUrl}&key=${process.env.API_KEY}`);
                     const blob = await videoResp.blob();
-                    setGenerationResult({ type: 'video', content: URL.createObjectURL(blob) });
-                } else throw new Error("Video generation failed to return a link.");
+                    setGenerationResult({ type: 'video', content: { url: URL.createObjectURL(blob) } });
+                } else { throw new Error("Video generation failed to return a valid URL."); }
             } else if (modelName.includes('tts')) {
                 config.responseModalities = [Modality.AUDIO];
+                config.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } };
+                contents = [{ parts: [{ text: `Say with a ${selectedTone.toLowerCase()} tone: ${prompt}` }] }];
                 const resp = await ai.models.generateContent({ model: modelName, contents, config });
-                const audioB64 = resp.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                if (audioB64) {
-                    const audioContext = new AudioContext({ sampleRate: 24000 });
-                    const audioBuffer = await decodeAudioData(decode(audioB64), audioContext);
-                    const source = audioContext.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(audioContext.destination);
-                    source.start();
-                    setGenerationResult({ type: 'audio', content: `data:audio/wav;base64,${audioB64}` });
-                } else throw new Error("TTS failed to produce audio.");
-            } else { // Text or multi-modal text
-                if (sourceFile) {
-                    contents = { parts: [{ inlineData: { mimeType: sourceFile.file.type, data: sourceFile.base64 } }, { text: prompt }] };
-                    if (modelName.includes('flash-image') && creationMode === 'edit') {
-                        config.responseModalities = [Modality.IMAGE];
-                    }
-                }
+                const b64 = resp.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                if (b64) {
+                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                    const audioBuffer = await decodeAudioData(decode(b64), audioContext, 24000, 1);
+                    const wavBlob = bufferToWave(audioBuffer, audioBuffer.length);
+                    setGenerationResult({ type: 'audio', content: { url: URL.createObjectURL(wavBlob) } });
+                } else { throw new Error("TTS generation failed."); }
+            } else { // Text or multi-modal models
+                 if(sourceFile) {
+                    const imagePart = { inlineData: { mimeType: sourceFile.file.type, data: sourceFile.base64 }};
+                    const textPart = { text: prompt };
+                    contents = { parts: [imagePart, textPart]};
+                 }
                 const resp = await ai.models.generateContent({ model: modelName, contents, config });
-                if (config.responseModalities?.includes(Modality.IMAGE)) {
-                    const imgPart = resp.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                    if(imgPart?.inlineData) setGenerationResult({ type: 'image', content: `data:image/png;base64,${imgPart.inlineData.data}` });
-                    else throw new Error("Model did not return an image.");
-                } else {
-                    const groundingSources = resp.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-                    setGenerationResult({ type: 'text', content: { url: resp.text, sources: groundingSources } });
-                }
+                const sources = resp.candidates?.[0]?.groundingMetadata?.groundingChunks;
+                setGenerationResult({ type: 'text', content: { url: resp.text, sources: sources }});
             }
         } catch (e: any) {
             console.error("AI generation error:", e);
             const msg = e.message || "An unknown error occurred.";
-            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please select a valid key."); }
-            else if (msg.includes("billing")) { setApiKeyOk(false); setError("This model requires a billed project. Please select a different API key."); }
-            else setError(msg);
-        } finally {
-            setIsGenerating(false);
-        }
+            if (msg.includes("API key not valid")) {
+                setApiKeyOk(false); setError("Your API key is invalid. Please select a valid key.");
+            } else if(msg.includes('Requested entity was not found')) {
+                setApiKeyOk(false); setError("Invalid API Key. Please select a valid key to use this model.");
+            } else { setError(msg); }
+        } finally { setIsGenerating(false); }
     };
     
-    // --- Audio Recording Logic ---
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
-            audioChunksRef.current = [];
-            mediaRecorderRef.current.ondataavailable = e => audioChunksRef.current.push(e.data);
-            mediaRecorderRef.current.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                const url = URL.createObjectURL(audioBlob);
-                const base64 = await fileToBase64(audioBlob as File);
-                setSourceFile({ file: audioBlob as File, type: 'audio', url, base64 });
-                stream.getTracks().forEach(track => track.stop());
-            };
-            mediaRecorderRef.current.start();
-            setIsRecording(true);
-        } catch (err) { setError("Microphone access denied or not available."); }
+    const bufferToWave = (abuffer: AudioBuffer, len: number) => {
+        let numOfChan = abuffer.numberOfChannels,
+            length = len * numOfChan * 2 + 44,
+            buffer = new ArrayBuffer(length),
+            view = new DataView(buffer),
+            channels = [], i, sample,
+            offset = 0,
+            pos = 0;
+    
+        setUint32(0x46464952);                         // "RIFF"
+        setUint32(length - 8);                         // file length - 8
+        setUint32(0x45564157);                         // "WAVE"
+    
+        setUint32(0x20746d66);                         // "fmt " chunk
+        setUint32(16);                                 // length = 16
+        setUint16(1);                                  // PCM (uncompressed)
+        setUint16(numOfChan);
+        setUint32(abuffer.sampleRate);
+        setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+        setUint16(numOfChan * 2);                      // block-align
+        setUint16(16);                                 // 16-bit
+    
+        setUint32(0x61746164);                         // "data" - chunk
+        setUint32(length - pos - 4);                   // chunk length
+    
+        for(i = 0; i < abuffer.numberOfChannels; i++)
+            channels.push(abuffer.getChannelData(i));
+    
+        while(pos < length) {
+            for(i = 0; i < numOfChan; i++) {
+                sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                view.setInt16(pos, sample, true);
+                pos += 2;
+            }
+            offset++;
+        }
+    
+        return new Blob([view], {type: 'audio/wav'});
+    
+        function setUint16(data: number) { view.setUint16(pos, data, true); pos += 2; }
+        function setUint32(data: number) { view.setUint32(pos, data, true); pos += 4; }
     };
-    const stopRecording = () => { mediaRecorderRef.current?.stop(); setIsRecording(false); };
-
 
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4">
-            <div className={`${cardBg} backdrop-blur-xl ${textColor} rounded-none md:rounded-3xl w-full h-full md:max-w-7xl md:h-[90vh] border ${borderColor} shadow-2xl flex flex-col`}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div className={`${cardBg} backdrop-blur-xl ${textColor} rounded-3xl w-full max-w-6xl h-[90vh] border ${borderColor} shadow-2xl flex flex-col`}>
                 <header className={`flex justify-between items-center p-4 border-b ${borderColor} flex-shrink-0`}>
-                     <h2 className="text-xl font-bold flex items-center gap-3"><Bot className={currentTheme.text} /> Create with AI</h2>
-                    {apiKeyOk && <CreationTabs activeTab={activeTab} onTabChange={(t) => {setActiveTab(t); resetForTabChange(t);}} textColor={textColor} currentTheme={currentTheme} />}
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-bold flex items-center gap-2"><Sparkles className={currentTheme.text}/>AI Creator Studio</h2>
+                        <CreationTabs activeTab={activeTab} onTabChange={(t) => { setActiveTab(t); resetForTabChange(t); }} textColor={textColor} currentTheme={currentTheme} />
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20}/></button>
                 </header>
-                
-                {!apiKeyOk ? ( <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                        <KeyRound size={48} className={`mx-auto ${currentTheme.text} mb-4`} /><h3 className="text-2xl font-bold mb-2">API Key Required</h3>
-                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, select a Google AI API key. Some models may require a key from a billed Google Cloud project.</p>
-                        <button onClick={async () => { await (window as any).aistudio.openSelectKey(); setApiKeyOk(true); }} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>Select API Key</button>
-                        <p className={`text-xs ${textSecondary} mt-4`}>See the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`underline ${currentTheme.hoverText}`}>billing documentation</a>.</p>
-                    </div> ) : ( <>
-                        <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
-                            <MainWorkspace {...{ prompt, setPrompt, isGenerating, generationStatus, generationResult, error, currentTheme, cardBg, borderColor, textColor, textSecondary, activeTab, mode: creationMode, setMode: setCreationMode, audioMode, setAudioMode, sourceFile, onFileChange: handleFileChange, removeFile: () => setSourceFile(null), isRecording, startRecording, stopRecording }} />
-                            {/* Fix: Passed the 'setCreativity' state setter to the 'onCreativityChange' prop to resolve a reference error. */}
-                            <SettingsPanel {...{ models: GOOGLE_AI_MODELS, selectedModel, onModelChange: setSelectedModel, tones: TONE_OPTIONS, selectedTone, onToneChange: setSelectedTone, creativity, onCreativityChange: setCreativity, aspectRatios: ASPECT_RATIOS, selectedAspectRatio, onAspectRatioChange: setSelectedAspectRatio, isImagenSelected: selectedModel.id.includes('imagen'), useSearch, onUseSearchChange: setUseSearch, useMaps, onUseMapsChange: setUseMaps, useThinking, onUseThinkingChange: setUseThinking, isProModel: selectedModel.id.includes('2.5-pro'), cardBg, textColor, textSecondary, borderColor, currentTheme }} />
-                        </div>
-                        <footer className={`flex justify-between items-center p-4 border-t ${borderColor} flex-shrink-0`}>
-                            <div className="flex items-center gap-2">
-                                {generationResult && (<>
-                                    <button onClick={handleGenerate} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Regenerate"><RefreshCw size={18} /></button>
-                                    {generationResult.type === 'text' && (<button onClick={() => {navigator.clipboard.writeText(typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url); setCopied(true); setTimeout(()=>setCopied(false), 2000)}} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Copy">{copied ? <Check size={18} className={currentTheme.text}/> : <Copy size={18} />}</button>)}
-                                    {['image', 'video', 'audio'].includes(generationResult.type) && (<button onClick={()=>{const link=document.createElement('a'); link.href=typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url; link.download=`firesocial-ai-${generationResult.type}`; link.click()}} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Download"><Download size={18} /></button>)}
-                                    <div className="w-px h-6 bg-gray-700 mx-2"></div>
-                                    <button className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Good"><ThumbsUp size={18} /></button>
-                                    <button className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Bad"><ThumbsDown size={18} /></button>
-                                </>)}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => { setPrompt(''); setGenerationResult(null); setError(null); }} className={`px-6 py-2 rounded-lg font-semibold text-sm ${cardBg} border ${borderColor} hover:bg-white/10`}>Reset</button>
-                                <button onClick={handleGenerate} disabled={isGenerating} className={`px-6 py-2 rounded-lg font-semibold text-sm bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white disabled:opacity-50 flex items-center gap-2`}>{isGenerating ? 'Generating...' : 'Create'} <Wand2 size={16}/></button>
-                            </div>
-                        </footer>
-                    </>)}
+                <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+                    <SettingsPanel
+                        models={GOOGLE_AI_MODELS.filter(c => c.category.includes(activeTab))}
+                        selectedModel={selectedModel} onModelChange={setSelectedModel}
+                        tones={TONE_OPTIONS} selectedTone={selectedTone} onToneChange={setSelectedTone}
+                        creativity={creativity} onCreativityChange={setCreativity}
+                        aspectRatios={ASPECT_RATIOS} selectedAspectRatio={selectedAspectRatio} onAspectRatioChange={setSelectedAspectRatio}
+                        isImagenSelected={selectedModel.id.includes('imagen')}
+                        useSearch={useSearch} onUseSearchChange={setUseSearch} useMaps={useMaps} onUseMapsChange={setUseMaps}
+                        useThinking={useThinking} onUseThinkingChange={setUseThinking} isProModel={selectedModel.id.includes('pro')}
+                        {...{ cardBg, textColor, textSecondary, borderColor, currentTheme }}
+                    />
+                    <MainWorkspace
+                        prompt={prompt} setPrompt={setPrompt}
+                        isGenerating={isGenerating} generationStatus={generationStatus} generationResult={generationResult} error={error}
+                        activeTab={activeTab} mode={creationMode} setMode={setCreationMode}
+                        audioMode={audioMode} setAudioMode={setAudioMode}
+                        sourceFile={sourceFile} onFileChange={handleFileChange} removeFile={() => setSourceFile(null)}
+                        isRecording={isRecording} startRecording={() => {}} stopRecording={() => {}}
+                        {...{ currentTheme, cardBg, borderColor, textColor, textSecondary }}
+                    />
+                </div>
+                <footer className={`p-4 border-t ${borderColor} flex-shrink-0 flex items-center justify-between`}>
+                    <div className="flex items-center gap-2">
+                        {generationResult && <>
+                            <button onClick={() => { navigator.clipboard.writeText(typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="px-3 py-2 text-sm rounded-lg flex items-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-white/20">
+                                {copied ? <><Check size={16}/> Copied</> : <><Copy size={16}/> Copy</>}
+                            </button>
+                             <button className="px-3 py-2 text-sm rounded-lg flex items-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-white/20"><Download size={16}/> Download</button>
+                        </>}
+                    </div>
+                     <button onClick={handleGenerate} disabled={isGenerating} className={`px-8 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} disabled:opacity-50 flex items-center gap-2`}>
+                        {isGenerating ? 'Generating...' : <><Wand2 size={16}/> Generate</>}
+                    </button>
+                </footer>
             </div>
         </div>
     );
 };
 
+// FIX: Add default export for AICreatorModal component.
 export default AICreatorModal;
