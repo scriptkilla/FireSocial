@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Bot, Send, User, Sparkles } from 'lucide-react';
 import { Theme } from '../types';
-import { GoogleGenAI, Chat } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import AvatarDisplay from './AvatarDisplay';
 
 interface AIChatbotModalProps {
@@ -22,7 +22,7 @@ type ChatMessage = {
 
 const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
     const { show, onClose, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
-    const [chat, setChat] = useState<Chat | null>(null);
+    const [chat, setChat] = useState<any | null>(null);
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);

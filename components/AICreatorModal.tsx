@@ -1,10 +1,13 @@
 
 
 
+
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Text, Image as ImageIcon, Video, Mic, Code, Bot, Settings, ChevronDown, Sparkles, Wand2, RefreshCw, Download, Copy, ThumbsUp, ThumbsDown, Check, AlertTriangle, KeyRound, UploadCloud, File, Map, Search, BrainCircuit, Play, StopCircle } from 'lucide-react';
 import { Theme } from '../types';
-import { GoogleGenAI, Modality, GroundingChunk } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 interface AICreatorModalProps {
     show: boolean;
@@ -15,6 +18,17 @@ interface AICreatorModalProps {
     textSecondary: string;
     borderColor: string;
 }
+
+type GroundingChunk = {
+  web?: {
+    uri?: string;
+    title?: string;
+  };
+  maps?: {
+    uri?: string;
+    title?: string;
+  };
+};
 
 // --- Helper Functions ---
 const fileToBase64 = (file: File): Promise<string> =>
@@ -206,10 +220,15 @@ const MainWorkspace: React.FC<{
                     <div className="mt-2 pt-2 border-t border-gray-700">
                         <h4 className="text-sm font-semibold mb-1">Sources:</h4>
                         <ul className="text-xs list-disc pl-5 space-y-1">
-                            {sources.map((chunk, index) => (
-                                chunk.web ? <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title}</a></li> :
-                                chunk.maps ? <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title}</a></li> : null
-                            ))}
+                            {sources.map((chunk, index) => {
+                                if (chunk.web && chunk.web.uri) {
+                                    return <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title || chunk.web.uri}</a></li>;
+                                }
+                                if (chunk.maps && chunk.maps.uri) {
+                                    return <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title || chunk.maps.uri}</a></li>;
+                                }
+                                return null;
+                            })}
                         </ul>
                     </div>
                 )}
