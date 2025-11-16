@@ -27,6 +27,7 @@ import NotificationsModal from './NotificationsModal';
 import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
 import AIChatbotModal from './AIChatbotModal';
+import LoginPage from './LoginPage';
 
 // --- Page Components (Moved outside FireSocial component) ---
 const FeedPage: React.FC<any> = ({ profile, posts, stories, liveUsers, following, friendSuggestions, trendingHashtags, messages, ...props }) => {
@@ -452,6 +453,7 @@ const AppLayout: React.FC<any> = ({ profile, ...props }) => {
 
 
 const FireSocial: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [themeColor, setThemeColor] = useState<ThemeColor>('orange');
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -507,6 +509,13 @@ const FireSocial: React.FC = () => {
     if (userProfile) {
         setProfile(userProfile);
     }
+
+    // Simulate login after 3 seconds for development
+    const timer = setTimeout(() => {
+      setIsLoggedIn(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -642,6 +651,10 @@ const FireSocial: React.FC = () => {
     const handleBookmarkLinkClick = () => {
         navigate('/profile');
         setActiveProfileTab('bookmarks');
+    }
+
+    if (!isLoggedIn) {
+        return <LoginPage />;
     }
 
     if (!profile) {

@@ -138,6 +138,7 @@ export interface Profile {
   blockedAccounts: UserListItem[];
   unlockedAchievements: string[];
   searchHistory?: string[];
+  aiApiKey?: string;
 }
 
 export interface Notification {

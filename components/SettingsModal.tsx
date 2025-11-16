@@ -105,13 +105,28 @@ const MainView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | 'textSecondary'
     </div>
 );
 
-const AccountSettingsView: React.FC<Pick<ViewProps, 'setView' | 'onEditProfile' | 'onClose' | 'profile' | 'hoverBg' | 'textSecondary'> & { setShowDeactivateConfirm: React.Dispatch<React.SetStateAction<boolean>> }> = ({ setView, onEditProfile, onClose, profile, hoverBg, textSecondary, setShowDeactivateConfirm }) => {
+const AccountSettingsView: React.FC<Pick<ViewProps, 'setView' | 'onEditProfile' | 'onClose' | 'profile' | 'hoverBg' | 'textSecondary' | 'setProfile' | 'currentTheme' | 'borderColor' | 'textColor'> & { setShowDeactivateConfirm: React.Dispatch<React.SetStateAction<boolean>> }> = ({ setView, onEditProfile, onClose, profile, hoverBg, textSecondary, setShowDeactivateConfirm, setProfile, ...props }) => {
+    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setProfile(p => ({ ...p, aiApiKey: e.target.value }));
+    };
+
     return (
         <SettingsSection title="Account Settings">
             <SettingsItem icon={User} label="Edit Profile" onClick={() => { onEditProfile(); onClose(); }} hoverBg={hoverBg} textSecondary={textSecondary} />
             <SettingsItem icon={Globe} label="Language" onClick={() => setView('language')} value={profile.language === 'en-US' ? 'English' : 'Español'} hoverBg={hoverBg} textSecondary={textSecondary} />
             <SettingsItem icon={KeyRound} label="Change Password" onClick={() => setView('changePassword')} hoverBg={hoverBg} textSecondary={textSecondary} />
             <SettingsItem icon={Lock} label="Two-Factor Authentication" onClick={() => setView('twoFactor')} hoverBg={hoverBg} textSecondary={textSecondary} />
+            <div className="p-3">
+                <FormInput
+                    label="AI API Key"
+                    type="password"
+                    value={profile.aiApiKey || ''}
+                    onChange={handleApiKeyChange}
+                    currentTheme={props.currentTheme}
+                    borderColor={props.borderColor}
+                    textColor={props.textColor}
+                />
+            </div>
             <SettingsItem icon={Download} label="Download Data" onClick={() => alert('Request received. We will email you a link to download your data when it is ready.')} hoverBg={hoverBg} textSecondary={textSecondary} />
             <SettingsItem icon={LogOut} label="Deactivate Account" onClick={() => setShowDeactivateConfirm(true)} hasNav={false} hoverBg={hoverBg} textSecondary={textSecondary} />
         </SettingsSection>
