@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, Link, useNavigate, useParams, Outlet, useLocation, useSearchParams } from 'react-router-dom';
-import { Home, MessageCircle, Bell, User, Settings, Moon, Sun, Image, X, Search, UserPlus, TrendingUp, Bookmark, BarChart3, Award, Video, Radio, Zap, Send, LogOut, Plus, Eye, Compass, ChevronLeft, CornerDownLeft, Users, FileText, History, Edit2, PlusCircle, Trash2, ArrowLeft, Gamepad2, Bot } from 'lucide-react';
+import { Home, MessageCircle, Bell, User, Settings, Moon, Sun, Image, X, Search, UserPlus, TrendingUp, Bookmark, BarChart3, Award, Video, Radio, Zap, Send, LogOut, Plus, Eye, Compass, ChevronLeft, CornerDownLeft, Users, FileText, History, Edit2, PlusCircle, Trash2, ArrowLeft, Gamepad2, Bot, AlertTriangle } from 'lucide-react';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 import { Notification, Message, GroupChat, Post, Story, Profile, FriendSuggestion, TrendingHashtag, LiveUser, ThemeColor, UserListItem, Theme, Comment, Achievement, ChatMessage, ActiveCall, MediaItem, StoryItem } from '../types';
 import { ALL_USERS_DATA, LOGGED_IN_USER_USERNAME, INITIAL_POSTS, INITIAL_NOTIFICATIONS, INITIAL_MESSAGES, INITIAL_CHAT_HISTORY, INITIAL_GROUP_CHATS, INITIAL_STORIES, INITIAL_FRIEND_SUGGESTIONS, INITIAL_TRENDING_HASHTAGS, INITIAL_LIVE_USERS, INITIAL_FOLLOWERS, INITIAL_FOLLOWING } from '../data';
@@ -27,6 +27,7 @@ import NotificationsModal from './NotificationsModal';
 import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
 import AIChatbotModal from './AIChatbotModal';
+import LoginPage from './LoginPage';
 
 // --- Page Components (Moved outside FireSocial component) ---
 const FeedPage: React.FC<any> = ({ profile, posts, stories, liveUsers, following, friendSuggestions, trendingHashtags, messages, ...props }) => {
@@ -452,6 +453,7 @@ const AppLayout: React.FC<any> = ({ profile, ...props }) => {
 
 
 const FireSocial: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [themeColor, setThemeColor] = useState<ThemeColor>('orange');
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -497,6 +499,7 @@ const FireSocial: React.FC = () => {
   const [showAIChatbot, setShowAIChatbot] = useState(false);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [reportingUser, setReportingUser] = useState<UserListItem | null>(null);
   
   const [followers, setFollowers] = useState<UserListItem[]>(INITIAL_FOLLOWERS);
   const [following, setFollowing] = useState<UserListItem[]>(INITIAL_FOLLOWING);
@@ -507,6 +510,13 @@ const FireSocial: React.FC = () => {
     if (userProfile) {
         setProfile(userProfile);
     }
+    
+    // Simulate login after 3 seconds for development
+    const timer = setTimeout(() => {
+      setIsLoggedIn(true);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -593,7 +603,9 @@ const FireSocial: React.FC = () => {
     const handleSharePost = async (post: Post) => { const shareUrl = `https://firesocial.dev/post/${post.id}`; try { if (navigator.share) { await navigator.share({ title: `Check out this post from ${post.user} on FireSocial`, text: post.content, url: shareUrl, }); } else { alert('Sharing is not supported on this browser.'); } } catch (error) { console.error('Error sharing:', error); } };
     const handleCopyLink = (postId: number) => { const postUrl = `https://firesocial.dev/post/${postId}`; navigator.clipboard.writeText(postUrl).then( () => alert('Link copied to clipboard!'), () => alert('Failed to copy link.') ); };
     const handleDeployGame = (gameIdea: string, previewImage: string) => { if (!profile) return; const newPost: Post = { id: Date.now(), userId: profile.id, user: profile.name, username: profile.username, avatar: profile.avatar, content: `🚀 I just created a new game with the AI Game Studio! It's a game about: "${gameIdea}". Check out the concept art! #AIGameDev #FireSocialCreator`, media: [{ type: 'image', url: previewImage }], likes: 0, comments: 0, shares: 0, time: 'Just now', reactions: {}, userReaction: null, bookmarked: false, views: 0, category: 'Gaming', }; setPosts(prevPosts => [newPost, ...prevPosts]); setProfile(p => p ? ({ ...p, posts: p.posts + 1 }) : p); setShowGameCreator(false); navigate('/profile'); setActiveProfileTab('posts'); };
-
+    const handleReportUser = (user: UserListItem) => { setReportingUser(user); };
+    const handleConfirmReportUser = () => { if (reportingUser) { alert(`Thank you for your report. We will review ${reportingUser.username}'s profile.`); setReportingUser(null); } };
+    const handleCancelReportUser = () => { setReportingUser(null); };
 
     // --- New Navigation Handlers ---
     const handleViewProfile = (usernameWithAt: string) => {
@@ -644,6 +656,10 @@ const FireSocial: React.FC = () => {
         setActiveProfileTab('bookmarks');
     }
 
+    if (!isLoggedIn) {
+        return <LoginPage />;
+    }
+
     if (!profile) {
         return <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center">Loading Profile...</div>;
     }
@@ -661,7 +677,7 @@ const FireSocial: React.FC = () => {
 
     const allProps = {
         profile, setProfile, darkMode, setDarkMode, themeColor, setThemeColor, notifications, setNotifications, messages, setMessages, groupChats, setGroupChats, posts, setPosts, stories, setStories, newPost, setNewPost, newPostMedia, setNewPostMedia, newPostMentionQuery, setNewPostMentionQuery, newPostTextareaRef, fileInputRef, showSettings, setShowSettings, searchQuery, setSearchQuery, showCreateStory, setShowCreateStory, viewingStoriesForUser, setViewingStoriesForUser, showCreatePoll, setShowCreatePoll, pollOptions, setPollOptions, friendSuggestions, setFriendSuggestions, trendingHashtags, showAnalytics, setShowAnalytics, liveUsers, hiddenPostIds, setHiddenPostIds, chatHistories, setChatHistories, activeCall, setActiveCall, showEditProfile, setShowEditProfile, showFollowList, setShowFollowList, showSuggestionsModal, setShowSuggestionsModal, activeTab: activeProfileTab, onTabChange: setActiveProfileTab, viewingPost, setViewingPost, viewingCommentsForPost, setViewingCommentsForPost, achievementToast, setAchievementToast, showNotifications, setShowNotifications, showAICreator, setShowAICreator, showGameCreator, setShowGameCreator, showAIChatbot, setShowAIChatbot, showSearchHistory, setShowSearchHistory, searchContainerRef, followers, setFollowers, following, setFollowing, allUsers, allAchievements: ALL_ACHIEVEMENTS, currentTheme, unreadNotifications, unreadMessages, ui: uiProps, navigate,
-        handleReaction, handleBookmark, handleFileSelect, handleRemoveMedia, handleCreatePost, handleNewPostChange, handleNewPostMentionSelect, handlePollOptionChange, handleAddPollOption, handleRemovePollOption, handleCreatePoll, handleVotePoll, handleDeletePost, handleCreateStory, handleDeleteStory, handleStoryClick, handleMarkOneNotificationRead, handleMarkAllNotificationsRead, handleMarkChatAsRead, handleSendMessage, handleDeleteMessage, handleEditMessage, handleReactToMessage, handleStartCall, handleEndCall, handleSaveProfile, handleFollowToggle, handleBlockToggle, handleAddComment, handleLikeComment, handleDeleteComment, handleEditComment, handleViewProfile, handleViewHashtag, handleSearchSubmit, handleSearchFromHistory, handleRemoveSearchHistoryItem, handleClearSearchHistory, handleEditSearchHistoryItem, handleDismissSuggestion, handleHidePost, handleMuteUser, handleReportPost, handleSharePost, handleCopyLink, handleDeployGame, handleBookmarkLinkClick
+        handleReaction, handleBookmark, handleFileSelect, handleRemoveMedia, handleCreatePost, handleNewPostChange, handleNewPostMentionSelect, handlePollOptionChange, handleAddPollOption, handleRemovePollOption, handleCreatePoll, handleVotePoll, handleDeletePost, handleCreateStory, handleDeleteStory, handleStoryClick, handleMarkOneNotificationRead, handleMarkAllNotificationsRead, handleMarkChatAsRead, handleSendMessage, handleDeleteMessage, handleEditMessage, handleReactToMessage, handleStartCall, handleEndCall, handleSaveProfile, handleFollowToggle, handleBlockToggle, handleAddComment, handleLikeComment, handleDeleteComment, handleEditComment, handleViewProfile, handleViewHashtag, handleSearchSubmit, handleSearchFromHistory, handleRemoveSearchHistoryItem, handleClearSearchHistory, handleEditSearchHistoryItem, handleDismissSuggestion, handleHidePost, handleMuteUser, handleReportPost, handleSharePost, handleCopyLink, handleDeployGame, handleBookmarkLinkClick, onReportUser: handleReportUser,
     };
 
     return (
@@ -681,6 +697,20 @@ const FireSocial: React.FC = () => {
             {showEditProfile && <EditProfileModal {...allProps} {...uiProps} onClose={() => setShowEditProfile(false)} onSave={handleSaveProfile} />}
             {showFollowList && <FollowListModal listType={showFollowList} onClose={() => setShowFollowList(null)} {...allProps} {...uiProps} onFollowToggle={handleFollowToggle} onViewProfile={handleViewProfile} />}
              
+            {reportingUser && (
+                <div className="fixed inset-0 bg-black/70 z-[150] flex items-center justify-center p-4">
+                    <div className={`${uiProps.cardBg} p-6 rounded-2xl max-w-sm w-full text-center border ${uiProps.borderColor}`}>
+                        <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
+                        <h3 className="text-lg font-bold">Report {reportingUser.username}?</h3>
+                        <p className={`mt-2 text-sm ${uiProps.textSecondary}`}>This will submit the account for review by our team for violating our community guidelines. This action is confidential.</p>
+                        <div className="flex gap-2 mt-6">
+                            <button onClick={handleCancelReportUser} className={`flex-1 py-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30`}>Cancel</button>
+                            <button onClick={handleConfirmReportUser} className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white">Report</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <Routes>
                 <Route path="/" element={<AppLayout {...allProps} />}>
                     <Route index element={<FeedPage {...allProps} />} />

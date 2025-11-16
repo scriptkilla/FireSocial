@@ -163,24 +163,6 @@ const ExplorePage: React.FC<ExplorePageProps> = (props) => {
 
     return (
         <div className="space-y-6">
-            <style>{`
-                .masonry-grid {
-                    column-gap: 1rem;
-                    column-count: 2;
-                }
-                @media (min-width: 768px) { .masonry-grid { column-count: 3; } }
-                .masonry-item {
-                    break-inside: avoid;
-                    margin-bottom: 1rem;
-                }
-                .horizontal-scroll {
-                    scroll-snap-type: x mandatory;
-                    -webkit-overflow-scrolling: touch;
-                }
-                .horizontal-scroll > * {
-                    scroll-snap-align: start;
-                }
-            `}</style>
             <FilterModal 
                 show={showFilters} 
                 onClose={() => setShowFilters(false)} 

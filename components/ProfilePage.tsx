@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { Profile, Post, Theme, Achievement, Comment } from '../types';
+import { Profile, Post, Theme, Achievement, Comment, UserListItem } from '../types';
 import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -14,6 +14,7 @@ interface ProfilePageProps {
     onEditProfile: () => void;
     onFollow: (userId: number, username: string) => void;
     onBlockToggle: (userId: number, username: string) => void;
+    onReportUser: (user: UserListItem) => void;
     isFollowing: boolean;
     isBlocked: boolean;
     onShowFollowers: () => void;
@@ -95,7 +96,7 @@ const CommentActivityItem: React.FC<{ comment: Comment; post: Post, onViewProfil
 
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks } = props;
+    const { profileToDisplay, isOwnProfile, posts, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, onReportUser, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
 
     const getLinkIcon = (url: string, size: number = 20) => {
@@ -180,13 +181,23 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                 </button>
                                 {showProfileOptions && (
                                     <div className={`absolute right-0 mt-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-xl w-48 z-10 overflow-hidden`}>
+                                        <button onClick={() => {
+                                            const userToReport: UserListItem = {
+                                                id: profileToDisplay.id,
+                                                username: profileToDisplay.username,
+                                                name: profileToDisplay.name,
+                                                avatar: profileToDisplay.avatar,
+                                                followedByYou: isFollowing,
+                                            };
+                                            onReportUser(userToReport);
+                                            setShowProfileOptions(false);
+                                        }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10`}>
+                                            <AlertTriangle size={16} />
+                                            <span>Report User</span>
+                                        </button>
                                         <button onClick={() => { onBlockToggle(profileToDisplay.id, profileToDisplay.username); setShowProfileOptions(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 text-red-500`}>
                                             <UserMinus size={16} />
                                             <span>{isBlocked ? 'Unblock' : 'Block'}</span>
-                                        </button>
-                                        <button onClick={() => { alert('Reported'); setShowProfileOptions(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10`}>
-                                            <AlertTriangle size={16} />
-                                            <span>Report</span>
                                         </button>
                                     </div>
                                 )}

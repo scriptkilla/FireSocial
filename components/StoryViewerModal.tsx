@@ -182,14 +182,6 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
 
     return (
         <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center font-sans">
-            <style>{`
-                @keyframes float-up {
-                    0% { transform: translateY(0) scale(1); opacity: 1; }
-                    100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
-                }
-                .animate-float-up { animation: float-up 3s ease-out forwards; }
-            `}</style>
-
             {/* Main Story Container */}
             <div 
                 className="relative w-full h-full md:max-w-md md:max-h-[90vh] md:aspect-[9/16] bg-gray-800 md:rounded-2xl overflow-hidden shadow-2xl flex flex-col"

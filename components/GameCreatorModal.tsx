@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Wand2, Play } from 'lucide-react';
 import { Theme } from '../types';
 import { GoogleGenAI } from '@google/genai';
@@ -19,13 +19,13 @@ interface GameCreatorModalProps {
 const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
     const { show, onClose, onDeployGame, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
 
-    const [apiKeyOk, setApiKeyOk] = useState(false);
-    const [gameIdea, setGameIdea] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [apiKeyOk, setApiKeyOk] = React.useState(false);
+    const [gameIdea, setGameIdea] = React.useState('');
+    const [isGenerating, setIsGenerating] = React.useState(false);
+    const [generatedImage, setGeneratedImage] = React.useState<string | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (show) {
             (async () => {
                 const hasKey = await (window as any).aistudio.hasSelectedApiKey();
@@ -92,7 +92,11 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
             } else if (msg.includes("billing")) {
                 setApiKeyOk(false);
                 setError("This model requires a billed project. Please select a different API key.");
-            } else {
+            } else if (msg.includes('Requested entity was not found')) {
+                setApiKeyOk(false);
+                setError("Invalid API Key. Please select a valid key to use this model.");
+            }
+            else {
                 setError(msg);
             }
         } finally {
