@@ -1,7 +1,109 @@
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage } from './types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
 const LOGGED_IN_USER_ID = 1001;
+
+export const INITIAL_MARKETPLACE_PRODUCTS: Product[] = [
+  {
+    id: 'prod_1',
+    name: 'Abstract Gradient Pack',
+    description: 'A set of 20 high-resolution abstract gradients for backgrounds and branding projects. Includes JPEG and PNG formats.',
+    price: 15,
+    currency: 'USD',
+    images: ['https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=800&q=60', 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&w=800&q=60'],
+    category: 'Digital',
+    creatorId: 1002,
+    creatorUsername: '@alexrivera',
+    creatorAvatar: '🎨',
+    stock: -1,
+    sales: 125,
+    rating: 4.8,
+  },
+  {
+    id: 'prod_2',
+    name: 'Minimalist Travel Poster',
+    description: 'A beautiful, high-quality print of a minimalist travel poster featuring Bali. Perfect for home decor. Frame not included.',
+    price: 35,
+    currency: 'USD',
+    images: ['https://images.unsplash.com/photo-1588626242450-496225a02422?auto=format&fit=crop&w=800&q=60'],
+    category: 'Art',
+    creatorId: 1003,
+    creatorUsername: '@jordanlee',
+    creatorAvatar: '🚀',
+    stock: 50,
+    sales: 22,
+    rating: 4.9,
+  },
+  {
+    id: 'prod_3',
+    name: 'FinTech App UI Kit',
+    description: 'A comprehensive UI kit for Figma, designed for modern FinTech applications. Includes 50+ screens and a full design system.',
+    price: 79,
+    currency: 'USD',
+    images: ['https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=800&q=60'],
+    category: 'Templates',
+    creatorId: 1004,
+    creatorUsername: '@taylorkim',
+    creatorAvatar: '💼',
+    stock: -1,
+    sales: 48,
+    rating: 5.0,
+  },
+    {
+      id: 'prod_user_1',
+      name: 'FireSocial UI Kit',
+      description: 'The complete UI Kit for FireSocial, built in Figma. Perfect for designers and developers to kickstart their social media projects.',
+      price: 49,
+      currency: 'USD',
+      images: ['https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=60'],
+      category: 'Templates',
+      creatorId: LOGGED_IN_USER_ID,
+      creatorUsername: LOGGED_IN_USER_USERNAME,
+      creatorAvatar: '👤',
+      stock: -1,
+      sales: 32,
+      rating: 4.9,
+    }
+];
+
+export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
+  enabled: true,
+  subscriptionTiers: [
+    {
+      id: '1', name: 'Supporter', price: 5, currency: 'USD', description: 'Basic support with exclusive content',
+      benefits: ['Exclusive posts', 'Behind-the-scenes content', 'Supporter badge'],
+      color: 'bg-gradient-to-r from-blue-400 to-cyan-500', subscriberCount: 24
+    },
+    {
+      id: '2', name: 'VIP', price: 15, currency: 'USD', description: 'Premium access with personal interaction',
+      benefits: ['All Supporter benefits', 'Monthly Q&A sessions', 'Early access to content', 'Direct messaging'],
+      color: 'bg-gradient-to-r from-purple-400 to-pink-500', subscriberCount: 8
+    }
+  ],
+  tipJar: { enabled: true, suggestedAmounts: [3, 5, 10, 25], customAmount: true, totalTips: 245.50, tipCount: 42 },
+  paidPosts: [
+    // Fix: Removed invalid 'previewText' property.
+    { id: 10, price: 3, currency: 'USD', purchaseCount: 28, revenue: 84 }
+  ],
+  products: [
+    INITIAL_MARKETPLACE_PRODUCTS.find(p => p.id === 'prod_user_1')!
+  ],
+  analytics: {
+    totalEarnings: 892.25,
+    monthlyEarnings: [245, 312, 178, 157],
+    topEarningPosts: [
+      // Fix: Removed invalid 'previewText' property.
+      { id: 10, price: 3, currency: 'USD', purchaseCount: 28, revenue: 84 }
+    ],
+    subscriberGrowth: [12, 18, 24, 32],
+    tipHistory: [
+      { date: '2024-01-15', amount: 10 },
+      { date: '2024-01-14', amount: 5 },
+      { date: '2024-01-13', amount: 25 },
+    ]
+  },
+  payoutMethod: 'stripe', payoutEmail: 'payout@example.com', minimumPayout: 50, nextPayoutDate: '2024-02-01', balance: 342.75
+};
 
 export const ALL_USERS_DATA_BASE: Profile[] = [
     {
@@ -49,6 +151,9 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         ],
         unlockedAchievements: ['first_post', '10_day_streak'],
         searchHistory: ['#design', 'ReactJS', '@alexrivera'],
+        isCreator: true,
+        creatorMonetization: INITIAL_CREATOR_MONETIZATION,
+        purchasedPostIds: [],
     },
     {
         id: 1002,
@@ -77,6 +182,7 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         blockedAccounts: [],
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
+        purchasedPostIds: [10],
     },
     {
         id: 1003,
@@ -105,6 +211,7 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         blockedAccounts: [],
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak', 'popular_post'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 1004,
@@ -132,6 +239,7 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         blockedAccounts: [],
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 1005,
@@ -160,22 +268,27 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         blockedAccounts: [],
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '10_day_streak', 'popular_post'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 2001, name: 'Chris Brown', username: '@chrisbrown', avatar: '🎭', email: 'chris@example.com', bio: 'Actor and director.', followers: 1500, following: 200, posts: 45, badges: ['🎬'], streak: 22, online: true, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 2002, name: 'Sam Wilson', username: '@samwilson', avatar: '🎪', email: 'sam@example.com', bio: 'Photographer.', followers: 900, following: 150, posts: 120, badges: ['📸'], streak: 12, online: false, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 2003, name: 'Maya Patel', username: '@mayapatel', avatar: '🎯', email: 'maya@example.com', bio: 'AI researcher.', followers: 3200, following: 80, posts: 25, badges: ['🧠'], streak: 8, online: true, verified: true, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
+        purchasedPostIds: [],
     },
     {
         id: 201, name: 'Blocked User 1', username: '@blocked1', avatar: '🚫', email: 'blocked@example.com', bio: 'This user is blocked.', followers: 0, following: 0, posts: 0, badges: [], streak: 0, online: false, verified: false, privacySettings: { profilePublic: false, showOnlineStatus: false, allowTagging: false, showActivity: false, privateAccount: true, suggestAccount: false, activityStatus: false }, notificationSettings: { push: false, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'hide' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: [],
         searchHistory: [],
+        purchasedPostIds: [],
     }
 ];
 
@@ -237,14 +350,15 @@ export const INITIAL_POSTS_BASE: Post[] = [
     { id: 6, userId: LOGGED_IN_USER_ID, user: 'THOMAS DARROW', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'Exploring the new features. Polls are pretty cool!', type: 'poll', pollOptions: [{id: 1, text: 'Agree', votes: 12}, {id: 2, text: 'Disagree', votes: 3}], totalVotes: 15, userVoted: 1, time: '1d ago', reactions: {like: 5}, userReaction: null, bookmarked: true, views: 180, likes: 5, comments: 1, shares: 0, category: 'Tech' },
     { id: 9, userId: 1003, user: 'Jordan Lee', username: '@jordanlee', avatar: '🚀', content: 'Quick clip from today\'s drone flight! Check out that coastline. Thanks @alexrivera for the editing tips! #drone #video #ocean', media: [{type: 'video', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4'}], postFormat: 'reel', likes: 215, comments: 25, shares: 30, time: '1d ago', reactions: {}, userReaction: null, bookmarked: false, views: 1500, category: 'Photography', location: 'Bali, Indonesia' },
     { id: 4, userId: 1004, user: 'Taylor Kim', username: '@taylorkim', avatar: '💼', content: 'Excited to announce our new project launch! 🎉 Shoutout to the entire team, especially @jordanlee for the amazing launch video.', likes: 89, comments: 22, shares: 18, time: '6h ago', reactions: { like: 60, love: 20, fire: 9 }, userReaction: null, bookmarked: false, views: 567, category: 'Business', location: 'New York, NY' },
+    { id: 10, userId: LOGGED_IN_USER_ID, user: 'THOMAS DARROW', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'Here is my exclusive, paid content! This is a deep dive into advanced React patterns that will supercharge your applications. We cover custom hooks, performance optimization with memoization and virtual lists, and state management strategies for large-scale apps.', isPaid: true, paidInfo: { price: 3, currency: 'USD', purchasers: [1002, 1003] }, likes: 55, comments: 12, shares: 8, time: '2d ago', reactions: {}, userReaction: null, bookmarked: false, views: 350, category: 'Tech' },
     { id: 7, userId: 201, user: 'Blocked User 1', username: '@blocked1', avatar: '🚫', content: 'You should not see this post.', likes: 1, comments: 0, shares: 0, time: '1m ago', reactions: {}, userReaction: null, bookmarked: false, views: 1}
 ];
 
 export const INITIAL_NOTIFICATIONS: Notification[] = [
-    { id: 1, type: 'like', user: 'Alex Rivera', username: '@alexrivera', content: 'liked your post', time: '5m ago', read: false },
-    { id: 2, type: 'comment', user: 'Jordan Lee', username: '@jordanlee', content: 'commented on your photo', time: '1h ago', read: false },
+    { id: 1, type: 'like', user: 'Alex Rivera', username: '@alexrivera', content: 'liked your post', time: '5m ago', read: false, postId: 3 },
+    { id: 2, type: 'comment', user: 'Jordan Lee', username: '@jordanlee', content: 'commented on your post', time: '1h ago', read: false, postId: 6 },
     { id: 3, type: 'follow', user: 'Taylor Kim', username: '@taylorkim', content: 'started following you', time: '3h ago', read: true },
-    { id: 4, type: 'tag', user: 'Alex Rivera', username: '@alexrivera', content: 'tagged you in a post', time: '5h ago', read: false }
+    { id: 4, type: 'tag', user: 'Alex Rivera', username: '@alexrivera', content: 'tagged you in a post', time: '5h ago', read: false, postId: 1 }
 ];
 
 export const INITIAL_MESSAGES: Message[] = [

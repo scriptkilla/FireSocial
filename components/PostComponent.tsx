@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 
@@ -35,6 +35,7 @@ interface PostComponentProps {
     onVotePoll: (postId: number, optionId: number) => void;
     onViewProfile: (username: string) => void;
     onViewHashtag: (tag: string) => void;
+    onPurchasePost: (postId: number) => void;
     isFollowing: boolean;
     isBlocked: boolean;
 }
@@ -68,7 +69,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 
 
 const PostComponent: React.FC<PostComponentProps> = (props) => {
-    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers } = props;
+    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [inlineComment, setInlineComment] = useState('');
@@ -92,7 +93,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         const text = e.target.value;
         setInlineComment(text);
 
-        const cursorPosition = e.target.selectionStart;
+        const cursorPosition = e.target.selectionStart ?? 0;
         const textUpToCursor = text.substring(0, cursorPosition);
         const mentionMatch = textUpToCursor.match(/@(\w*)$/);
 
@@ -128,6 +129,10 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         setInlineCommentMentionQuery(null);
     };
 
+    const isOwnPost = post.userId === profile.id;
+    const hasPurchased = profile.purchasedPostIds?.includes(post.id);
+    const isLocked = post.isPaid && !isOwnPost && !hasPurchased;
+
     return (
         <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
             {/* Post Header */}
@@ -154,7 +159,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     </button>
                     {showPostOptions && (
                         <div className={`absolute right-0 mt-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-xl w-52 z-10 overflow-hidden`}>
-                            {post.username === profile.username ? (
+                            {isOwnPost ? (
                                 <>
                                     <MenuItem icon={Edit} label="Edit Post" onClick={(e) => handleMenuClick(e, () => alert('Edit functionality not implemented yet.'))} className="rounded-t-2xl" />
                                     <MenuItem icon={Trash2} label="Delete Post" onClick={(e) => handleMenuClick(e, () => onDelete(post.id))} className="text-red-500" />
@@ -169,7 +174,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             <MenuItem icon={Bookmark} label={post.bookmarked ? 'Unsave' : 'Save'} onClick={(e) => handleMenuClick(e, () => onBookmark(post.id))} />
                             <MenuItem icon={Share2} label="Share to..." onClick={(e) => handleMenuClick(e, () => onShare(post))} />
                             <MenuItem icon={LinkIcon} label="Copy link" onClick={(e) => handleMenuClick(e, () => onCopyLink(post.id))} />
-                            {post.username !== profile.username && (
+                            {!isOwnPost && (
                                 <>
                                     <MenuItem icon={UserMinus} label={isBlocked ? 'Unblock' : 'Block'} onClick={(e) => handleMenuClick(e, () => onBlockToggle(post.userId, post.username))} className="text-red-500" />
                                     <MenuItem icon={AlertTriangle} label="Report post" onClick={(e) => handleMenuClick(e, () => onReport(post.id))} className="text-red-500 rounded-b-2xl" />
@@ -180,120 +185,138 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                 </div>
             </div>
             
-            {/* Post Body */}
-            <div onClick={() => onViewPost(post)} className="cursor-pointer">
-                {post.media && post.media.length > 0 && <PostMedia media={post.media} postFormat={post.postFormat} currentTheme={currentTheme} />}
-                <ParsedContent content={post.content} textColor={textColor} currentTheme={currentTheme} onViewHashtag={onViewHashtag} onViewProfile={onViewProfile} />
-            </div>
-            
-            {/* Poll */}
-            {post.type === 'poll' && post.pollOptions && (
-              <div className="mb-4 space-y-2">
-                {post.pollOptions.map(option => {
-                  const percentage = (post.totalVotes ?? 0) > 0 ? (option.votes / (post.totalVotes ?? 1) * 100).toFixed(0) : 0;
-                  const isSelected = post.userVoted === option.id;
-                  return (
-                    <button key={option.id} onClick={() => post.userVoted === null && onVotePoll(post.id, option.id)} disabled={post.userVoted !== null} className={`w-full p-3 rounded-2xl border ${borderColor} ${isSelected ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white` : `${cardBg} ${textColor}`} hover:bg-white/10 transition-all relative overflow-hidden text-left`}>
-                      <div className={`absolute left-0 top-0 h-full ${isSelected ? 'bg-white/20' : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} opacity-20`} transition-all`} style={{ width: `${percentage}%` }} />
-                      <div className="relative flex justify-between items-center"><span>{option.text}</span>{post.userVoted !== null && <span>{percentage}%</span>}</div>
+            {isLocked ? (
+                <div className={`text-center p-8 rounded-2xl border-2 border-dashed ${borderColor} ${cardBg} backdrop-blur-sm`}>
+                    <Lock size={48} className={`mx-auto ${currentTheme.text} mb-4`} />
+                    <h3 className={`font-bold text-xl ${textColor}`}>Unlock this exclusive post</h3>
+                    <p className={`mt-2 mb-6 ${textSecondary}`}>
+                        This content is available for purchase. Unlock it now to view the full post.
+                    </p>
+                    <button 
+                        onClick={() => onPurchasePost(post.id)}
+                        className={`w-full py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg`}
+                    >
+                        Unlock for ${post.paidInfo?.price}
                     </button>
-                  );
-                })}
-                <p className={`text-sm ${textSecondary} text-center`}>{post.totalVotes} votes</p>
-              </div>
-            )}
-            
-            {/* Post Stats */}
-            <div className={`flex items-center gap-2 mb-4 ${textSecondary} text-sm`}><Eye size={16} /><span>{post.views} views</span></div>
-            
-            {/* Post Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex gap-6">
-                <div className="relative">
-                  <button onClick={() => setShowReactionPicker(prev => !prev)} className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all`}>
-                    {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} />}<span>{post.likes}</span>
-                  </button>
-                  {showReactionPicker && (
-                    <div className={`absolute bottom-full mb-2 ${cardBg} backdrop-blur-xl rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
-                      {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
-                    </div>
-                  )}
                 </div>
-                <button onClick={() => onViewComments(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><MessageSquare size={20} /><span>{post.comments}</span></button>
-                <button onClick={() => onShare(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><Share2 size={20} /><span>{post.shares}</span></button>
-              </div>
-              <button onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
-            </div>
-            
-            {/* Comment Section */}
-            <div className={`mt-4 pt-4 border-t ${borderColor} space-y-3`}>
-                {post.commentsData && post.commentsData.length > 0 && (
-                    <div className="space-y-2">
-                        {post.commentsData.slice(0, 2).map(comment => (
-                            <div key={comment.id} className="flex items-start gap-2 text-sm px-2">
-                                <button onClick={() => onViewProfile(comment.username)}>
-                                    <AvatarDisplay avatar={comment.avatar} size="w-8 h-8" fontSize="text-base" />
-                                </button>
-                                <div className="flex-1">
-                                    <p>
-                                        <button onClick={() => onViewProfile(comment.username)} className={`font-semibold ${textColor} mr-2 hover:underline`}>{comment.username}</button>
-                                        <span className={textColor}>
-                                            {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
-                                            {comment.text}
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+            ) : (
+                <>
+                    {/* Post Body */}
+                    <div onClick={() => onViewPost(post)} className="cursor-pointer">
+                        {post.media && post.media.length > 0 && <PostMedia media={post.media} postFormat={post.postFormat} currentTheme={currentTheme} />}
+                        <ParsedContent content={post.content} textColor={textColor} currentTheme={currentTheme} onViewHashtag={onViewHashtag} onViewProfile={onViewProfile} />
                     </div>
-                )}
-                
-                {post.comments > 2 && (
-                    <button onClick={() => onViewComments(post)} className={`text-sm ${textSecondary} font-semibold px-2 hover:underline`}>
-                        View all {post.comments} comments
-                    </button>
-                )}
-
-                <div className="flex items-center gap-2 pt-2">
-                    <AvatarDisplay avatar={profile.avatar} size="w-8 h-8" fontSize="text-base" />
-                    <form onSubmit={(e) => { e.preventDefault(); handleAddInlineComment(); }} className="flex-1 flex gap-2 items-center relative">
-                        {inlineCommentMentionQuery !== null && (
-                            <div className={`absolute bottom-full mb-2 w-full max-w-sm ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
-                                <ul className="max-h-48 overflow-y-auto">
-                                   {allUsers
-                                        .filter(user =>
-                                            user.username.toLowerCase().includes(`@${inlineCommentMentionQuery.toLowerCase()}`) ||
-                                            user.name.toLowerCase().includes(inlineCommentMentionQuery.toLowerCase())
-                                        )
-                                        .slice(0, 5)
-                                        .map(user => (
-                                        <li key={user.id}>
-                                            <button onClick={() => handleInlineMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-white/10">
-                                                <AvatarDisplay avatar={user.avatar} size="w-10 h-10" />
-                                                <div>
-                                                    <p className={textColor}>{user.name}</p>
-                                                    <p className={`text-sm ${textSecondary}`}>{user.username}</p>
-                                                </div>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
+                    
+                    {/* Poll */}
+                    {post.type === 'poll' && post.pollOptions && (
+                    <div className="mb-4 space-y-2">
+                        {post.pollOptions.map(option => {
+                        const percentage = (post.totalVotes ?? 0) > 0 ? (option.votes / (post.totalVotes ?? 1) * 100).toFixed(0) : 0;
+                        const isSelected = post.userVoted === option.id;
+                        return (
+                            <button key={option.id} onClick={() => post.userVoted === null && onVotePoll(post.id, option.id)} disabled={post.userVoted !== null} className={`w-full p-3 rounded-2xl border ${borderColor} ${isSelected ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white` : `${cardBg} ${textColor}`} hover:bg-white/10 transition-all relative overflow-hidden text-left`}>
+                            <div className={`absolute left-0 top-0 h-full ${isSelected ? 'bg-white/20' : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} opacity-20`} transition-all`} style={{ width: `${percentage}%` }} />
+                            <div className="relative flex justify-between items-center"><span>{option.text}</span>{post.userVoted !== null && <span>{percentage}%</span>}</div>
+                            </button>
+                        );
+                        })}
+                        <p className={`text-sm ${textSecondary} text-center`}>{post.totalVotes} votes</p>
+                    </div>
+                    )}
+                    
+                    {/* Post Stats */}
+                    <div className={`flex items-center gap-2 mb-4 ${textSecondary} text-sm`}><Eye size={16} /><span>{post.views} views</span></div>
+                    
+                    {/* Post Actions */}
+                    <div className="flex items-center justify-between">
+                    <div className="flex gap-6">
+                        <div className="relative">
+                        <button onClick={() => setShowReactionPicker(prev => !prev)} className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all`}>
+                            {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} />}<span>{post.likes}</span>
+                        </button>
+                        {showReactionPicker && (
+                            <div className={`absolute bottom-full mb-2 ${cardBg} backdrop-blur-xl rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
+                            {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
                             </div>
                         )}
-                        <input 
-                            ref={inlineCommentInputRef}
-                            type="text" 
-                            placeholder="Add a comment..." 
-                            value={inlineComment}
-                            onChange={handleInlineCommentChange}
-                            className={`flex-1 px-4 py-2 text-sm bg-black/5 dark:bg-white/5 rounded-full border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-1 ${currentTheme.ring}`}
-                        />
-                        <button type="submit" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim()}>
-                            <Send size={18} />
-                        </button>
-                    </form>
-                </div>
-            </div>
+                        </div>
+                        <button onClick={() => onViewComments(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><MessageSquare size={20} /><span>{post.comments}</span></button>
+                        <button onClick={() => onShare(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><Share2 size={20} /><span>{post.shares}</span></button>
+                    </div>
+                    <button onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
+                    </div>
+                    
+                    {/* Comment Section */}
+                    <div className={`mt-4 pt-4 border-t ${borderColor} space-y-3`}>
+                        {post.commentsData && post.commentsData.length > 0 && (
+                            <div className="space-y-2">
+                                {post.commentsData.slice(0, 2).map(comment => (
+                                    <div key={comment.id} className="flex items-start gap-2 text-sm px-2">
+                                        <button onClick={() => onViewProfile(comment.username)}>
+                                            <AvatarDisplay avatar={comment.avatar} size="w-8 h-8" fontSize="text-base" />
+                                        </button>
+                                        <div className="flex-1">
+                                            <p>
+                                                <button onClick={() => onViewProfile(comment.username)} className={`font-semibold ${textColor} mr-2 hover:underline`}>{comment.username}</button>
+                                                <span className={textColor}>
+                                                    {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
+                                                    {comment.text}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {post.comments > 2 && (
+                            <button onClick={() => onViewComments(post)} className={`text-sm ${textSecondary} font-semibold px-2 hover:underline`}>
+                                View all {post.comments} comments
+                            </button>
+                        )}
+
+                        <div className="flex items-center gap-2 pt-2">
+                            <AvatarDisplay avatar={profile.avatar} size="w-8 h-8" fontSize="text-base" />
+                            <form onSubmit={(e) => { e.preventDefault(); handleAddInlineComment(); }} className="flex-1 flex gap-2 items-center relative">
+                                {inlineCommentMentionQuery !== null && (
+                                    <div className={`absolute bottom-full mb-2 w-full max-w-sm ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
+                                        <ul className="max-h-48 overflow-y-auto">
+                                        {allUsers
+                                                .filter(user =>
+                                                    user.username.toLowerCase().includes(`@${inlineCommentMentionQuery.toLowerCase()}`) ||
+                                                    user.name.toLowerCase().includes(inlineCommentMentionQuery.toLowerCase())
+                                                )
+                                                .slice(0, 5)
+                                                .map(user => (
+                                                <li key={user.id}>
+                                                    <button onClick={() => handleInlineMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-white/10">
+                                                        <AvatarDisplay avatar={user.avatar} size="w-10 h-10" />
+                                                        <div>
+                                                            <p className={textColor}>{user.name}</p>
+                                                            <p className={`text-sm ${textSecondary}`}>{user.username}</p>
+                                                        </div>
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                <input 
+                                    ref={inlineCommentInputRef}
+                                    type="text" 
+                                    placeholder="Add a comment..." 
+                                    value={inlineComment}
+                                    onChange={handleInlineCommentChange}
+                                    className={`flex-1 px-4 py-2 text-sm bg-black/5 dark:bg-white/5 rounded-full border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-1 ${currentTheme.ring}`}
+                                />
+                                <button type="submit" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim()}>
+                                    <Send size={18} />
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

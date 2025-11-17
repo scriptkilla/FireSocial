@@ -10,6 +10,7 @@ interface NotificationsModalProps {
     unreadCount: number;
     onMarkAllRead: () => void;
     onMarkOneRead: (id: number) => void;
+    onViewNotification: (notification: Notification) => void;
     // UI Props
     currentTheme: Theme;
     cardBg: string;
@@ -25,6 +26,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({
     unreadCount,
     onMarkAllRead,
     onMarkOneRead,
+    onViewNotification,
     currentTheme,
     cardBg,
     textColor,
@@ -125,7 +127,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({
                                {notifs.map(notification => (
                                    <div
                                        key={notification.id}
-                                       onClick={() => onMarkOneRead(notification.id)}
+                                       onClick={() => onViewNotification(notification)}
                                        className={`p-3 rounded-2xl flex items-start gap-3 cursor-pointer transition-colors hover:bg-white/5 ${!notification.read ? 'bg-blue-500/10' : ''}`}
                                    >
                                        <div className="relative mt-1">

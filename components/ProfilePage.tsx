@@ -1,12 +1,161 @@
 import React, { useState } from 'react';
-import { Profile, Post, Theme, Achievement, Comment } from '../types';
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film } from 'lucide-react';
+import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product } from '../types';
+// Fix: Imported the 'Users' icon from lucide-react.
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
+
+// --- SUB-COMPONENTS for Monetization ---
+
+const SubscriptionBadge: React.FC<{ tier: SubscriptionTier, onClick?: () => void }> = ({ tier, onClick }) => (
+    <button onClick={onClick} className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-white font-semibold cursor-pointer hover:shadow-lg transition-all ${tier.color}`}>
+        <span>⭐</span>
+        <span>{tier.name}</span>
+        <span>${tier.price}/mo</span>
+    </button>
+);
+
+const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => void, currentTheme: Theme, cardBg: string, borderColor: string }> = ({ tipJar, onTip, currentTheme, cardBg, borderColor }) => {
+    const [customAmount, setCustomAmount] = useState('');
+    const [showCustom, setShowCustom] = useState(false);
+
+    if (!tipJar.enabled) return null;
+
+    const handleTip = (amount: number) => {
+        onTip(amount);
+        alert(`Thank you for the $${amount} tip! ❤️`);
+    };
+
+    return (
+        <div className={`bg-gradient-to-br ${currentTheme.light} border ${borderColor} rounded-2xl p-6`}>
+            <div className="text-center mb-4">
+                <div className="text-4xl mb-2">💝</div>
+                <h3 className="font-semibold text-gray-800">Support the Creator</h3>
+                <p className="text-gray-600 text-sm">Show your appreciation with a tip</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+                {tipJar.suggestedAmounts.map(amount => (
+                    <button key={amount} onClick={() => handleTip(amount)} className={`bg-white/50 border ${borderColor} rounded-lg py-3 font-semibold text-gray-800 hover:bg-white/80 transition-all`}>
+                        ${amount}
+                    </button>
+                ))}
+            </div>
+
+            {tipJar.customAmount && (
+                showCustom ? (
+                    <div className="space-y-3">
+                        <input type="number" value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} placeholder="Enter custom amount" className={`w-full ${cardBg} border ${borderColor} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${currentTheme.ring}`} min="1" />
+                        <div className="flex space-x-2">
+                            <button onClick={() => { if (customAmount && Number(customAmount) > 0) { handleTip(Number(customAmount)); setCustomAmount(''); setShowCustom(false); } }} className={`flex-1 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white py-2 rounded-lg font-semibold transition-all`}>
+                                Send Tip
+                            </button>
+                            <button onClick={() => setShowCustom(false)} className={`px-4 py-2 border ${borderColor} text-gray-700 rounded-lg hover:bg-white/20 transition-all`}>Cancel</button>
+                        </div>
+                    </div>
+                ) : (
+                    <button onClick={() => setShowCustom(true)} className={`w-full border-2 border-dashed ${borderColor} text-gray-600 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all`}>
+                        Custom Amount
+                    </button>
+                )
+            )}
+        </div>
+    );
+};
+
+
+const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization, onUpdate: (updated: CreatorMonetization) => void, currentTheme: Theme, cardBg: string, borderColor: string, textColor: string, textSecondary: string, onAddNewProductClick: () => void }> = (props) => {
+    const { monetization, onUpdate, currentTheme, cardBg, borderColor, textColor, textSecondary, onAddNewProductClick } = props;
+    const [activeTab, setActiveTab] = useState('overview');
+
+    if (!monetization.enabled) {
+        return (
+            <div className="p-12 text-center">
+                <div className="text-6xl mb-4">💰</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">Start Earning on FireSocial</h3>
+                <p className="text-gray-500 mb-6">Unlock subscription tiers, tips, paid posts, and digital products to monetize your content.</p>
+                <button onClick={() => onUpdate({ ...monetization, enabled: true })} className={`bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white px-8 py-3 rounded-lg font-semibold transition-all`}>
+                    Get Started
+                </button>
+            </div>
+        );
+    }
+    
+    const StatCard: React.FC<{label: string, value: string | number, icon: React.ReactNode}> = ({label, value, icon}) => (
+        <div className={`${cardBg} p-4 rounded-xl border ${borderColor}`}>
+            <div className="flex items-center gap-3 text-sm text-gray-400 mb-2">{icon} {label}</div>
+            <div className="text-2xl font-bold">{value}</div>
+        </div>
+    );
+    
+    return (
+        <div className="space-y-6">
+            <div className="flex gap-4 border-b border-gray-500/20 overflow-x-auto">
+                <button onClick={() => setActiveTab('overview')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'overview' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Overview</button>
+                <button onClick={() => setActiveTab('subscriptions')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'subscriptions' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Subscriptions</button>
+                <button onClick={() => setActiveTab('tips')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'tips' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Tip Jar</button>
+                <button onClick={() => setActiveTab('products')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'products' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Products</button>
+            </div>
+            
+            {activeTab === 'overview' && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Available Balance" value={`$${monetization.balance}`} icon={<DollarSign size={16}/>} />
+                <StatCard label="This Month" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={16}/>} />
+                <StatCard label="Subscribers" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={16}/>} />
+                <StatCard label="Total Tips" value={monetization.tipJar.tipCount} icon={<Heart size={16}/>} />
+            </div>}
+            
+            {activeTab === 'subscriptions' && <div className="space-y-4">
+                <h3 className="font-bold text-lg">Your Subscription Tiers</h3>
+                {monetization.subscriptionTiers.map(tier => (
+                    <div key={tier.id} className={`p-4 rounded-xl border ${borderColor} flex justify-between items-center`}>
+                        <div>
+                            <p className="font-bold">{tier.name} - ${tier.price}/mo</p>
+                            <p className="text-sm text-gray-400">{tier.subscriberCount} subscribers</p>
+                        </div>
+                        <button className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-500/50 hover:bg-white/10">Edit</button>
+                    </div>
+                ))}
+                <button className={`w-full p-4 border-2 border-dashed ${borderColor} rounded-xl text-gray-400 hover:border-gray-400`}>+ Add New Tier</button>
+            </div>}
+
+            {activeTab === 'tips' && <div className="space-y-4">
+                <h3 className="font-bold text-lg">Tip Jar Settings</h3>
+                 <div className="flex justify-between items-center p-4 rounded-xl border border-gray-700">
+                    <label htmlFor="tip-jar-enabled">Enable Tip Jar</label>
+                    <button onClick={() => onUpdate({...monetization, tipJar: {...monetization.tipJar, enabled: !monetization.tipJar.enabled}})} className={`w-12 h-6 rounded-full transition-all ${monetization.tipJar.enabled ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full transition-transform ${monetization.tipJar.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+                <p>Suggested amounts: {monetization.tipJar.suggestedAmounts.map(a => `$${a}`).join(', ')}</p>
+            </div>}
+
+            {activeTab === 'products' && monetization.products && <div className="space-y-4">
+                <h3 className="font-bold text-lg">Your Products for Sale</h3>
+                {monetization.products.map(product => (
+                    <div key={product.id} className={`p-4 rounded-xl border ${borderColor} flex justify-between items-center`}>
+                        <div className="flex items-center gap-4">
+                            <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-lg" />
+                            <div>
+                                <p className="font-bold">{product.name}</p>
+                                <p className={`text-sm ${textSecondary}`}>${product.price} - {product.sales} sales</p>
+                            </div>
+                        </div>
+                        <button className={`px-4 py-2 text-sm font-semibold rounded-lg border ${borderColor} hover:bg-white/10`}>Manage</button>
+                    </div>
+                ))}
+                <button onClick={onAddNewProductClick} className={`w-full p-4 border-2 border-dashed ${borderColor} rounded-xl ${textSecondary} hover:border-gray-400`}>+ Add New Product</button>
+            </div>}
+        </div>
+    );
+};
+
+// --- MAIN PROFILE PAGE ---
 
 interface ProfilePageProps {
     profileToDisplay: Profile;
     isOwnProfile: boolean;
     posts: Post[];
+    scheduledPosts: ScheduledPost[];
+    onDeleteScheduledPost: (scheduledId: number) => void;
     activeTab: string;
     onTabChange: (tab: string) => void;
     onEditProfile: () => void;
@@ -23,6 +172,8 @@ interface ProfilePageProps {
     onViewAchievements: () => void;
     onViewTrophies: () => void;
     onViewStreaks: () => void;
+    onPurchasePost: (postId: number) => void;
+    onShowAddProductModal: () => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -33,7 +184,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
 
     const getLinkIcon = (url: string, size: number = 20) => {
@@ -194,6 +345,15 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                     </div>
                     <p className={`${textColor} mb-4`}>{profileToDisplay.bio}</p>
 
+                    {profileToDisplay.isCreator && !isOwnProfile && profileToDisplay.creatorMonetization?.subscriptionTiers && (
+                        <div className="mb-4">
+                            <h3 className={`font-semibold ${textSecondary} mb-2 text-sm`}>Support {profileToDisplay.name}</h3>
+                            <div className="flex flex-wrap gap-2">
+                                {profileToDisplay.creatorMonetization.subscriptionTiers.map(tier => <SubscriptionBadge key={tier.id} tier={tier} />)}
+                            </div>
+                        </div>
+                    )}
+                    
                     {profileToDisplay.featuredHashtags && profileToDisplay.featuredHashtags.length > 0 && (<div className="flex flex-wrap gap-2 mb-4">{profileToDisplay.featuredHashtags.map(tag => (<button onClick={() => onViewHashtag(tag)} key={tag} className={`px-3 py-1 ${cardBg} backdrop-blur-xl rounded-full border ${borderColor} ${textSecondary} text-sm hover:bg-white/10`}>{tag}</button>))}</div>)}
                     {profileToDisplay.links && profileToDisplay.links.length > 0 && (<div className="flex items-center gap-4 mb-4">{profileToDisplay.links.map(link => (<a href={link.url} target="_blank" rel="noopener noreferrer" key={link.id} title={link.title} className={`${textSecondary} hover:scale-125 ${currentTheme.hoverText} transition-transform duration-200`}>{getLinkIcon(link.url, 24)}</a>))}</div>)}
 
@@ -217,6 +377,9 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                         <button onClick={onShowFollowing} className="text-left cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold ${textColor}`}>{profileToDisplay.following.toLocaleString()}</p><p className={textSecondary}>Following</p></button>
                         <div className="cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent flex items-center gap-1`}>{profileToDisplay.streak} <Zap size={20} /></p><p className={textSecondary}>Day Streak</p></div>
                     </div>
+                     {!isOwnProfile && profileToDisplay.creatorMonetization?.tipJar && (
+                        <TipJarComponent tipJar={profileToDisplay.creatorMonetization.tipJar} onTip={() => {}} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} />
+                    )}
                 </div>
             </div>
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
@@ -225,12 +388,32 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                     <button onClick={() => onTabChange('comments')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'comments' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Comments</button>
                     <button onClick={() => onTabChange('media')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'media' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Media</button>
                     {isOwnProfile && <button onClick={() => onTabChange('bookmarks')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'bookmarks' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Bookmarks</button>}
+                    {isOwnProfile && <button onClick={() => onTabChange('scheduled')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'scheduled' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Scheduled</button>}
+                    {isOwnProfile && profileToDisplay.isCreator && <button onClick={() => onTabChange('monetization')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'monetization' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Monetization</button>}
                 </div>
                 <div>
                     {activeTab === 'posts' && (userPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{userPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No posts yet.</p>)}
                     {activeTab === 'comments' && (userComments.length > 0 ? <div className="space-y-4">{userComments.map(({ comment, post }) => (<CommentActivityItem key={comment.id} comment={comment} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No comments yet.</p>)}
                     {activeTab === 'media' && (mediaPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{mediaPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No media yet.</p>)}
                     {activeTab === 'bookmarks' && isOwnProfile && (bookmarkedPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{bookmarkedPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No bookmarked posts.</p>)}
+                    {activeTab === 'scheduled' && isOwnProfile && (scheduledPosts.length > 0 ? (
+                        <div className="space-y-4">
+                            {scheduledPosts.map((sp) => (
+                                <div key={sp.scheduledId} className={`p-4 rounded-2xl border ${borderColor} flex justify-between items-start`}>
+                                    <div className="flex-1">
+                                        <p className={`text-sm font-semibold ${textSecondary}`}>Scheduled for: <span className={textColor}>{new Date(sp.scheduledTime).toLocaleString()}</span></p>
+                                        <p className={`${textColor} mt-2 line-clamp-3`}>{sp.postData.content}</p>
+                                    </div>
+                                    <button onClick={() => onDeleteScheduledPost(sp.scheduledId)} className={`p-2 ml-2 ${textSecondary} hover:text-red-500 rounded-full hover:bg-red-500/10`}>
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : <p className={`${textSecondary} text-center py-8`}>You have no scheduled posts.</p>)}
+                    {activeTab === 'monetization' && isOwnProfile && profileToDisplay.creatorMonetization && (
+                        <CreatorMonetizationDashboard monetization={profileToDisplay.creatorMonetization} onUpdate={() => {}} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} textColor={textColor} textSecondary={textSecondary} onAddNewProductClick={onShowAddProductModal} />
+                    )}
                 </div>
             </div>
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>

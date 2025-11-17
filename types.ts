@@ -94,6 +94,77 @@ export interface Post {
   postFormat?: 'standard' | 'reel';
   category?: string;
   location?: string;
+  isPaid?: boolean;
+  paidInfo?: {
+    price: number;
+    currency: string;
+    purchasers: number[]; // user IDs
+  };
+}
+
+export interface SubscriptionTier {
+  id: string;
+  name: string;
+  price: number;
+  currency: string;
+  description: string;
+  benefits: string[];
+  color: string;
+  subscriberCount: number;
+}
+
+export interface PaidPostAnalytics {
+  id: number; // Corresponds to Post id
+  price: number;
+  currency: string;
+  purchaseCount: number;
+  revenue: number;
+}
+
+export interface TipJar {
+  enabled: boolean;
+  suggestedAmounts: number[];
+  customAmount: boolean;
+  totalTips: number;
+  tipCount: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  images: string[];
+  category: 'Digital' | 'Art' | 'Templates' | 'Physical';
+  creatorId: number;
+  creatorUsername: string;
+  creatorAvatar: string;
+  stock: number; // -1 for infinite/digital
+  sales: number;
+  rating: number; // 0-5
+}
+
+export interface CreatorAnalytics {
+  totalEarnings: number;
+  monthlyEarnings: number[];
+  topEarningPosts: PaidPostAnalytics[];
+  subscriberGrowth: number[];
+  tipHistory: { date: string; amount: number }[];
+}
+
+export interface CreatorMonetization {
+  enabled: boolean;
+  subscriptionTiers: SubscriptionTier[];
+  tipJar: TipJar;
+  paidPosts: PaidPostAnalytics[];
+  products: Product[];
+  analytics: CreatorAnalytics;
+  payoutMethod: 'stripe' | 'paypal' | 'bank';
+  payoutEmail?: string;
+  minimumPayout: number;
+  nextPayoutDate: string;
+  balance: number;
 }
 
 export interface Profile {
@@ -138,16 +209,26 @@ export interface Profile {
   blockedAccounts: UserListItem[];
   unlockedAchievements: string[];
   searchHistory?: string[];
+  creatorMonetization?: CreatorMonetization;
+  isCreator?: boolean;
+  purchasedPostIds?: number[];
+}
+
+export interface ScheduledPost {
+  scheduledId: number;
+  postData: Omit<Post, 'id' | 'time'>;
+  scheduledTime: string; // ISO string
 }
 
 export interface Notification {
   id: number;
-  type: 'like' | 'comment' | 'follow' | 'tag';
+  type: 'like' | 'comment' | 'follow' | 'tag' | 'schedule';
   user: string;
   username: string;
   content: string;
   time: string;
   read: boolean;
+  postId?: number;
 }
 
 export interface Message {

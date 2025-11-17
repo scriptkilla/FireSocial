@@ -391,16 +391,19 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                         onChange={handleApiKeyChange}
                         className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
                     />
-                    {selectedService !== 'Custom' && (
-                        <a
-                            href={API_CONFIG[selectedService].url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`text-xs mt-2 inline-block ${currentTheme.text} hover:underline`}
-                        >
-                            Get your API key
-                        </a>
-                    )}
+                    <a
+                        href={selectedService === 'Custom' ? '#' : API_CONFIG[selectedService].url}
+                        target={selectedService === 'Custom' ? '_self' : '_blank'}
+                        rel="noopener noreferrer"
+                        className={`text-xs mt-2 inline-block ${currentTheme.text} ${selectedService === 'Custom' ? 'opacity-50 cursor-not-allowed' : 'hover:underline'}`}
+                        onClick={(e) => {
+                            if (selectedService === 'Custom') {
+                                e.preventDefault();
+                            }
+                        }}
+                    >
+                        Get your API key
+                    </a>
                 </div>
 
                 <div className="pt-2">
