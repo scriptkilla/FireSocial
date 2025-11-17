@@ -320,13 +320,46 @@ export const FireSocial: React.FC = () => {
             <span className="font-semibold text-lg">{label}</span>
         </button>
     );
+    
+    const MobileNavItem: React.FC<{ page: Page | string, label: string, icon: React.ElementType, current: Page, onClick: () => void }> = ({ page, label, icon: Icon, current, onClick }) => (
+        <button onClick={onClick} className={`relative flex flex-col items-center gap-1 p-2 rounded-lg w-20 flex-shrink-0 transition-colors ${current === page ? currentTheme.text : textSecondary}`}>
+            {current === page && <div className={`absolute -top-px left-1/2 -translate-x-1/2 h-1 w-8 rounded-full bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}`}></div>}
+            <Icon size={24} />
+            <span className="text-xs font-medium truncate">{label}</span>
+        </button>
+    );
 
     return (
         <div className={`min-h-screen bg-gradient-to-br ${currentTheme.light} dark:from-gray-900 dark:to-black font-sans transition-colors`}>
-            <div className="container mx-auto grid grid-cols-12 gap-8 items-start p-4">
+            <style>{`
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+            <div className="container mx-auto grid grid-cols-12 gap-8 items-start p-2 sm:p-4">
                 <aside className="col-span-3 sticky top-4 hidden lg:flex flex-col gap-4">
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
-                        <h1 className={`text-3xl font-bold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent mb-6`}>FireSocial</h1>
+                        <div className="pl-2 mb-6">
+                            <svg width="190" height="48" viewBox="0 0 250 62" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="fireGradient" x1="50%" y1="0%" x2="50%" y2="100%">
+                                        <stop offset="0%" stopColor="#FBBF24" />
+                                        <stop offset="50%" stopColor="#F97316" />
+                                        <stop offset="100%" stopColor="#EF4444" />
+                                    </linearGradient>
+                                    <linearGradient id="textGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+                                        <stop offset="0%" stopColor="#F97316" />
+                                        <stop offset="100%" stopColor="#EF4444" />
+                                    </linearGradient>
+                                </defs>
+                                <g transform="translate(0, 3) scale(1.1)">
+                                    <path d="M29.5 2.1c-1.1-1-2.9-1.5-4.5-1.5C14.1.6 5.6 9.3 5.6 20.2c0 8.5 5.5 15.7 13.1 18.3.1-1.3.1-3.1-.1-4.7-1.1-6.1 2.3-11.4 2.3-11.4s1.7-3.4 5-3.4c3.9 0 6.1 2.9 6.1 7.1 0 4.2-2.7 10.6-6.4 10.6-3 0-5.2-2.5-5.2-5.7 0-2.8 1.4-5.8 2.1-7.6.9-2.2.8-3.1-.4-5-2.2-3.4-6-1-6 2.8 0 1.6.6 3.4.6 3.4s-2 8.5-2.5 10.4C9.5 43.8 19.3 55.4 29.5 55.4c11 0 20-8.9 20-20 0-11.1-9-22.2-20-23.3z" fill="url(#fireGradient)" transform="scale(0.9) translate(5,0)"/>
+                                </g>
+                                <text x="70" y="42" fontFamily="'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif" fontSize="38" fontWeight="bold">
+                                    <tspan fill="url(#textGradient)">Fire</tspan>
+                                    <tspan fill={darkMode ? "#FFFFFF" : "#1F2937"}>Social</tspan>
+                                </text>
+                            </svg>
+                        </div>
                         <nav className="space-y-2">
                             <NavItem page="home" label="Home" icon={Home} current={activePage} onClick={handleHomePageSelect} />
                             <NavItem page="explore" label="Explore" icon={Compass} current={activePage} onClick={() => setActivePage('explore')} />
@@ -346,7 +379,7 @@ export const FireSocial: React.FC = () => {
                     </div>
                 </aside>
                 
-                <main className="col-span-12 lg:col-span-6">
+                <main className="col-span-12 lg:col-span-6 pb-24 lg:pb-0">
                     {renderPage()}
                 </main>
                 
@@ -376,6 +409,19 @@ export const FireSocial: React.FC = () => {
                 </aside>
             </div>
             
+            <footer className={`lg:hidden fixed bottom-0 left-0 right-0 ${cardBg} backdrop-blur-xl border-t ${borderColor} shadow-t-lg z-50`}>
+                <nav className="flex justify-start items-center p-1 overflow-x-auto no-scrollbar">
+                    <MobileNavItem page="home" label="Home" icon={Home} current={activePage} onClick={handleHomePageSelect} />
+                    <MobileNavItem page="explore" label="Explore" icon={Compass} current={activePage} onClick={() => setActivePage('explore')} />
+                    <MobileNavItem page="notifications" label="Alerts" icon={Bell} current={activePage} onClick={() => setShowNotifications(true)} />
+                    <MobileNavItem page="messages" label="DMs" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
+                    <MobileNavItem page="marketplace" label="Market" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
+                    <MobileNavItem page="ai-creator" label="AI Create" icon={Bot} current={activePage} onClick={() => setShowAICreator(true)} />
+                    <MobileNavItem page="game-studio" label="Games" icon={Gamepad2} current={activePage} onClick={() => setShowGameCreator(true)} />
+                    <MobileNavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
+                </nav>
+            </footer>
+
             {/* Modals */}
             {showSettings && <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} profile={profile} setProfile={setProfile} onEditProfile={() => {setShowSettings(false); setShowEditProfile(true);}} setThemeColor={setThemeColor} allUsers={allUserListItems} onBlockToggle={handleBlockToggle} themeColor={themeColor} darkMode={darkMode} {...uiProps} />}
             {showEditProfile && <EditProfileModal profile={profile} onClose={() => setShowEditProfile(false)} onSave={handleSaveProfile} {...uiProps} />}
