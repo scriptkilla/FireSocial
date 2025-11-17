@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, User, PhoneCall } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, User, PhoneCall, AlertTriangle } from 'lucide-react';
 import { ActiveCall, Theme } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -18,6 +19,7 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
     const [isMuted, setIsMuted] = useState(false);
     const [isCameraOff, setIsCameraOff] = useState(call.type === 'voice');
     const [callDuration, setCallDuration] = useState(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -25,72 +27,57 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
     // Effect to manage media stream with robust error handling
     useEffect(() => {
         const startStream = async () => {
-            let stream: MediaStream | null = null;
-            let finalStreamIsAudioOnly = call.type === 'voice';
-    
-            const videoConstraints: MediaStreamConstraints = { audio: true, video: true };
-            const audioConstraints: MediaStreamConstraints = { audio: true };
-    
+            setErrorMessage(null); // Clear previous errors
+
             try {
-                if (call.type === 'video') {
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia(videoConstraints);
-                    } catch (videoError) {
-                        const error = videoError as DOMException;
-                        // Fallback to audio-only if camera is not found or unusable, but not for permission errors.
-                        if (error.name === 'NotFoundError' || error.name === 'NotReadableError') {
-                            console.warn("Could not get video stream, attempting audio-only fallback.", videoError);
-                            // This next call is critical. If it fails, the outer catch will handle it.
-                            stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-                            finalStreamIsAudioOnly = true;
-                            alert("A camera was not found or is currently in use. The call will continue with audio only.");
-                        } else {
-                            // For other errors (like permission denied), we don't want to fallback. Just fail the call.
-                            throw videoError;
-                        }
-                    }
-                } else { // This is an audio-only call from the start.
-                    stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+                // Check for devices first for more specific error messages
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const hasMicrophone = devices.some(device => device.kind === 'audioinput');
+                const hasCamera = devices.some(device => device.kind === 'videoinput');
+
+                if (!hasMicrophone) {
+                    setErrorMessage("No microphone found. A microphone is required to make a call.");
+                    return;
                 }
-    
-                // If we successfully got a stream, proceed with setup.
+
+                let streamIsAudioOnly = call.type === 'voice';
+                if (call.type === 'video' && !hasCamera) {
+                    console.warn("No camera found. Falling back to audio-only call.");
+                    streamIsAudioOnly = true;
+                }
+
+                const constraints: MediaStreamConstraints = {
+                    audio: true,
+                    video: !streamIsAudioOnly,
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
                 streamRef.current = stream;
                 if (localVideoRef.current) localVideoRef.current.srcObject = stream;
                 if (remoteVideoRef.current) remoteVideoRef.current.srcObject = stream; // Simulating remote stream
-    
-                setIsCameraOff(finalStreamIsAudioOnly);
-    
-                stream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-                if (!finalStreamIsAudioOnly && stream.getVideoTracks().length > 0) {
-                    stream.getVideoTracks().forEach(track => track.enabled = !isCameraOff);
-                }
-    
+
+                setIsCameraOff(streamIsAudioOnly);
+
             } catch (err) {
-                // This block catches fatal errors:
-                // 1. Failure to get even an audio stream.
-                // 2. Permission denied for any stream.
-                // 3. Any other unexpected errors.
                 console.error("Error accessing media devices.", err);
                 const error = err as DOMException;
-                let errMessage = "Could not start the call. Please check your devices and permissions.";
-    
+                let userMessage = "Could not start the call. Please check your devices and permissions.";
+
                 if (error.name === 'NotAllowedError') {
-                    errMessage = "Access to your camera and/or microphone was denied. Please check your browser permissions to enable them.";
+                    userMessage = "Access to your camera and/or microphone was denied. Please check your browser permissions to enable them for this site.";
                 } else if (error.name === 'NotFoundError') {
-                    // Since we have fallback logic, getting this error here definitively means no microphone was found.
-                    errMessage = "Could not find a microphone, which is required for all calls. Please ensure it is connected and enabled.";
+                    userMessage = "Could not find a required camera or microphone. Please ensure they are connected and enabled.";
                 } else if (error.name === 'NotReadableError') {
-                     // This can happen if hardware or OS-level issues prevent access, e.g., another app has a lock on the device.
-                    errMessage = "Your camera or microphone could not be accessed. It might be in use by another application or there could be a hardware issue.";
+                    userMessage = "Your camera or microphone could not be accessed. It might be in use by another application or there could be a hardware issue.";
                 }
                 
-                alert(errMessage);
-                onEndCall('00:00');
+                setErrorMessage(userMessage);
             }
         };
-    
+
         startStream();
-    
+
         // Cleanup function to stop all tracks when the component unmounts
         return () => {
             if (streamRef.current) {
@@ -101,13 +88,13 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
 
     // Effect to transition from connecting to active
     useEffect(() => {
-        if (phase === 'connecting') {
+        if (phase === 'connecting' && !errorMessage) {
             const timer = setTimeout(() => {
                 setPhase('active');
             }, 3000); // Simulate 3 seconds of ringing
             return () => clearTimeout(timer);
         }
-    }, [phase]);
+    }, [phase, errorMessage]);
 
     // Effect to run the call timer
     useEffect(() => {
@@ -150,6 +137,24 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
     const remoteUser = call.user;
     const shouldShowAvatar = call.type === 'voice' || phase === 'connecting' || isCameraOff;
 
+    if (errorMessage) {
+        return (
+            <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-md z-[150] flex flex-col items-center justify-center text-white p-4">
+                <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-8 border ${borderColor} text-center max-w-lg`}>
+                    <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">Call Error</h2>
+                    <p className={textSecondary}>{errorMessage}</p>
+                    <button 
+                        onClick={() => onEndCall('00:00')} 
+                        className={`mt-6 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     const renderControls = () => (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-20">
             {phase === 'active' && (
@@ -160,17 +165,17 @@ const CallModal: React.FC<CallModalProps> = ({ call, onEndCall, currentTheme, ca
             <div className="flex items-center gap-4">
                 {phase === 'active' && (
                     <>
-                        <button aria-label={isMuted ? "Unmute" : "Mute"} onClick={() => setIsMuted(!isMuted)} className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
+                        <button onClick={() => setIsMuted(!isMuted)} className={`p-4 rounded-full transition-colors ${isMuted ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
                             {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
                         </button>
                         {call.type === 'video' && (
-                            <button aria-label={isCameraOff ? "Turn camera on" : "Turn camera off"} onClick={() => setIsCameraOff(!isCameraOff)} className={`p-4 rounded-full transition-colors ${isCameraOff ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
+                            <button onClick={() => setIsCameraOff(!isCameraOff)} className={`p-4 rounded-full transition-colors ${isCameraOff ? 'bg-white text-black' : `${cardBg} backdrop-blur-xl text-white`}`}>
                                 {isCameraOff ? <VideoOff size={24} /> : <Video size={24} />}
                             </button>
                         )}
                     </>
                 )}
-                <button aria-label="End call" onClick={handleEndCall} className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors">
+                <button onClick={handleEndCall} className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-colors">
                     <PhoneOff size={24} />
                 </button>
             </div>

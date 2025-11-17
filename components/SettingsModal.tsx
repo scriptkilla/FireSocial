@@ -1,9 +1,8 @@
 
-
-import React, { useState } from 'react';
-import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
-import { THEMES as ThemeConstants } from '../constants';
+import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService } from '../constants';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELP CENTER DATA ---
@@ -22,7 +21,7 @@ const HELP_ARTICLES = [
   { id: 'features-3', category: 'Features', question: 'How do I delete a post?', answer: 'Find the post you want to delete, click the three-dots icon (...) in the top-right corner of the post, and select "Delete Post". Note that this action cannot be undone.' },
 
   // Privacy & Security
-  { id: 'privacy-1', category: 'Privacy & Security', question: 'How do I make my account private?', answer: 'You can make your account private in the Settings menu. Go to Settings > Privacy and Security, and toggle the "Private Account" option on. When your account is private, only followers you approve can see your content.' },
+  { id: 'privacy-1', category: 'Privacy & Security', question: 'How do I make my account private?', answer: 'You can make my account private in the Settings menu. Go to Settings > Privacy and Security, and toggle the "Private Account" option on. When your account is private, only followers you approve can see your content.' },
   { id: 'privacy-2', category: 'Privacy & Security', question: 'How do I block someone?', answer: 'To block a user, go to their profile, click the three-dots icon (...), and select "Block User". You can manage your blocked accounts in Settings > Privacy and Security > Blocked Accounts.' },
   { id: 'privacy-3', category: 'Privacy & Security', question: 'What is Two-Factor Authentication (2FA)?', answer: '2FA adds an extra layer of security to your account. When enabled, you\'ll need to enter a special login code in addition to your password. You can enable it in Settings > Account Settings > Two-Factor Authentication.' },
 
@@ -35,6 +34,9 @@ const HELP_ARTICLES = [
 
 
 // --- HELPER & VIEW COMPONENTS ---
+// These are now defined at the top-level of the file to follow React best practices
+// and to be used by the new View components.
+
 const SettingsSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div>
         <h3 className="px-4 pb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">{title}</h3>
@@ -71,12 +73,13 @@ const FormInput: React.FC<{label: string, type: string, value: string, onChange:
     </div>
 );
 
-type SettingsView = 'main' | 'account' | 'privacy' | 'notifications' | 'content' | 'support' | 'appearance' | 'blocked' | 'language' | 'changePassword' | 'twoFactor' | 'mutedAccounts' | 'restrictedAccounts' | 'favoriteTopics' | 'hiddenWords' | 'sensitiveContent' | 'reportProblem' | 'helpCenter';
+
+// --- PROPS FOR VIEW COMPONENTS ---
+type SettingsView = 'main' | 'account' | 'privacy' | 'notifications' | 'content' | 'support' | 'appearance' | 'blocked' | 'language' | 'changePassword' | 'twoFactor' | 'mutedAccounts' | 'restrictedAccounts' | 'favoriteTopics' | 'hiddenWords' | 'sensitiveContent' | 'reportProblem' | 'helpCenter' | 'apiConfig';
 
 interface ViewProps {
     profile: Profile;
     setProfile: React.Dispatch<React.SetStateAction<Profile>>;
-    setView: (view: SettingsView) => void;
     onClose: () => void;
     onEditProfile: () => void;
     setThemeColor: (color: ThemeColor) => void;
@@ -87,25 +90,29 @@ interface ViewProps {
     cardBg: string;
     textColor: string;
     textSecondary: string;
-    borderColor: string;
     hoverBg: string;
     darkMode: boolean;
+    // Fix: Add borderColor to the ViewProps interface to ensure it's available for child components.
+    borderColor: string;
     // Data
     allUsers: UserListItem[];
 }
 
-const MainView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | 'textSecondary'>> = ({ setView, hoverBg, textSecondary }) => (
+// --- VIEW COMPONENTS ---
+const MainView: React.FC<{ setView: (view: SettingsView) => void } & Pick<ViewProps, 'hoverBg' | 'textSecondary'>> = ({ setView, hoverBg, textSecondary }) => (
     <div className="space-y-6">
+        {/* Fix: Added the required `textSecondary` prop to all `SettingsItem` components. */}
         <SettingsItem icon={User} label="Account Settings" onClick={() => setView('account')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Shield} label="Privacy and Security" onClick={() => setView('privacy')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Bell} label="Notifications" onClick={() => setView('notifications')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Palette} label="Appearance" onClick={() => setView('appearance')} hoverBg={hoverBg} textSecondary={textSecondary} />
+        <SettingsItem icon={KeyRound} label="API Configuration" onClick={() => setView('apiConfig')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={List} label="Content Preferences" onClick={() => setView('content')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={HelpCircle} label="Support and About" onClick={() => setView('support')} hoverBg={hoverBg} textSecondary={textSecondary} />
     </div>
 );
 
-const AccountSettingsView: React.FC<Pick<ViewProps, 'setView' | 'onEditProfile' | 'onClose' | 'profile' | 'hoverBg' | 'textSecondary'> & { setShowDeactivateConfirm: React.Dispatch<React.SetStateAction<boolean>> }> = ({ setView, onEditProfile, onClose, profile, hoverBg, textSecondary, setShowDeactivateConfirm }) => {
+const AccountSettingsView: React.FC<Pick<ViewProps, 'onEditProfile' | 'onClose' | 'profile' | 'hoverBg' | 'textSecondary'> & { setShowDeactivateConfirm: React.Dispatch<React.SetStateAction<boolean>>, setView: (view: SettingsView) => void }> = ({ setView, onEditProfile, onClose, profile, hoverBg, textSecondary, setShowDeactivateConfirm }) => {
     return (
         <SettingsSection title="Account Settings">
             <SettingsItem icon={User} label="Edit Profile" onClick={() => { onEditProfile(); onClose(); }} hoverBg={hoverBg} textSecondary={textSecondary} />
@@ -118,22 +125,23 @@ const AccountSettingsView: React.FC<Pick<ViewProps, 'setView' | 'onEditProfile' 
     );
 };
 
-const PrivacySettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' | 'setView' | 'currentTheme' | 'darkMode' | 'textSecondary' | 'hoverBg'>> = ({ profile, setProfile, setView, ...props }) => {
+const PrivacySettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' | 'currentTheme' | 'darkMode' | 'textSecondary' | 'hoverBg'> & { setView: (view: SettingsView) => void }> = ({ profile, setProfile, setView, currentTheme, darkMode, textSecondary, hoverBg }) => {
     const handlePrivacyChange = (setting: keyof Profile['privacySettings'], value: boolean) => {
         setProfile(p => ({ ...p, privacySettings: { ...p.privacySettings, [setting]: value } }));
     };
+    const toggleProps = { currentTheme, darkMode, textSecondary, hoverBg };
     return (
         <SettingsSection title="Privacy and Security">
-            <SettingsToggleItem icon={Lock} label="Private Account" description="Only approved followers can see your posts." isEnabled={profile.privacySettings.privateAccount} onToggle={() => handlePrivacyChange('privateAccount', !profile.privacySettings.privateAccount)} {...props} />
-            <SettingsToggleItem icon={Eye} label="Activity Status" isEnabled={profile.privacySettings.activityStatus} onToggle={() => handlePrivacyChange('activityStatus', !profile.privacySettings.activityStatus)} {...props} />
-            <SettingsItem icon={VolumeX} label="Muted Accounts" onClick={() => setView('mutedAccounts')} hoverBg={props.hoverBg} textSecondary={props.textSecondary} />
-            <SettingsItem icon={UserMinus} label="Blocked Accounts" onClick={() => setView('blocked')} hoverBg={props.hoverBg} textSecondary={props.textSecondary} />
-            <SettingsItem icon={Users} label="Restricted Accounts" onClick={() => setView('restrictedAccounts')} hoverBg={props.hoverBg} textSecondary={props.textSecondary} />
+            <SettingsToggleItem icon={Lock} label="Private Account" description="Only approved followers can see your posts." isEnabled={profile.privacySettings.privateAccount} onToggle={() => handlePrivacyChange('privateAccount', !profile.privacySettings.privateAccount)} {...toggleProps} />
+            <SettingsToggleItem icon={Eye} label="Activity Status" isEnabled={profile.privacySettings.activityStatus} onToggle={() => handlePrivacyChange('activityStatus', !profile.privacySettings.activityStatus)} {...toggleProps} />
+            <SettingsItem icon={VolumeX} label="Muted Accounts" onClick={() => setView('mutedAccounts')} hoverBg={hoverBg} textSecondary={textSecondary} />
+            <SettingsItem icon={UserMinus} label="Blocked Accounts" onClick={() => setView('blocked')} hoverBg={hoverBg} textSecondary={textSecondary} />
+            <SettingsItem icon={Users} label="Restricted Accounts" onClick={() => setView('restrictedAccounts')} hoverBg={hoverBg} textSecondary={textSecondary} />
         </SettingsSection>
     );
 };
 
-const BlockedAccountsView: React.FC<Pick<ViewProps, 'profile' | 'allUsers' | 'onBlockToggle' | 'currentTheme' | 'borderColor' | 'textColor' | 'textSecondary' | 'cardBg'>> = ({ profile, allUsers, onBlockToggle, ...props }) => {
+const BlockedAccountsView: React.FC<Pick<ViewProps, 'profile' | 'allUsers' | 'onBlockToggle' | 'currentTheme' | 'borderColor' | 'textColor' | 'textSecondary' | 'cardBg'>> = ({ profile, allUsers, onBlockToggle, currentTheme, borderColor, textColor, textSecondary, cardBg }) => {
     const list = profile.blockedAccounts;
     const [userSearch, setUserSearch] = useState('');
 
@@ -144,8 +152,8 @@ const BlockedAccountsView: React.FC<Pick<ViewProps, 'profile' | 'allUsers' | 'on
 
     return (
         <div className="space-y-4">
-            <p className={`px-4 text-sm ${props.textSecondary}`}>Once you block someone, they will no longer be able to find your profile, posts, or story.</p>
-            <div className="px-3"><input type="text" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Search for users to block..." className={`w-full px-4 py-2 bg-black/5 dark:bg-white/5 rounded-xl border ${props.borderColor} ${props.textColor} focus:outline-none focus:ring-1 ${props.currentTheme.ring}`} /></div>
+            <p className={`px-4 text-sm ${textSecondary}`}>Once you block someone, they will no longer be able to find your profile, posts, or story.</p>
+            <div className="px-3"><input type="text" value={userSearch} onChange={(e) => setUserSearch(e.target.value)} placeholder="Search for users to block..." className={`w-full px-4 py-2 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} /></div>
             
             {userSearch ? (
                 <SettingsSection title="Search Results">
@@ -154,13 +162,13 @@ const BlockedAccountsView: React.FC<Pick<ViewProps, 'profile' | 'allUsers' | 'on
                         return (<div key={user.id} className="flex items-center justify-between p-2 rounded-lg">
                             <div className="flex items-center gap-3">
                                 <AvatarDisplay avatar={user.avatar} size="w-10 h-10" fontSize="text-xl" />
-                                <div><p className={props.textColor}>{user.name}</p><p className={`text-sm ${props.textSecondary}`}>{user.username}</p></div>
+                                <div><p className={textColor}>{user.name}</p><p className={`text-sm ${textSecondary}`}>{user.username}</p></div>
                             </div>
-                            <button onClick={() => onBlockToggle(user.id, user.username)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${isBlocked ? `${props.cardBg} ${props.textColor}` : `bg-red-500 text-white`}`}>
+                            <button onClick={() => onBlockToggle(user.id, user.username)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${isBlocked ? `${cardBg} ${textColor}` : `bg-red-500 text-white`}`}>
                                 {isBlocked ? `Unblock` : 'Block'}
                             </button>
                         </div>)
-                    }) : <p className={`px-4 ${props.textSecondary}`}>No users found.</p>}
+                    }) : <p className={`px-4 ${textSecondary}`}>No users found.</p>}
                 </SettingsSection>
             ) : (
                 <SettingsSection title={`Blocked Accounts (${list.length})`}>
@@ -168,13 +176,13 @@ const BlockedAccountsView: React.FC<Pick<ViewProps, 'profile' | 'allUsers' | 'on
                         <div key={user.id} className="flex items-center justify-between p-2 rounded-lg">
                             <div className="flex items-center gap-3">
                                 <AvatarDisplay avatar={user.avatar} size="w-10 h-10" fontSize="text-xl" />
-                                <div><p className={props.textColor}>{user.name}</p><p className={`text-sm ${props.textSecondary}`}>{user.username}</p></div>
+                                <div><p className={textColor}>{user.name}</p><p className={`text-sm ${textSecondary}`}>{user.username}</p></div>
                             </div>
-                            <button onClick={() => onBlockToggle(user.id, user.username)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${props.cardBg} ${props.textColor}`}>
+                            <button onClick={() => onBlockToggle(user.id, user.username)} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${cardBg} ${textColor}`}>
                                 Unblock
                             </button>
                         </div>
-                    )) : <p className={`px-4 ${props.textSecondary}`}>You haven't blocked any accounts.</p>}
+                    )) : <p className={`px-4 ${textSecondary}`}>You haven't blocked any accounts.</p>}
                 </SettingsSection>
             )}
         </div>
@@ -192,19 +200,218 @@ const AppearanceSettingsView: React.FC<Pick<ViewProps, 'themeColor' | 'setThemeC
     </SettingsSection>
 );
 
-const NotificationSettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' | 'currentTheme' | 'darkMode' | 'textSecondary' | 'hoverBg'>> = ({ profile, setProfile, ...props }) => {
+const NotificationSettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' | 'currentTheme' | 'darkMode' | 'textSecondary' | 'hoverBg'>> = ({ profile, setProfile, currentTheme, darkMode, textSecondary, hoverBg }) => {
     const handleNotificationChange = (setting: keyof Profile['notificationSettings'], value: boolean) => {
         setProfile(p => ({ ...p, notificationSettings: { ...p.notificationSettings, [setting]: value } }));
     };
+    const toggleProps = { currentTheme, darkMode, textSecondary, hoverBg };
     return (
         <SettingsSection title="Notifications">
-            <SettingsToggleItem icon={Bell} label="Push Notifications" isEnabled={profile.notificationSettings.push} onToggle={() => handleNotificationChange('push', !profile.notificationSettings.push)} {...props} />
-            <SettingsToggleItem icon={Bell} label="Email Notifications" isEnabled={profile.notificationSettings.email} onToggle={() => handleNotificationChange('email', !profile.notificationSettings.email)} {...props} />
+            <SettingsToggleItem icon={Bell} label="Push Notifications" isEnabled={profile.notificationSettings.push} onToggle={() => handleNotificationChange('push', !profile.notificationSettings.push)} {...toggleProps} />
+            <SettingsToggleItem icon={Bell} label="Email Notifications" isEnabled={profile.notificationSettings.email} onToggle={() => handleNotificationChange('email', !profile.notificationSettings.email)} {...toggleProps} />
         </SettingsSection>
     );
 };
 
-const ContentPreferencesView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | 'textSecondary'>> = ({ setView, hoverBg, textSecondary }) => (
+const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | 'textColor' | 'textSecondary'>> = ({ currentTheme, borderColor, textColor, textSecondary }) => {
+    const [selectedService, setSelectedService] = useState<ApiService>('Google AI');
+    const [apiKey, setApiKey] = useState('');
+    const [apiVersion, setApiVersion] = useState('');
+    const [customModelName, setCustomModelName] = useState('');
+    const [customBaseUrl, setCustomBaseUrl] = useState('');
+    const [connectionStatus, setConnectionStatus] = useState<'untested' | 'testing' | 'valid' | 'invalid'>('untested');
+    
+    const availableVersions = API_VERSIONS[selectedService] || [];
+    const selectedVersionDetails = availableVersions.find(v => v.name === apiVersion);
+
+    useEffect(() => {
+        const config = API_CONFIG[selectedService];
+        
+        if (selectedService !== 'Custom') {
+            const versions = API_VERSIONS[selectedService] || [];
+            const savedKey = localStorage.getItem(config.storageKey);
+            const savedVersion = localStorage.getItem(config.storageKey.replace('apiKey', 'apiVersion'));
+            
+            setApiKey(savedKey || '');
+
+            const validSavedVersion = versions.find(v => v.name === savedVersion);
+            if (validSavedVersion) {
+                setApiVersion(savedVersion!);
+            } else if (versions.length > 0) {
+                const defaultVersion = versions[0].name;
+                setApiVersion(defaultVersion);
+                localStorage.setItem(config.storageKey.replace('apiKey', 'apiVersion'), defaultVersion);
+            } else {
+                setApiVersion('');
+                localStorage.removeItem(config.storageKey.replace('apiKey', 'apiVersion'));
+            }
+        } else {
+            const savedKey = localStorage.getItem(config.storageKey);
+            const savedBaseUrl = localStorage.getItem(config.baseUrlKey!);
+            const savedModelName = localStorage.getItem(config.modelNameKey!);
+            setApiKey(savedKey || '');
+            setCustomBaseUrl(savedBaseUrl || '');
+            setCustomModelName(savedModelName || '');
+        }
+
+        setConnectionStatus('untested');
+    }, [selectedService]);
+
+    const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newKey = e.target.value;
+        setApiKey(newKey);
+        localStorage.setItem(API_CONFIG[selectedService].storageKey, newKey);
+        setConnectionStatus('untested');
+    };
+
+    const handleApiVersionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newVersion = e.target.value;
+        setApiVersion(newVersion);
+        localStorage.setItem(API_CONFIG[selectedService].storageKey.replace('apiKey', 'apiVersion'), newVersion);
+    };
+    
+    const handleCustomBaseUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newUrl = e.target.value;
+        setCustomBaseUrl(newUrl);
+        localStorage.setItem(API_CONFIG['Custom'].baseUrlKey!, newUrl);
+        setConnectionStatus('untested');
+    };
+
+    const handleCustomModelNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
+        setCustomModelName(newName);
+        localStorage.setItem(API_CONFIG['Custom'].modelNameKey!, newName);
+    };
+
+    const handleTestConnection = () => {
+        setConnectionStatus('testing');
+        setTimeout(() => {
+            let isValid = false;
+            if (selectedService === 'Custom') {
+                try {
+                    // Basic validation for URL and key
+                    isValid = apiKey.trim().length > 10 && new URL(customBaseUrl.trim()).protocol.startsWith('http');
+                } catch (e) {
+                    isValid = false;
+                }
+            } else {
+                isValid = apiKey.trim().length > 10;
+            }
+
+            if (isValid) {
+                setConnectionStatus('valid');
+            } else {
+                setConnectionStatus('invalid');
+            }
+        }, 1500);
+    };
+
+    const renderConnectionButton = () => {
+        switch (connectionStatus) {
+            case 'testing':
+                return <button disabled className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-500/20 rounded-lg text-sm font-semibold"><Loader2 size={16} className="animate-spin" /> Testing...</button>;
+            case 'valid':
+                return <div className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold"><CheckCircle size={16} /> Connected</div>;
+            case 'invalid':
+                return <button onClick={handleTestConnection} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-semibold"><WifiOff size={16} /> Invalid Config. Retry?</button>;
+            case 'untested':
+            default:
+                return <button onClick={handleTestConnection} disabled={!apiKey.trim()} className={`w-full flex items-center justify-center gap-2 px-4 py-2 bg-white/5 rounded-lg text-sm font-semibold border ${borderColor} hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed`}><Wifi size={16} /> Test Connection</button>;
+        }
+    };
+
+    return (
+        <SettingsSection title="API Configuration">
+            <div className="p-3 space-y-4">
+                <div>
+                    <label className={`block mb-2 text-sm ${textSecondary}`}>AI Service</label>
+                    <select
+                        value={selectedService}
+                        onChange={(e) => setSelectedService(e.target.value as ApiService)}
+                        className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
+                    >
+                        {Object.keys(API_CONFIG).map(service => (
+                            <option key={service} value={service}>{service}</option>
+                        ))}
+                    </select>
+                </div>
+                {selectedService === 'Custom' ? (
+                    <>
+                        <div>
+                            <label className={`block mb-2 text-sm ${textSecondary}`}>Endpoint Base URL</label>
+                            <input
+                                type="text"
+                                placeholder="https://api.example.com/v1"
+                                value={customBaseUrl}
+                                onChange={handleCustomBaseUrlChange}
+                                className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                            />
+                        </div>
+                        <div>
+                            <label className={`block mb-2 text-sm ${textSecondary}`}>Model Name</label>
+                            <input
+                                type="text"
+                                placeholder="e.g., custom-model-v1-beta"
+                                value={customModelName}
+                                onChange={handleCustomModelNameChange}
+                                className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <div>
+                        <label className={`block mb-2 text-sm ${textSecondary}`}>Version</label>
+                        <select
+                            value={apiVersion}
+                            onChange={handleApiVersionChange}
+                            className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
+                            disabled={availableVersions.length === 0}
+                        >
+                            {availableVersions.map(version => (
+                                <option key={version.name} value={version.name}>
+                                    {version.name}
+                                </option>
+                            ))}
+                            {availableVersions.length === 0 && <option>No versions available</option>}
+                        </select>
+                        {selectedVersionDetails && (
+                            <p className={`text-xs mt-2 ${textSecondary}`}>
+                                {selectedVersionDetails.description}
+                            </p>
+                        )}
+                    </div>
+                )}
+                
+                <div>
+                    <label className={`block mb-2 text-sm ${textSecondary}`}>API Key</label>
+                    <input
+                        type="password"
+                        placeholder="Enter your API key"
+                        value={apiKey}
+                        onChange={handleApiKeyChange}
+                        className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                    />
+                    {selectedService !== 'Custom' && (
+                        <a
+                            href={API_CONFIG[selectedService].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`text-xs mt-2 inline-block ${currentTheme.text} hover:underline`}
+                        >
+                            Get your API key
+                        </a>
+                    )}
+                </div>
+
+                <div className="pt-2">
+                    {renderConnectionButton()}
+                </div>
+            </div>
+        </SettingsSection>
+    );
+};
+
+const ContentPreferencesView: React.FC<Pick<ViewProps, 'hoverBg' | 'textSecondary'> & { setView: (view: SettingsView) => void }> = ({ setView, hoverBg, textSecondary }) => (
     <SettingsSection title="Content Preferences">
         <SettingsItem icon={Heart} label="Favorite Topics" onClick={() => setView('favoriteTopics')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={VolumeX} label="Hidden Words" onClick={() => setView('hiddenWords')} hoverBg={hoverBg} textSecondary={textSecondary} />
@@ -212,139 +419,89 @@ const ContentPreferencesView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | '
     </SettingsSection>
 );
 
-const SupportAndAboutView: React.FC<Pick<ViewProps, 'setView' | 'hoverBg' | 'textSecondary'>> = ({ setView, hoverBg, textSecondary }) => (
+const SupportAndAboutView: React.FC<Pick<ViewProps, 'hoverBg' | 'textSecondary'> & { setView: (view: SettingsView) => void }> = ({ setView, hoverBg, textSecondary }) => (
     <SettingsSection title="Support and About">
         <SettingsItem icon={HelpCircle} label="Help Center" onClick={() => setView('helpCenter')} hoverBg={hoverBg} textSecondary={textSecondary} />
-        <SettingsItem icon={AlertTriangle} label="Report a Problem" onClick={() => setView('reportProblem')} hoverBg={hoverBg} textSecondary={textSecondary} />
-        <SettingsItem icon={Info} label="App Version" hasNav={false} value="1.0.0" hoverBg={hoverBg} textSecondary={textSecondary} />
     </SettingsSection>
 );
 
-const HelpCenterView: React.FC<Pick<ViewProps, 'setView' | 'currentTheme' | 'borderColor' | 'textColor' | 'textSecondary' | 'hoverBg'>> = ({ setView, currentTheme, borderColor, textColor, textSecondary, hoverBg }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedArticle, setSelectedArticle] = useState<typeof HELP_ARTICLES[0] | null>(null);
-
-    if (selectedArticle) {
-        return (
-            <div>
-                <button onClick={() => setSelectedArticle(null)} className={`flex items-center gap-2 p-2 mb-4 rounded-lg ${hoverBg}`}>
-                    <ChevronLeft size={20} /> Back to Help Center
-                </button>
-                <h3 className={`text-xl font-bold ${textColor} mb-2`}>{selectedArticle.question}</h3>
-                <p className={textSecondary}>{selectedArticle.answer}</p>
-            </div>
-        );
-    }
-
-    const filteredArticles = HELP_ARTICLES.filter(
-        a => a.question.toLowerCase().includes(searchTerm.toLowerCase()) || a.answer.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const categories = [...new Set(filteredArticles.map(a => a.category))];
-
-    return (
-        <div>
-            <div className={`relative mb-4`}>
-                <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} />
-                <input
-                    type="text"
-                    placeholder="Search for help..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-2 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`}
-                />
-            </div>
-            {categories.map(category => (
-                <div key={category} className="mb-4">
-                    <h4 className="font-semibold text-lg mb-2">{category}</h4>
-                    <div className="space-y-1">
-                        {filteredArticles.filter(a => a.category === category).map(article => (
-                            <button key={article.id} onClick={() => setSelectedArticle(article)} className={`w-full text-left p-3 rounded-lg ${hoverBg} flex justify-between items-center`}>
-                                <span>{article.question}</span>
-                                <ChevronRight size={16} className={textSecondary} />
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-};
-
-// --- PROPS INTERFACE ---
-interface SettingsModalProps {
-    show: boolean;
-    onClose: () => void;
-    onEditProfile: () => void;
-    profile: Profile;
-    setProfile: React.Dispatch<React.SetStateAction<Profile>>;
-    darkMode: boolean;
-    themeColor: ThemeColor;
-    setThemeColor: (color: ThemeColor) => void;
-    allUsers: UserListItem[];
-    onBlockToggle: (userId: number, username: string) => void;
-}
-
-// --- MAIN MODAL COMPONENT ---
-export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
-    const { show, onClose, onEditProfile, profile, setProfile, darkMode, themeColor, setThemeColor, allUsers, onBlockToggle } = props;
+// --- MAIN SETTINGS MODAL COMPONENT ---
+export const SettingsModal: React.FC<ViewProps & { show: boolean }> = (props) => {
+    const { show, onClose, cardBg, textColor } = props;
     const [view, setView] = useState<SettingsView>('main');
     const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
 
-    const currentTheme = ThemeConstants[themeColor];
-    const cardBg = darkMode ? 'bg-gray-800/80' : 'bg-white/80';
-    const textColor = darkMode ? 'text-white' : 'text-gray-900';
-    const textSecondary = darkMode ? 'text-gray-400' : 'text-gray-600';
-    const borderColor = darkMode ? 'border-gray-700' : 'border-gray-200';
-    const hoverBg = darkMode ? 'hover:bg-white/10' : 'hover:bg-black/5';
+    useEffect(() => {
+        if (show) {
+            setView('main');
+            setShowDeactivateConfirm(false);
+        }
+    }, [show]);
 
-    const viewProps: ViewProps = {
-        profile, setProfile, setView, onClose, onEditProfile, setThemeColor, onBlockToggle,
-        themeColor, currentTheme, cardBg, textColor, textSecondary, borderColor, hoverBg, darkMode,
-        allUsers
-    };
+    if (!show) return null;
 
-    const renderView = () => {
+    const getTitle = (): string => {
         switch (view) {
-            case 'main': return <MainView setView={setView} hoverBg={hoverBg} textSecondary={textSecondary} />;
-            case 'account': return <AccountSettingsView {...viewProps} setShowDeactivateConfirm={setShowDeactivateConfirm} />;
-            case 'privacy': return <PrivacySettingsView {...viewProps} />;
-            case 'blocked': return <BlockedAccountsView {...viewProps} />;
-            case 'appearance': return <AppearanceSettingsView {...viewProps} />;
-            case 'notifications': return <NotificationSettingsView {...viewProps} />;
-            case 'content': return <ContentPreferencesView setView={setView} hoverBg={hoverBg} textSecondary={textSecondary} />;
-            case 'support': return <SupportAndAboutView setView={setView} hoverBg={hoverBg} textSecondary={textSecondary} />;
-            case 'helpCenter': return <HelpCenterView {...viewProps} />;
-            default: return <p>This section is under construction.</p>;
+            case 'main': return 'Settings';
+            case 'account': return 'Account Settings';
+            case 'privacy': return 'Privacy and Security';
+            case 'notifications': return 'Notifications';
+            case 'content': return 'Content Preferences';
+            case 'support': return 'Support and About';
+            case 'appearance': return 'Appearance';
+            case 'blocked': return 'Blocked Accounts';
+            case 'language': return 'Language';
+            case 'changePassword': return 'Change Password';
+            case 'twoFactor': return 'Two-Factor Authentication';
+            case 'mutedAccounts': return 'Muted Accounts';
+            case 'restrictedAccounts': return 'Restricted Accounts';
+            case 'favoriteTopics': return 'Favorite Topics';
+            case 'hiddenWords': return 'Hidden Words';
+            case 'sensitiveContent': return 'Sensitive Content';
+            case 'reportProblem': return 'Report a Problem';
+            case 'helpCenter': return 'Help Center';
+            case 'apiConfig': return 'API Configuration';
+            default: return 'Settings';
         }
     };
 
-    const getTitle = () => {
-        if (view === 'main') return 'Settings';
-        const capitalized = view.replace(/([A-Z])/g, ' $1').trim();
-        return capitalized.charAt(0).toUpperCase() + capitalized.slice(1);
+    const renderContent = () => {
+        switch(view) {
+            case 'main': return <MainView setView={setView} hoverBg={props.hoverBg} textSecondary={props.textSecondary} />;
+            case 'account': return <AccountSettingsView {...props} setView={setView} setShowDeactivateConfirm={setShowDeactivateConfirm} />;
+            case 'privacy': return <PrivacySettingsView {...props} setView={setView} />;
+            case 'blocked': return <BlockedAccountsView {...props} />;
+            case 'appearance': return <AppearanceSettingsView {...props} />;
+            case 'notifications': return <NotificationSettingsView {...props} />;
+            case 'apiConfig': return <ApiConfigView {...props} />;
+            case 'content': return <ContentPreferencesView {...props} setView={setView} />;
+            case 'support': return <SupportAndAboutView {...props} setView={setView} />;
+            default: return <MainView setView={setView} hoverBg={props.hoverBg} textSecondary={props.textSecondary} />;
+        }
     };
-    
-    if (!show) return null;
-    
+
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-16">
-            <div className={`overflow-y-auto max-h-[90vh] ${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-lg w-full border ${borderColor} shadow-2xl`}>
-                <div className="flex items-center mb-6">
-                    {view !== 'main' && <button aria-label="Back" onClick={() => setView('main')} className="p-2 -ml-2 mr-2 hover:bg-white/10 rounded-full"><ChevronLeft size={20} /></button>}
-                    <h2 className="text-2xl font-bold">{getTitle()}</h2>
-                    <button aria-label="Close" onClick={onClose} className="p-2 ml-auto hover:bg-white/10 rounded-full"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-16" onClick={onClose}>
+            <div className={`overflow-y-auto max-h-[90vh] ${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-lg w-full border ${props.borderColor} shadow-2xl relative`} onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-2">
+                        {view !== 'main' && <button onClick={() => setView('main')} className="p-2 hover:bg-white/10 rounded-full"><ChevronLeft size={20} /></button>}
+                        <h2 className="text-2xl font-bold">{getTitle()}</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
-                {renderView()}
+
+                {renderContent()}
+
                 {showDeactivateConfirm && (
-                    <div className="fixed inset-0 bg-black/70 z-[150] flex items-center justify-center p-4">
-                        <div className={`${cardBg} p-6 rounded-2xl max-w-sm w-full text-center border ${borderColor}`}>
-                            <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
-                            <h3 className="text-lg font-bold">Deactivate Account?</h3>
-                            <p className={`mt-2 text-sm ${textSecondary}`}>This is temporary. Your profile will be hidden until you reactivate by logging back in.</p>
+                    <div className="absolute inset-0 bg-gray-900/80 flex items-center justify-center p-4 rounded-3xl">
+                        <div className={`${cardBg} p-6 rounded-2xl border ${props.borderColor} max-w-sm w-full text-center`}>
+                            <AlertTriangle size={48} className="mx-auto text-red-500" />
+                            <h3 className="text-xl font-bold mt-4">Deactivate Account?</h3>
+                            <p className={`mt-2 ${props.textSecondary}`}>Your profile will be disabled. You can reactivate it by logging back in. Are you sure?</p>
                             <div className="flex gap-2 mt-6">
-                                <button onClick={() => setShowDeactivateConfirm(false)} className={`flex-1 py-2 rounded-lg bg-gray-500/20 hover:bg-gray-500/30`}>Cancel</button>
-                                <button onClick={() => {alert('Account deactivated.'); onClose();}} className="flex-1 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white">Deactivate</button>
+                                <button onClick={() => setShowDeactivateConfirm(false)} className={`flex-1 py-2 rounded-lg ${cardBg} border ${props.borderColor} hover:bg-white/10`}>Cancel</button>
+                                <button onClick={() => { alert('Account deactivated.'); onClose(); }} className="flex-1 py-2 rounded-lg bg-red-600 text-white font-semibold">Deactivate</button>
                             </div>
                         </div>
                     </div>

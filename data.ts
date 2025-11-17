@@ -1,20 +1,21 @@
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage } from './types';
 
-export const LOGGED_IN_USER_USERNAME = '@thomasdarrow';
+export const LOGGED_IN_USER_USERNAME = '@pimpslap';
 const LOGGED_IN_USER_ID = 1001;
 
 export const ALL_USERS_DATA_BASE: Profile[] = [
     {
         id: LOGGED_IN_USER_ID,
-        name: 'Thomas Darrow',
+        name: 'THOMAS DARROW',
         username: LOGGED_IN_USER_USERNAME,
         email: 'yourname@example.com',
         bio: 'CREATOR OF FIRESOCIAL',
         avatar: '👤',
-        coverPhoto: 'https://uniim1.shutterfly.com/render/00-EfPiueeEFx-hS39eSM3R3y48bm8LC9MiAcZQlFEPEdoUPJu31FN2s7poTgTz5TGAaAUrgnwgvQnZ_1RWb7NZPA?cn=THISLIFE&res=small&ts=1762962264462',
+        wallpaper: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        coverPhoto: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80',
         followers: 2,
         following: 2,
-        posts: 3,
+        posts: 2,
         badges: ['🏆', '⭐', '🔥'],
         streak: 15,
         online: true,
@@ -228,30 +229,12 @@ export const INITIAL_COMMENTS: { [postId: number]: Comment[] } = {
 };
 
 export const INITIAL_POSTS_BASE: Post[] = [
-    {
-        id: 10,
-        userId: 1001,
-        user: 'Thomas Darrow',
-        username: '@thomasdarrow',
-        avatar: '👤',
-        content: 'Loving this vibe.',
-        media: [{type: 'image', url: 'https://uniim1.shutterfly.com/render/00-EfPiueeEFx-hS39eSM3R3y48bm8LC9MiAcZQlFEPEdoPeaKVccJk4LjYz60Yyda3aAUrgnwgvQnZ_1RWb7NZPA?cn=THISLIFE&res=small&ts=1762962264462'}],
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        time: 'Just now',
-        reactions: {},
-        userReaction: null,
-        bookmarked: false,
-        views: 0,
-        category: 'Photography'
-    },
     { id: 1, userId: 1002, user: 'Alex Rivera', username: '@alexrivera', avatar: '🎨', content: 'Just launched my new portfolio! Check it out 🚀 #webdev #design #uidesign', likes: 42, comments: 3, shares: 5, time: '2h ago', reactions: { like: 30, love: 8, fire: 4 }, userReaction: null, bookmarked: false, views: 234, commentsData: INITIAL_COMMENTS[1], category: 'Art', location: 'Miami, FL' },
     { id: 2, userId: 1003, user: 'Jordan Lee', username: '@jordanlee', avatar: '🚀', content: 'Beautiful sunset today! Nature is amazing 🌅 #travel #photography #bali', media: [{type: 'image', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'}], likes: 128, comments: 3, shares: 12, time: '4h ago', reactions: { like: 100, love: 20, fire: 8 }, userReaction: 'love', bookmarked: true, views: 892, commentsData: INITIAL_COMMENTS[2], category: 'Photography', location: 'Bali, Indonesia' },
     { id: 8, userId: 1002, user: 'Alex Rivera', username: '@alexrivera', avatar: '🎨', content: 'A few snaps from my recent design sprint. Which one is your favorite? #carousel #designprocess', media: [{type: 'image', url: 'https://images.unsplash.com/photo-1558655146-364adaf1fcc9?auto=format&fit=crop&w=800&q=60'}, {type: 'image', url: 'https://images.unsplash.com/photo-1557844352-761f2565b576?auto=format&fit=crop&w=800&q=60'}, {type: 'image', url: 'https://images.unsplash.com/photo-1522199755839-a2bacb67c546?auto=format&fit=crop&w=800&q=60'}], likes: 76, comments: 12, shares: 8, time: '18h ago', reactions: {}, userReaction: null, bookmarked: false, views: 654, category: 'Art' },
     { id: 5, userId: 1005, user: 'Tech Weekly', username: '@techweekly', avatar: '💡', content: 'Our new AI assistant is now in public beta. Automate your workflow like never before! #AI #Tech', time: '5h ago', reactions: {}, userReaction: null, bookmarked: false, views: 1200, likes: 256, comments: 32, shares: 25, isSponsored: true, category: 'Tech'},
-    { id: 3, userId: LOGGED_IN_USER_ID, user: 'Thomas Darrow', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'My first post on FireSocial! 🔥 #newbeginnings', likes: 10, comments: 1, shares: 1, time: '1d ago', reactions: { like: 10 }, userReaction: null, bookmarked: false, views: 150, commentsData: INITIAL_COMMENTS[3], category: 'Lifestyle' },
-    { id: 6, userId: LOGGED_IN_USER_ID, user: 'Thomas Darrow', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'Exploring the new features. Polls are pretty cool!', type: 'poll', pollOptions: [{id: 1, text: 'Agree', votes: 12}, {id: 2, text: 'Disagree', votes: 3}], totalVotes: 15, userVoted: 1, time: '1d ago', reactions: {like: 5}, userReaction: null, bookmarked: true, views: 180, likes: 5, comments: 1, shares: 0, category: 'Tech' },
+    { id: 3, userId: LOGGED_IN_USER_ID, user: 'THOMAS DARROW', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'My first post on FireSocial! 🔥 #newbeginnings', likes: 10, comments: 1, shares: 1, time: '1d ago', reactions: { like: 10 }, userReaction: null, bookmarked: false, views: 150, commentsData: INITIAL_COMMENTS[3], category: 'Lifestyle' },
+    { id: 6, userId: LOGGED_IN_USER_ID, user: 'THOMAS DARROW', username: LOGGED_IN_USER_USERNAME, avatar: '👤', content: 'Exploring the new features. Polls are pretty cool!', type: 'poll', pollOptions: [{id: 1, text: 'Agree', votes: 12}, {id: 2, text: 'Disagree', votes: 3}], totalVotes: 15, userVoted: 1, time: '1d ago', reactions: {like: 5}, userReaction: null, bookmarked: true, views: 180, likes: 5, comments: 1, shares: 0, category: 'Tech' },
     { id: 9, userId: 1003, user: 'Jordan Lee', username: '@jordanlee', avatar: '🚀', content: 'Quick clip from today\'s drone flight! Check out that coastline. Thanks @alexrivera for the editing tips! #drone #video #ocean', media: [{type: 'video', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4'}], postFormat: 'reel', likes: 215, comments: 25, shares: 30, time: '1d ago', reactions: {}, userReaction: null, bookmarked: false, views: 1500, category: 'Photography', location: 'Bali, Indonesia' },
     { id: 4, userId: 1004, user: 'Taylor Kim', username: '@taylorkim', avatar: '💼', content: 'Excited to announce our new project launch! 🎉 Shoutout to the entire team, especially @jordanlee for the amazing launch video.', likes: 89, comments: 22, shares: 18, time: '6h ago', reactions: { like: 60, love: 20, fire: 9 }, userReaction: null, bookmarked: false, views: 567, category: 'Business', location: 'New York, NY' },
     { id: 7, userId: 201, user: 'Blocked User 1', username: '@blocked1', avatar: '🚫', content: 'You should not see this post.', likes: 1, comments: 0, shares: 0, time: '1m ago', reactions: {}, userReaction: null, bookmarked: false, views: 1}

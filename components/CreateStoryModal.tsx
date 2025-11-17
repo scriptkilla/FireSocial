@@ -54,7 +54,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = (props) => {
             <div className={`overflow-hidden max-h-[90vh] ${cardBg} backdrop-blur-xl ${textColor} rounded-3xl p-6 max-w-lg w-full border ${borderColor} shadow-2xl flex flex-col`}>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Create Story</h2>
-                    <button aria-label="Close" onClick={handleClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                    <button onClick={handleClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </div>
                 
                 <div className="flex-grow flex items-center justify-center">
@@ -72,7 +72,7 @@ const CreateStoryModal: React.FC<CreateStoryModalProps> = (props) => {
                              ) : (
                                 <video src={media.url} controls className="w-full h-full object-contain" />
                              )}
-                             <button aria-label="Remove media" onClick={() => setMedia(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/80"><X size={16} /></button>
+                             <button onClick={() => setMedia(null)} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-black/80"><X size={16} /></button>
                         </div>
                     )}
                 </div>

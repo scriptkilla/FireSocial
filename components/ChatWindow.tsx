@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Profile, Message, Theme, ChatMessage } from '../types';
 import { Send, Video, Mic, MoreHorizontal, Phone, Check, CheckCheck, Clock, AlertCircle, Paperclip, X, Trash2, Copy, Edit, Reply } from 'lucide-react';
@@ -23,51 +21,57 @@ interface ChatWindowProps {
     borderColor: string;
 }
 
-const StatusIcon: React.FC<{ status: ChatMessage['status'], currentTheme: Theme }> = ({ status, currentTheme }) => {
-    switch (status) {
-        case 'sending': return <Clock size={16} className="text-gray-400" />;
-        case 'sent': return <Check size={16} className="text-gray-400" />;
-        case 'delivered': return <CheckCheck size={16} className="text-gray-400" />;
-        case 'read': return <CheckCheck size={16} className={currentTheme.text} />;
-        case 'failed': return <AlertCircle size={16} className="text-red-500" />;
-        default: return null;
-    }
-};
+const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onSendMessage, onDeleteMessage, onEditMessage, onReactToMessage, onStartCall, currentTheme, textColor, textSecondary, borderColor }) => {
+    const [messageInput, setMessageInput] = useState('');
+    const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+    const [isRecipientTyping, setIsRecipientTyping] = useState(false);
+    
+    const [visibleMessages, setVisibleMessages] = useState<ChatMessage[]>([]);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
+    
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-const ChatMessageBubble: React.FC<{
-    message: ChatMessage;
-    isOwn: boolean;
-    chatWith: Message;
-    currentTheme: Theme;
-    textColor: string;
-    textSecondary: string;
-    profile: Profile;
-    onReply: (message: ChatMessage) => void;
-    onEdit: (message: ChatMessage) => void;
-    onDelete: () => void;
-    onReact: (emoji: string) => void;
-    getRepliedMessage: (id: number) => ChatMessage | undefined;
-}> = ({ message, isOwn, chatWith, currentTheme, textColor, textSecondary, profile, onReply, onEdit, onDelete, onReact, getRepliedMessage }) => {
-    
-    const [showActions, setShowActions] = useState(false);
-    const repliedMessage = message.replyTo ? getRepliedMessage(message.replyTo) : null;
-    
-    const renderMessageContent = () => {
-        switch (message.type) {
-            case 'image': return <img src={message.url} alt="Uploaded content" className="rounded-2xl max-h-64 cursor-pointer" />;
-            case 'voice': return <div className="flex items-center gap-2"><div className="font-bold text-2xl">▶</div><div className="flex items-end gap-0.5 h-8">{message.waveform?.map((h, i) => <div key={i} className={`w-1 rounded-full bg-current`} style={{height: `${h * 100}%`}}></div>)}</div><span className="text-sm font-mono">{message.duration}</span></div>;
-            case 'file': return <div className="flex items-center gap-3 p-2 bg-black/10 rounded-lg"><Paperclip size={24} /><div className="text-left"><p className="font-semibold">{message.fileName}</p><p className="text-xs">{message.fileSize}</p></div></div>;
-            case 'call': return <div className={`text-sm p-2 rounded-lg flex items-center gap-2 italic ${textSecondary}`}><Phone size={14} /><span>{message.text} {message.callInfo?.duration && `(${message.callInfo.duration})`}</span></div>;
-            default: return <p className="whitespace-pre-wrap text-left">{message.text}</p>;
-        }
-    };
+    const ChatMessageBubble: React.FC<{
+        message: ChatMessage;
+        isOwn: boolean;
+        getRepliedMessage: (id: number) => ChatMessage | undefined;
+        onReply: (message: ChatMessage) => void;
+        onEdit: (message: ChatMessage) => void;
+        onDelete: () => void;
+        onReact: (emoji: string) => void;
+    }> = ({ message, isOwn, getRepliedMessage, onReply, onEdit, onDelete, onReact }) => {
+        
+        const [showActions, setShowActions] = useState(false);
+        const repliedMessage = message.replyTo ? getRepliedMessage(message.replyTo) : null;
+        
+        const StatusIcon = () => {
+            switch (message.status) {
+                case 'sending': return <Clock size={16} className="text-gray-400" />;
+                case 'sent': return <Check size={16} className="text-gray-400" />;
+                case 'delivered': return <CheckCheck size={16} className="text-gray-400" />;
+                case 'read': return <CheckCheck size={16} className={currentTheme.text} />;
+                case 'failed': return <AlertCircle size={16} className="text-red-500" />;
+                default: return null;
+            }
+        };
 
-    const messageContainerClass = `px-4 py-3 rounded-2xl ${isOwn ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white` : `bg-black/10 dark:bg-white/10 ${textColor}`}`;
-    
-    return (
-        <div className={`flex items-end gap-2 group ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            {!isOwn && <AvatarDisplay avatar={chatWith.avatar} size="w-8 h-8" />}
-            <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+        const renderMessageContent = () => {
+            switch (message.type) {
+                case 'image': return <img src={message.url} alt="Uploaded content" className="rounded-2xl max-h-64 cursor-pointer" />;
+                case 'voice': return <div className="flex items-center gap-2"><div className="font-bold text-2xl">▶</div><div className="flex items-end gap-0.5 h-8">{message.waveform?.map((h, i) => <div key={i} className={`w-1 rounded-full bg-current`} style={{height: `${h * 100}%`}}></div>)}</div><span className="text-sm font-mono">{message.duration}</span></div>;
+                case 'file': return <div className="flex items-center gap-3 p-2 bg-black/10 rounded-lg"><Paperclip size={24} /><div className="text-left"><p className="font-semibold">{message.fileName}</p><p className="text-xs">{message.fileSize}</p></div></div>;
+                case 'call': return <div className={`text-sm p-2 rounded-lg flex items-center gap-2 italic ${textSecondary}`}><Phone size={14} /><span>{message.text} {message.callInfo?.duration && `(${message.callInfo.duration})`}</span></div>;
+                default: return <p className="whitespace-pre-wrap text-left">{message.text}</p>;
+            }
+        };
+
+        const messageContainerClass = `px-4 py-3 rounded-2xl ${isOwn ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white` : `bg-black/10 dark:bg-white/10 ${textColor}`}`;
+        
+        const MessageCore = () => (
+             <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
                 <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex ${isOwn ? 'flex-row-reverse' : ''} gap-1 relative`}>
                     <button onClick={() => onReply(message)} title="Reply" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><Reply size={16}/></button>
                     <button onClick={() => setShowActions(s => !s)} title="More" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><MoreHorizontal size={16}/></button>
@@ -86,10 +90,10 @@ const ChatMessageBubble: React.FC<{
                     )}
                 </div>
 
-                <div className={`relative max-w-md my-1 ${isOwn ? 'text-right' : 'text-left'}`}>
+                <div className={`relative max-w-md ${isOwn ? 'text-right' : 'text-left'}`}>
                     {repliedMessage && (
                         <div className={`px-3 pt-2 pb-1 text-sm bg-black/5 dark:bg-white/5 rounded-t-xl border-l-2 ${currentTheme.border} opacity-80`}>
-                            <p className="font-semibold">{repliedMessage.sentBy === profile.id ? profile.name : chatWith.user}</p>
+                            <p className="font-semibold">{repliedMessage.sentBy === profile.id ? profile.name : "Them"}</p>
                             <p className={`line-clamp-1 opacity-70`}>{repliedMessage.text}</p>
                         </div>
                     )}
@@ -99,7 +103,7 @@ const ChatMessageBubble: React.FC<{
                     <div className={`text-xs mt-1 px-2 ${isOwn ? 'text-right' : 'text-left'} text-gray-400 flex items-center gap-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                         {message.isEdited && <span>Edited</span>}
                         <span>{message.time}</span>
-                        {isOwn && <StatusIcon status={message.status} currentTheme={currentTheme} />}
+                        {isOwn && <StatusIcon />}
                     </div>
                     {message.reactions && Object.keys(message.reactions).length > 0 && (
                         <div className={`absolute -bottom-3 ${isOwn ? 'right-2' : 'left-2'} flex gap-1`}>
@@ -115,23 +119,16 @@ const ChatMessageBubble: React.FC<{
                     )}
                 </div>
             </div>
-        </div>
-    );
-};
+        );
 
-
-const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onSendMessage, onDeleteMessage, onEditMessage, onReactToMessage, onStartCall, currentTheme, textColor, textSecondary, borderColor }) => {
-    const [messageInput, setMessageInput] = useState('');
-    const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
-    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
-    const [isRecipientTyping, setIsRecipientTyping] = useState(false);
-    
-    const [visibleMessages, setVisibleMessages] = useState<ChatMessage[]>([]);
-    const [hasMore, setHasMore] = useState(true);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
-    const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
-    
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+        return (
+             <div className={`flex items-end gap-2 group ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                {!isOwn && <AvatarDisplay avatar={chatWith.avatar} size="w-8 h-8" />}
+                <MessageCore />
+                {isOwn && <AvatarDisplay avatar={profile.avatar} size="w-8 h-8" />}
+            </div>
+        )
+    };
 
     useEffect(() => {
         const initialMessages = history.slice(-MESSAGES_PER_PAGE);
@@ -144,9 +141,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
         if (!scrollEl) return;
 
         if (prevScrollHeight !== null) {
+            // This block runs after "load more" has added new messages to the top.
+            // We adjust the scroll position to keep the user's view stable.
             scrollEl.scrollTop = scrollEl.scrollHeight - prevScrollHeight;
-            setPrevScrollHeight(null); 
+            setPrevScrollHeight(null); // Reset after use
         } else {
+            // This block runs on initial load, or when a new message is added to the bottom.
+            // Scroll to the bottom to show the latest content.
             scrollEl.scrollTop = scrollEl.scrollHeight;
         }
     }, [visibleMessages]);
@@ -154,6 +155,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
     const handleLoadMore = () => {
         if(isLoadingMore || !hasMore || !scrollContainerRef.current) return;
 
+        // Before adding new items, capture the current scrollHeight.
         setPrevScrollHeight(scrollContainerRef.current.scrollHeight);
         setIsLoadingMore(true);
 
@@ -205,8 +207,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
     };
 
     return (
-        <div className="h-full flex flex-col p-4">
-            <div className={`flex-shrink-0 border-b ${borderColor} pb-4 mb-4 flex items-center justify-between`}>
+        <div className="h-full grid grid-rows-[auto_1fr_auto]">
+            <div className={`border-b ${borderColor} p-4 flex items-center justify-between`}>
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <AvatarDisplay avatar={chatWith.avatar} size="w-12 h-12" fontSize="text-2xl" />
@@ -223,7 +225,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
                 </div>
             </div>
             
-            <div ref={scrollContainerRef} className="flex-grow overflow-y-auto pr-2 -mr-2 space-y-1">
+            <div ref={scrollContainerRef} className="min-h-0 overflow-y-auto p-4 space-y-4">
                  {hasMore && (
                     <div className="text-center">
                         <button onClick={handleLoadMore} disabled={isLoadingMore} className={`px-4 py-2 text-sm font-semibold rounded-full ${currentTheme.text} hover:bg-black/5`}>
@@ -231,27 +233,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
                         </button>
                     </div>
                 )}
-                <div className="space-y-4 pt-2 pb-4">
-                    {visibleMessages.map(msg => (
-                        <ChatMessageBubble 
-                            key={msg.id} 
-                            message={msg} 
-                            isOwn={msg.sentBy === profile.id}
-                            chatWith={chatWith}
-                            currentTheme={currentTheme} 
-                            textColor={textColor}
-                            textSecondary={textSecondary}
-                            profile={profile}
-                            onReply={setReplyingTo}
-                            onEdit={handleStartEdit}
-                            onDelete={() => onDeleteMessage(chatWith.userId, msg.id)}
-                            onReact={(emoji) => onReactToMessage(chatWith.userId, msg.id, emoji)}
-                            getRepliedMessage={getRepliedMessage}
-                        />
-                    ))}
-                </div>
+                {visibleMessages.map(msg => (
+                    <ChatMessageBubble 
+                        key={msg.id} 
+                        message={msg} 
+                        isOwn={msg.sentBy === profile.id} 
+                        onReply={setReplyingTo}
+                        onEdit={handleStartEdit}
+                        onDelete={() => onDeleteMessage(chatWith.userId, msg.id)}
+                        onReact={(emoji) => onReactToMessage(chatWith.userId, msg.id, emoji)}
+                        getRepliedMessage={getRepliedMessage}
+                    />
+                ))}
                 {isRecipientTyping && (
-                     <div className="flex items-end gap-2 group justify-start mb-4">
+                     <div className="flex items-end gap-2 group justify-start">
                         <AvatarDisplay avatar={chatWith.avatar} size="w-8 h-8"/>
                         <div className={`px-4 py-3 rounded-2xl bg-black/10 dark:bg-white/10 ${textColor}`}>
                             <div className="flex gap-1 items-center">
@@ -264,7 +259,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ profile, chatWith, history, onS
                 )}
             </div>
             
-            <div className="flex-shrink-0 flex flex-col mt-4">
+            <div className={`flex flex-col p-4 border-t ${borderColor}`}>
                 {(replyingTo || editingMessage) && (
                     <div className={`p-2 mb-2 rounded-lg bg-black/5 dark:bg-white/10 text-sm flex justify-between items-center border-l-4 ${currentTheme.border}`}>
                         <div>

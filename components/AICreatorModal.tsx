@@ -1,13 +1,8 @@
 
-
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Text, Image as ImageIcon, Video, Mic, Code, Bot, Settings, ChevronDown, Sparkles, Wand2, RefreshCw, Download, Copy, ThumbsUp, ThumbsDown, Check, AlertTriangle, KeyRound, UploadCloud, File, Map, Search, BrainCircuit, Play, StopCircle } from 'lucide-react';
 import { Theme } from '../types';
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, GroundingChunk } from "@google/genai";
 
 interface AICreatorModalProps {
     show: boolean;
@@ -18,17 +13,6 @@ interface AICreatorModalProps {
     textSecondary: string;
     borderColor: string;
 }
-
-type GroundingChunk = {
-  web?: {
-    uri?: string;
-    title?: string;
-  };
-  maps?: {
-    uri?: string;
-    title?: string;
-  };
-};
 
 // --- Helper Functions ---
 const fileToBase64 = (file: File): Promise<string> =>
@@ -52,18 +36,13 @@ const decode = (base64: string) => {
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
 ): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
+  const frameCount = dataInt16.length;
+  const buffer = ctx.createBuffer(1, frameCount, 24000);
+  const channelData = buffer.getChannelData(0);
+  for (let i = 0; i < frameCount; i++) {
+    channelData[i] = dataInt16[i] / 32768.0;
   }
   return buffer;
 }
@@ -78,29 +57,253 @@ const CREATION_TABS = [
 ];
 
 type AIModel = {
-    id: string; name: string; description: string;
+    id: string;
+    name: string;
+    description: string;
 };
-type AIModelCategory = { category: string; models: AIModel[]; };
-const GOOGLE_AI_MODELS: AIModelCategory[] = [
+type AIModelCategory = {
+    category: string;
+    models: AIModel[];
+};
+type AIModelFamily = {
+    family: string;
+    developer: string;
+    description: string;
+    accessType: string;
+    categories: AIModelCategory[];
+};
+
+const AI_MODELS: AIModelFamily[] = [
     {
-        category: 'Text & Chat', models: [
-            { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable model for complex tasks.' },
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast and efficient for general use.' },
-            { id: 'gemini-flash-lite-latest', name: 'Gemini Flash Lite', description: 'Lightweight and fastest for simple tasks.' },
+        family: 'Gemini Series',
+        developer: 'Google DeepMind',
+        description: 'Native multi-modal understanding, massive context windows, strong in reasoning.',
+        accessType: 'Proprietary',
+        categories: [
+            {
+                category: 'Text & Chat',
+                models: [
+                    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable model for complex tasks.' },
+                    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast and efficient for general use.' },
+                ]
+            },
+            {
+                category: 'Image',
+                models: [
+                    { id: 'imagen-4.0-generate-001', name: 'Imagen 4', description: 'Highest-quality image generation.' },
+                    { id: 'gemini-2.5-flash-image', name: 'Nano Banana', description: 'Generate and edit images quickly.' },
+                ]
+            },
+            {
+                category: 'Video',
+                models: [
+                    { id: 'veo-3.1-generate-preview', name: 'Veo 3.1', description: 'High-quality video generation.' },
+                    { id: 'veo-3.1-fast-generate-preview', name: 'Veo 3.1 Fast', description: 'Faster video generation.' },
+                ]
+            },
+            {
+                category: 'Audio',
+                models: [
+                    { id: 'gemini-2.5-flash-preview-tts', name: 'TTS', description: 'Text-to-speech generation.' },
+                ]
+            },
         ]
-    }, {
-        category: 'Image', models: [
-            { id: 'imagen-4.0-generate-001', name: 'Imagen 4', description: 'Highest-quality image generation.' },
-            { id: 'gemini-2.5-flash-image', name: 'Nano Banana', description: 'Generate and edit images quickly.' },
+    },
+    {
+        family: 'GPT Series',
+        developer: 'OpenAI',
+        description: 'State-of-the-art performance, strong multi-modal and reasoning abilities.',
+        accessType: 'Proprietary',
+        categories: [
+             {
+                category: 'GPT-5.1 Series',
+                models: [
+                    { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Newest series; conversational, intelligent, with "Instant" & "Thinking" variants.' },
+                    { id: 'gpt-5.1-chat', name: 'GPT-5.1 Chat', description: 'Chat-optimized version of the newest GPT-5.1 model.' },
+                    { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', description: 'Code-optimized version of the newest GPT-5.1 model.' },
+                ]
+            },
+            {
+                category: 'GPT-4o Series',
+                models: [
+                    { id: 'gpt-4o', name: 'GPT-4o', description: 'Balanced multimodal (text/image) model, updated to be more intuitive.' },
+                    { id: 'gpt-4o-mini', name: 'GPT-4o mini', description: 'A smaller, faster, and more affordable version of GPT-4o.' },
+                ]
+            },
+            {
+                category: 'o-Series (Reasoning)',
+                 models: [
+                    { id: 'o3-mini', name: 'o3-mini', description: 'Advanced reasoning model for complex STEM and logic problems.' },
+                    { id: 'o4-mini', name: 'o4-mini', description: 'Next-gen advanced reasoning model for complex problems.' },
+                ]
+            },
+             {
+                category: 'Legacy & Specialized',
+                 models: [
+                    { id: 'gpt-5', name: 'GPT-5', description: 'Predecessor to the GPT-5.1 series.' },
+                    { id: 'gpt-4.5', name: 'GPT-4.5', description: 'Research preview focusing on broad knowledge and natural interaction.' },
+                ]
+            },
         ]
-    }, {
-        category: 'Video', models: [
-             { id: 'veo-3.1-generate-preview', name: 'Veo 3.1', description: 'High-quality video generation.' },
-            { id: 'veo-3.1-fast-generate-preview', name: 'Veo 3.1 Fast', description: 'Faster video generation.' },
+    },
+    {
+        family: 'Claude Series',
+        developer: 'Anthropic',
+        description: 'Focus on safety, reliability, and advanced reasoning; known for long context windows.',
+        accessType: 'Proprietary',
+        categories: [
+             {
+                category: 'Text & Chat',
+                models: [
+                    { id: 'claude-opus-4.1', name: 'Claude Opus 4.1', description: 'Most intelligent for specialized reasoning, high precision. Use cases: Advanced reasoning, real-world coding, complex research.' },
+                    { id: 'claude-sonnet-4.5', name: 'Claude Sonnet 4.5', description: 'Best balance of intelligence/speed/cost, top for coding/agents. Use cases: Complex AI agents, code generation, computer use, financial analysis.' },
+                    { id: 'claude-haiku-4.5', name: 'Claude Haiku 4.5', description: 'Fastest model, near-frontier intelligence, cost-effective. Use cases: Live customer chats, content moderation, quick queries.' },
+                ]
+            },
         ]
-    }, {
-        category: 'Audio', models: [
-            { id: 'gemini-2.5-flash-preview-tts', name: 'TTS', description: 'Text-to-speech generation.' },
+    },
+    {
+        family: 'Llama Series',
+        developer: 'Meta',
+        description: 'Powerful open models, strong performance for their size, large community.',
+        accessType: 'Open License',
+        categories: [
+             {
+                category: 'Llama 4 Series',
+                models: [
+                    { id: 'llama-4', name: 'Llama 4 🚀', description: 'Scout (17B), Maverick (17B). Powers Meta AI assistant; multimodal (text+images); open weights & cloud APIs.' },
+                ]
+            },
+            {
+                category: 'Llama 3 Series',
+                models: [
+                    { id: 'llama-3.3', name: 'Llama 3.3', description: '70B. High-performance, text-only; efficient for summarization, Q&A.' },
+                    { id: 'llama-3.2', name: 'Llama 3.2', description: '1B, 3B, Vision 11B, Vision 90B. Includes first open-weight vision models; small text models for mobile/edge devices.' },
+                    { id: 'llama-3.1', name: 'Llama 3.1', description: '8B, 70B, 405B. Large-scale open-weight models; 405B is a frontier-level model for advanced reasoning.' },
+                ]
+            },
+        ]
+    },
+     {
+        family: 'Grok Series',
+        developer: 'xAI',
+        description: 'Integrated with real-time platform data, features "reasoning" modes.',
+        accessType: 'Proprietary',
+        categories: [
+             {
+                category: 'Grok 4 Series',
+                models: [
+                    { id: 'grok-4', name: 'Grok 4', description: 'Current flagship; native tool use, 256k context, voice mode with live camera.' },
+                    { id: 'grok-4-heavy', name: 'Grok 4 Heavy', description: 'Uses multi-agent parallel reasoning for complex tasks.' },
+                    { id: 'grok-4-fast', name: 'Grok 4 Fast', description: 'Balances speed and intelligence for quicker responses.' },
+                ]
+            },
+            {
+                category: 'Grok 3 Series',
+                models: [
+                    { id: 'grok-3', name: 'Grok 3', description: '"Reasoning model"; introduced Think mode, DeepSearch, and voice support.' },
+                    { id: 'grok-3-mini', name: 'Grok 3 mini', description: 'Faster version of Grok 3.' },
+                ]
+            },
+            {
+                category: 'Older Versions',
+                models: [
+                    { id: 'grok-2', name: 'Grok 2', description: 'Major performance upgrade; image generation; Grok-2 mini for faster responses.' },
+                    { id: 'grok-1.5', name: 'Grok 1.5', description: 'Improved reasoning; 128k token context window.' },
+                    { id: 'grok-1', name: 'Grok 1', description: 'First version; witty tone; real-time X integration.' },
+                ]
+            }
+        ]
+    },
+    {
+        family: 'DeepSeek Series',
+        developer: 'DeepSeek',
+        description: 'Competitive open-source reasoning models, strong performance.',
+        accessType: 'Open Source (MIT)',
+        categories: [
+             {
+                category: 'Text & Chat',
+                models: [
+                    { id: 'deepseek-v3.2-exp', name: 'DeepSeek-V3.2-Exp', description: 'Experimental (Sept \'25); Efficient long-context processing. Cost-effective.' },
+                    { id: 'deepseek-v3.1', name: 'DeepSeek-V3.1', description: 'Hybrid model (Aug \'25); Faster reasoning and stronger agent/tool use.' },
+                    { id: 'deepseek-r1-0528', name: 'DeepSeek-R1-0528', description: 'R1 upgrade (May \'25); Stronger reasoning, less hallucination, supports system prompts.' },
+                    { id: 'deepseek-v3-0324', name: 'DeepSeek-V3-0324', description: 'V3 update (March \'25); Surpasses GPT-4.5 in math/coding, better tool use.' },
+                    { id: 'deepseek-r1', name: 'DeepSeek-R1', description: 'Specialized "reasoning model" for complex problem-solving and logic.' },
+                    { id: 'deepseek-v3', name: 'DeepSeek-V3', description: 'General-purpose model with strong coding/math abilities and 128K context.' },
+                ]
+            },
+        ]
+    },
+    {
+        family: 'Mistral AI',
+        developer: 'Mistral AI',
+        description: 'High-performance open and optimized models, known for efficiency and customization.',
+        accessType: 'Varies (Open & Proprietary)',
+        categories: [
+            {
+                category: 'Reasoning (Magistral)',
+                models: [
+                    { id: 'magistral-medium-1.2', name: 'Magistral Medium 1.2', description: 'Enterprise reasoning model for advanced tasks.' },
+                    { id: 'magistral-small-1.2', name: 'Magistral Small 1.2', description: 'Open-weight counterpart for advanced reasoning.' },
+                ]
+            },
+            {
+                category: 'Enterprise & General',
+                models: [
+                    { id: 'mistral-medium-3', name: 'Mistral Medium 3', description: 'Balances high performance with lower cost; strong in coding & STEM.' },
+                    { id: 'mistral-small-3.2', name: 'Mistral Small 3.2', description: 'Leader in small models; some versions have image understanding.' },
+                ]
+            },
+            {
+                category: 'Coding',
+                models: [
+                    { id: 'devstral-medium', name: 'Devstral Medium', description: 'AI model designed for software engineering tasks.' },
+                    { id: 'devstral-small-1.1', name: 'Devstral Small 1.1', description: 'Smaller, open-source model for coding.' },
+                    { id: 'codestral-2508', name: 'Codestral 2508', description: 'Specialized model for code generation.' },
+                ]
+            },
+            {
+                category: 'Audio (Voxtral)',
+                models: [
+                    { id: 'voxtral-small', name: 'Voxtral Small', description: 'Open-source audio model for chat and transcription.' },
+                    { id: 'voxtral-mini', name: 'Voxtral Mini', description: 'A more compact version of Voxtral for audio tasks.' },
+                ]
+            },
+            {
+                category: 'Edge (Ministral)',
+                models: [
+                    { id: 'ministral-8b', name: 'Ministral 8B', description: 'Small model optimized for edge devices like phones.' },
+                    { id: 'ministral-3b', name: 'Ministral 3B', description: 'A very compact model for on-device tasks.' },
+                ]
+            },
+            {
+                category: 'Multimodal (Pixtral)',
+                models: [
+                    { id: 'pixtral-large', name: 'Pixtral Large', description: 'Can understand both text and images.' },
+                ]
+            },
+            {
+                category: 'Specialized',
+                models: [
+                    { id: 'mistral-ocr', name: 'Mistral OCR', description: 'Special-purpose model for text recognition in images.' },
+                    { id: 'mistral-saba', name: 'Mistral Saba', description: 'A specialized model focused on the Arabic language.' },
+                ]
+            },
+        ]
+    },
+    {
+        family: 'Others',
+        developer: 'Various',
+        description: 'Includes efficient and specialized models from other leading AI companies.',
+        accessType: 'Varies (Open & Proprietary)',
+        categories: [
+             {
+                category: 'Text & Chat',
+                models: [
+                    { id: 'falcon-3', name: 'Falcon 3', description: 'Next-gen open model from TII.' },
+                    { id: 'qwen3', name: 'Qwen3', description: 'Large language model from Alibaba Cloud.' },
+                ]
+            },
         ]
     },
 ];
@@ -125,21 +328,8 @@ const CreationTabs: React.FC<{ activeTab: string, onTabChange: (tab: string) => 
     </div>
 );
 
-const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-    <div><label className="block text-sm font-medium text-gray-400 mb-2">{label}</label>{children}</div>
-);
-
-const ToggleItem: React.FC<{ icon: React.ElementType, label: string, checked: boolean, onChange: (c:boolean) => void, disabled?: boolean, currentTheme: Theme }> = ({ icon: Icon, label, checked, onChange, disabled=false, currentTheme }) => (
-    <label className={`flex items-center justify-between p-2 rounded-lg hover:bg-white/10 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed': ''}`}>
-        <div className="flex items-center gap-2 text-sm"><Icon size={16}/>{label}</div>
-        <button onClick={() => !disabled && onChange(!checked)} disabled={disabled} className={`w-10 h-5 rounded-full transition-all ${checked ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
-            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
-        </button>
-    </label>
-);
-
 const SettingsPanel: React.FC<{
-    models: AIModelCategory[]; selectedModel: AIModel; onModelChange: (model: AIModel) => void;
+    models: AIModelFamily[]; selectedModel: AIModel; onModelChange: (model: AIModel) => void;
     tones: string[]; selectedTone: string; onToneChange: (tone: string) => void;
     creativity: number; onCreativityChange: (value: number) => void;
     aspectRatios: string[]; selectedAspectRatio: string; onAspectRatioChange: (ratio: string) => void;
@@ -153,7 +343,20 @@ const SettingsPanel: React.FC<{
 }> = (props) => {
     const { models, selectedModel, onModelChange, tones, selectedTone, onToneChange, creativity, onCreativityChange, aspectRatios, selectedAspectRatio, onAspectRatioChange, isImagenSelected, useSearch, onUseSearchChange, useMaps, onUseMapsChange, useThinking, onUseThinkingChange, isProModel, cardBg, textColor, textSecondary, borderColor, currentTheme } = props;
     const [dropdown, setDropdown] = useState<'model' | 'tone' | null>(null);
+
+    const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+        <div><label className="block text-sm font-medium text-gray-400 mb-2">{label}</label>{children}</div>
+    );
     
+    const ToggleItem: React.FC<{ icon: React.ElementType, label: string, checked: boolean, onChange: (c:boolean) => void, disabled?: boolean }> = ({ icon: Icon, label, checked, onChange, disabled=false }) => (
+        <label className={`flex items-center justify-between p-2 rounded-lg hover:bg-white/10 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed': ''}`}>
+            <div className="flex items-center gap-2 text-sm"><Icon size={16}/>{label}</div>
+            <button onClick={() => !disabled && onChange(!checked)} disabled={disabled} className={`w-10 h-5 rounded-full transition-all ${checked ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
+                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${checked ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+        </label>
+    );
+
     return (
         <aside className={`w-full lg:w-72 flex-shrink-0 p-4 space-y-4 overflow-y-auto rounded-lg bg-black/5 dark:bg-white/5`}>
             <SettingItem label="AI Model">
@@ -161,17 +364,34 @@ const SettingsPanel: React.FC<{
                     <button onClick={() => setDropdown(d => d === 'model' ? null : 'model')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
                         <span>{selectedModel.name}</span> <ChevronDown size={16} />
                     </button>
-                    {dropdown === 'model' && (<div className={`absolute top-full mt-1 w-full ${cardBg} border ${borderColor} rounded-lg shadow-xl z-10`}>
-                       {models.map(cat => (<div key={cat.category}><h4 className="px-2 pt-2 pb-1 text-xs font-bold text-gray-500">{cat.category}</h4><ul>
-                           {cat.models.map(m => (<li key={m.id}><button onClick={() => { onModelChange(m); setDropdown(null); }} className={`w-full text-left p-2 hover:bg-white/10 text-sm`}><p className={selectedModel.id === m.id ? currentTheme.text : textColor}>{m.name}</p></button></li>))}
-                       </ul></div>))}
+                    {dropdown === 'model' && (<div className={`absolute top-full mt-1 w-full ${cardBg} border ${borderColor} rounded-lg shadow-xl z-10 max-h-64 overflow-y-auto`}>
+                        {models.map(family => (
+                            <div key={family.family}>
+                                <h4 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 sticky top-0 bg-inherit">{family.family}</h4>
+                                <ul>
+                                    {family.categories.map(category => (
+                                        <React.Fragment key={category.category}>
+                                            {family.categories.length > 1 && <h5 className="px-3 pt-1 text-xs font-semibold text-gray-500">{category.category}</h5>}
+                                            {category.models.map(m => (
+                                                <li key={m.id}>
+                                                    <button onClick={() => { onModelChange(m); setDropdown(null); }} className={`w-full text-left px-3 py-2 hover:bg-white/10 text-sm`}>
+                                                        <p className={selectedModel.id === m.id ? currentTheme.text : textColor}>{m.name}</p>
+                                                        <p className="text-xs text-gray-500">{m.description}</p>
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
                     </div>)}
                 </div>
             </SettingItem>
             <div className={`p-3 rounded-lg border ${borderColor} bg-black/5 dark:bg-white/5 space-y-2`}>
-                 <ToggleItem icon={Search} label="Use Google Search" checked={useSearch} onChange={onUseSearchChange} currentTheme={currentTheme} />
-                 <ToggleItem icon={Map} label="Use Google Maps" checked={useMaps} onChange={onUseMapsChange} currentTheme={currentTheme} />
-                 <ToggleItem icon={BrainCircuit} label="Thinking Mode" checked={useThinking} onChange={onUseThinkingChange} disabled={!isProModel} currentTheme={currentTheme} />
+                 <ToggleItem icon={Search} label="Use Google Search" checked={useSearch} onChange={onUseSearchChange} />
+                 <ToggleItem icon={Map} label="Use Google Maps" checked={useMaps} onChange={onUseMapsChange} />
+                 <ToggleItem icon={BrainCircuit} label="Thinking Mode" checked={useThinking} onChange={onUseThinkingChange} disabled={!isProModel} />
             </div>
             <SettingItem label="Tone"><div className="relative">
                 <button onClick={() => setDropdown(d => d === 'tone' ? null : 'tone')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
@@ -206,38 +426,29 @@ const MainWorkspace: React.FC<{
         if (!generationResult) return null;
         const content = generationResult.content;
         const url = typeof content === 'string' ? content : content.url;
-        const sources = typeof content === 'object' ? content.sources : [];
 
-        return (
-          <div className="w-full h-full flex flex-col items-center justify-center">
-            {generationResult.type === 'image' && <img src={url} alt="Generated" className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
-            {generationResult.type === 'video' && <video src={url} controls className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
-            {generationResult.type === 'audio' && <audio src={url} controls />}
-            {generationResult.type === 'text' && (
-              <div className="self-start w-full overflow-y-auto">
-                <p className="whitespace-pre-wrap p-2">{url}</p>
-                {sources && sources.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-700">
-                        <h4 className="text-sm font-semibold mb-1">Sources:</h4>
-                        <ul className="text-xs list-disc pl-5 space-y-1">
-                            {sources.map((chunk, index) => {
-                                if (chunk.web && chunk.web.uri) {
-                                    return <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title || chunk.web.uri}</a></li>;
-                                }
-                                if (chunk.maps && chunk.maps.uri) {
-                                    return <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title || chunk.maps.uri}</a></li>;
-                                }
-                                return null;
-                            })}
-                        </ul>
-                    </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
+        return <div className="w-full h-full flex flex-col items-center justify-center">
+             {generationResult.type === 'image' && <img src={url} alt="Generated" className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
+             {generationResult.type === 'video' && <video src={url} controls className="max-w-full max-h-full object-contain mx-auto rounded-lg"/>}
+             {generationResult.type === 'audio' && <audio src={url} controls />}
+             {generationResult.type === 'text' && <div className="self-start w-full overflow-y-auto"><p className="whitespace-pre-wrap p-2">{typeof content === 'string' ? content : content.url}</p></div>}
+        </div>
     };
     
+    const renderGroundingSources = () => {
+        if (!generationResult || typeof generationResult.content === 'string' || !generationResult.content.sources || generationResult.content.sources.length === 0) return null;
+        
+        return <div className="mt-2 pt-2 border-t border-gray-700">
+            <h4 className="text-sm font-semibold mb-1">Sources:</h4>
+            <ul className="text-xs list-disc pl-5 space-y-1">
+                {generationResult.content.sources.map((chunk, index) => (
+                    chunk.web ? <li key={index}><a href={chunk.web.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.web.title}</a></li> :
+                    chunk.maps ? <li key={index}><a href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className={`hover:underline ${currentTheme.text}`}>{chunk.maps.title}</a></li> : null
+                ))}
+            </ul>
+        </div>
+    };
+
     return (
         <main className="flex-1 flex flex-col p-4 gap-4">
             {['Image', 'Video'].includes(activeTab) && <div className="flex-shrink-0">
@@ -276,7 +487,7 @@ const MainWorkspace: React.FC<{
                             {sourceFile.type === 'image' && <img src={sourceFile.url} className="w-full h-full object-contain rounded-lg" />}
                             {sourceFile.type === 'video' && <video src={sourceFile.url} controls className="w-full h-full object-contain rounded-lg" />}
                             {sourceFile.type === 'audio' && <audio src={sourceFile.url} controls />}
-                            <button aria-label="Remove file" onClick={removeFile} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full"><X size={14}/></button>
+                            <button onClick={removeFile} className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full"><X size={14}/></button>
                         </div>
                         : audioMode === 'transcribe' ? 
                             <button onClick={isRecording ? stopRecording : startRecording} className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-colors ${isRecording ? 'bg-red-500 text-white' : `${cardBg} border ${borderColor}`}`}>
@@ -290,6 +501,7 @@ const MainWorkspace: React.FC<{
                         </div>
                     ) : <div className="text-center"><Bot size={48} className={`mx-auto ${textSecondary}`} /><p className={`mt-4 font-semibold ${textColor}`}>Your creation will appear here</p></div>}
                 </div>
+                 {renderGroundingSources()}
             </div>
         </main>
     );
@@ -305,7 +517,6 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
     const [generationStatus, setGenerationStatus] = useState('Generating...');
     const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [selectedModel, setSelectedModel] = useState<AIModel>(GOOGLE_AI_MODELS[0].models[1]);
     const [selectedTone, setSelectedTone] = useState(TONE_OPTIONS[0]);
     const [creativity, setCreativity] = useState(0.7);
     const [copied, setCopied] = useState(false);
@@ -325,6 +536,30 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
 
+    const findModelById = (id: string) => {
+        for (const family of AI_MODELS) {
+            for (const category of family.categories) {
+                const model = category.models.find(m => m.id === id);
+                if (model) return model;
+            }
+        }
+        return AI_MODELS[0].categories[0].models[0];
+    };
+    const [selectedModel, setSelectedModel] = useState<AIModel>(() => findModelById('gemini-2.5-flash'));
+    
+    // Fix: Added a helper function to retrieve the developer's name for a given model ID.
+    const getModelDeveloper = (modelId: string): string => {
+        for (const family of AI_MODELS) {
+            for (const category of family.categories) {
+                if (category.models.some(m => m.id === modelId)) {
+                    return family.developer;
+                }
+            }
+        }
+        return 'Unknown';
+    };
+
+
     useEffect(() => {
         if (show) { (async () => setApiKeyOk(await (window as any).aistudio.hasSelectedApiKey()))(); }
     }, [show]);
@@ -335,7 +570,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
         if (tab === 'Image') defaultModelId = 'imagen-4.0-generate-001';
         if (tab === 'Video') defaultModelId = 'veo-3.1-fast-generate-preview';
         if (tab === 'Audio') defaultModelId = 'gemini-2.5-flash-preview-tts';
-        for (const cat of GOOGLE_AI_MODELS) { const m = cat.models.find(m => m.id === defaultModelId); if (m) { setSelectedModel(m); break; }}
+        setSelectedModel(findModelById(defaultModelId));
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,6 +586,17 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
     const handleGenerate = async () => {
         if (audioMode === 'transcribe' && !sourceFile) { setError("Please record or upload audio to transcribe."); return; }
         if (!prompt.trim() && !(sourceFile && creationMode !== 'generate')) { setError("A prompt is required."); return; }
+
+        const isGoogleModel = AI_MODELS.find(f => f.developer === 'Google DeepMind')
+                                ?.categories.flatMap(c => c.models)
+                                .some(m => m.id === selectedModel.id);
+
+        if (!isGoogleModel) {
+            // Fix: Replaced `selectedModel.developer` with `getModelDeveloper(selectedModel.id)` to correctly retrieve the developer name, as the `developer` property does not exist on the `AIModel` type.
+            setError(`Generation with ${selectedModel.name} (${getModelDeveloper(selectedModel.id)}) is not yet supported in this interface. Please select a model from the Gemini Series to proceed.`);
+            return;
+        }
+
         if (selectedModel.id.includes('veo')) {
             const hasKey = await (window as any).aistudio.hasSelectedApiKey();
             if (!hasKey) {
@@ -383,7 +629,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 config.numberOfImages = 1; config.outputMimeType = 'image/jpeg'; config.aspectRatio = selectedAspectRatio;
                 const resp = await ai.models.generateImages({ model: modelName, prompt, config });
                 const b64 = resp.generatedImages?.[0]?.image?.imageBytes;
-                if (b64) setGenerationResult({ type: 'image', content: { url: `data:image/jpeg;base64,${b64}` }});
+                if (b64) setGenerationResult({ type: 'image', content: `data:image/jpeg;base64,${b64}` });
                 else throw new Error("API did not return an image.");
             } else if (modelName.includes('veo')) {
                 config = { numberOfVideos: 1, resolution: '720p', aspectRatio: selectedAspectRatio as any };
@@ -393,145 +639,121 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
 
                 setGenerationStatus('Submitting video request...');
                 let op = await (ai.models as any).generateVideos(payload);
+                setGenerationStatus('Generating video... this can take minutes.');
                 while (!op.done) {
-                    setGenerationStatus(`Processing video... (${op.progress?.percentage || 0}%)`);
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    await new Promise(r => setTimeout(r, 10000));
                     op = await (ai.operations as any).getVideosOperation({ operation: op });
                 }
-                const videoUrl = op.response?.generatedVideos?.[0]?.video?.uri;
-                if (videoUrl) {
-                    const videoResp = await fetch(`${videoUrl}&key=${process.env.API_KEY}`);
+                const link = op.response?.generatedVideos?.[0]?.video?.uri;
+                if (link) {
+                    setGenerationStatus('Fetching video file...');
+                    const videoResp = await fetch(`${link}&key=${process.env.API_KEY}`);
                     const blob = await videoResp.blob();
                     setGenerationResult({ type: 'video', content: { url: URL.createObjectURL(blob) } });
-                } else { throw new Error("Video generation failed to return a valid URL."); }
+                } else throw new Error("Video generation failed to return a link.");
             } else if (modelName.includes('tts')) {
                 config.responseModalities = [Modality.AUDIO];
-                config.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } };
-                contents = [{ parts: [{ text: `Say with a ${selectedTone.toLowerCase()} tone: ${prompt}` }] }];
                 const resp = await ai.models.generateContent({ model: modelName, contents, config });
-                const b64 = resp.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                if (b64) {
-                    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-                    const audioBuffer = await decodeAudioData(decode(b64), audioContext, 24000, 1);
-                    const wavBlob = bufferToWave(audioBuffer, audioBuffer.length);
-                    setGenerationResult({ type: 'audio', content: { url: URL.createObjectURL(wavBlob) } });
-                } else { throw new Error("TTS generation failed."); }
-            } else { // Text or multi-modal models
-                 if(sourceFile) {
-                    const imagePart = { inlineData: { mimeType: sourceFile.file.type, data: sourceFile.base64 }};
-                    const textPart = { text: prompt };
-                    contents = { parts: [imagePart, textPart]};
-                 }
+                const audioB64 = resp.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                if (audioB64) {
+                    const audioContext = new AudioContext({ sampleRate: 24000 });
+                    const audioBuffer = await decodeAudioData(decode(audioB64), audioContext);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(audioContext.destination);
+                    source.start();
+                    setGenerationResult({ type: 'audio', content: { url: `data:audio/wav;base64,${audioB64}` } });
+                } else throw new Error("TTS failed to produce audio.");
+            } else { // Text or multi-modal text
+                if (sourceFile) {
+                    contents = { parts: [{ inlineData: { mimeType: sourceFile.file.type, data: sourceFile.base64 } }, { text: prompt }] };
+                    if (modelName.includes('flash-image') && creationMode === 'edit') {
+                        config.responseModalities = [Modality.IMAGE];
+                    }
+                }
                 const resp = await ai.models.generateContent({ model: modelName, contents, config });
-                const sources = resp.candidates?.[0]?.groundingMetadata?.groundingChunks;
-                setGenerationResult({ type: 'text', content: { url: resp.text, sources: sources }});
+                if (config.responseModalities?.includes(Modality.IMAGE)) {
+                    const imgPart = resp.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                    if(imgPart?.inlineData) setGenerationResult({ type: 'image', content: { url: `data:image/png;base64,${imgPart.inlineData.data}` } });
+                    else throw new Error("Model did not return an image.");
+                } else {
+                    const groundingSources = resp.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+                    setGenerationResult({ type: 'text', content: { url: resp.text, sources: groundingSources } });
+                }
             }
         } catch (e: any) {
             console.error("AI generation error:", e);
             const msg = e.message || "An unknown error occurred.";
-            if (msg.includes("API key not valid")) {
-                setApiKeyOk(false); setError("Your API key is invalid. Please select a valid key.");
-            } else if(msg.includes('Requested entity was not found')) {
-                setApiKeyOk(false); setError("Invalid API Key. Please select a valid key to use this model.");
-            } else { setError(msg); }
-        } finally { setIsGenerating(false); }
-    };
-    
-    const bufferToWave = (abuffer: AudioBuffer, len: number) => {
-        let numOfChan = abuffer.numberOfChannels,
-            length = len * numOfChan * 2 + 44,
-            buffer = new ArrayBuffer(length),
-            view = new DataView(buffer),
-            channels = [], i, sample,
-            offset = 0,
-            pos = 0;
-    
-        setUint32(0x46464952);                         // "RIFF"
-        setUint32(length - 8);                         // file length - 8
-        setUint32(0x45564157);                         // "WAVE"
-    
-        setUint32(0x20746d66);                         // "fmt " chunk
-        setUint32(16);                                 // length = 16
-        setUint16(1);                                  // PCM (uncompressed)
-        setUint16(numOfChan);
-        setUint32(abuffer.sampleRate);
-        setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-        setUint16(numOfChan * 2);                      // block-align
-        setUint16(16);                                 // 16-bit
-    
-        setUint32(0x61746164);                         // "data" - chunk
-        setUint32(length - pos - 4);                   // chunk length
-    
-        for(i = 0; i < abuffer.numberOfChannels; i++)
-            channels.push(abuffer.getChannelData(i));
-    
-        while(pos < length) {
-            for(i = 0; i < numOfChan; i++) {
-                sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
-                view.setInt16(pos, sample, true);
-                pos += 2;
-            }
-            offset++;
+            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please select a valid key."); }
+            else if (msg.includes("billing")) { setApiKeyOk(false); setError("This model requires a billed project. Please select a different API key."); }
+            else setError(msg);
+        } finally {
+            setIsGenerating(false);
         }
-    
-        return new Blob([view], {type: 'audio/wav'});
-    
-        function setUint16(data: number) { view.setUint16(pos, data, true); pos += 2; }
-        function setUint32(data: number) { view.setUint32(pos, data, true); pos += 4; }
     };
+    
+    // --- Audio Recording Logic ---
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+            mediaRecorderRef.current.ondataavailable = e => audioChunksRef.current.push(e.data);
+            mediaRecorderRef.current.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const url = URL.createObjectURL(audioBlob);
+                const base64 = await fileToBase64(audioBlob as File);
+                setSourceFile({ file: audioBlob as File, type: 'audio', url, base64 });
+                stream.getTracks().forEach(track => track.stop());
+            };
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+        } catch (err) { setError("Microphone access denied or not available."); }
+    };
+    const stopRecording = () => { mediaRecorderRef.current?.stop(); setIsRecording(false); };
+
 
     if (!show) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className={`${cardBg} backdrop-blur-xl ${textColor} rounded-3xl w-full max-w-6xl h-[90vh] border ${borderColor} shadow-2xl flex flex-col`}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-0 md:p-4">
+            <div className={`${cardBg} backdrop-blur-xl ${textColor} rounded-none md:rounded-3xl w-full h-full md:max-w-7xl md:h-[90vh] border ${borderColor} shadow-2xl flex flex-col`}>
                 <header className={`flex justify-between items-center p-4 border-b ${borderColor} flex-shrink-0`}>
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-xl font-bold flex items-center gap-2"><Sparkles className={currentTheme.text}/>AI Creator Studio</h2>
-                        <CreationTabs activeTab={activeTab} onTabChange={(t) => { setActiveTab(t); resetForTabChange(t); }} textColor={textColor} currentTheme={currentTheme} />
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20}/></button>
+                     <h2 className="text-xl font-bold flex items-center gap-3"><Bot className={currentTheme.text} /> Create with AI</h2>
+                    {apiKeyOk && <CreationTabs activeTab={activeTab} onTabChange={(t) => {setActiveTab(t); resetForTabChange(t);}} textColor={textColor} currentTheme={currentTheme} />}
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                 </header>
-                <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-                    <SettingsPanel
-                        models={GOOGLE_AI_MODELS.filter(c => c.category.includes(activeTab))}
-                        selectedModel={selectedModel} onModelChange={setSelectedModel}
-                        tones={TONE_OPTIONS} selectedTone={selectedTone} onToneChange={setSelectedTone}
-                        creativity={creativity} onCreativityChange={setCreativity}
-                        aspectRatios={ASPECT_RATIOS} selectedAspectRatio={selectedAspectRatio} onAspectRatioChange={setSelectedAspectRatio}
-                        isImagenSelected={selectedModel.id.includes('imagen')}
-                        useSearch={useSearch} onUseSearchChange={setUseSearch} useMaps={useMaps} onUseMapsChange={setUseMaps}
-                        useThinking={useThinking} onUseThinkingChange={setUseThinking} isProModel={selectedModel.id.includes('pro')}
-                        {...{ cardBg, textColor, textSecondary, borderColor, currentTheme }}
-                    />
-                    <MainWorkspace
-                        prompt={prompt} setPrompt={setPrompt}
-                        isGenerating={isGenerating} generationStatus={generationStatus} generationResult={generationResult} error={error}
-                        activeTab={activeTab} mode={creationMode} setMode={setCreationMode}
-                        audioMode={audioMode} setAudioMode={setAudioMode}
-                        sourceFile={sourceFile} onFileChange={handleFileChange} removeFile={() => setSourceFile(null)}
-                        isRecording={isRecording} startRecording={() => {}} stopRecording={() => {}}
-                        {...{ currentTheme, cardBg, borderColor, textColor, textSecondary }}
-                    />
-                </div>
-                <footer className={`p-4 border-t ${borderColor} flex-shrink-0 flex items-center justify-between`}>
-                    <div className="flex items-center gap-2">
-                        {generationResult && <>
-                            <button onClick={() => { navigator.clipboard.writeText(typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="px-3 py-2 text-sm rounded-lg flex items-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-white/20">
-                                {copied ? <><Check size={16}/> Copied</> : <><Copy size={16}/> Copy</>}
-                            </button>
-                             <button className="px-3 py-2 text-sm rounded-lg flex items-center gap-2 bg-black/10 dark:bg-white/10 hover:bg-white/20"><Download size={16}/> Download</button>
-                        </>}
-                    </div>
-                     <button onClick={handleGenerate} disabled={isGenerating} className={`px-8 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} disabled:opacity-50 flex items-center gap-2`}>
-                        {isGenerating ? 'Generating...' : <><Wand2 size={16}/> Generate</>}
-                    </button>
-                </footer>
+                
+                {!apiKeyOk ? ( <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <KeyRound size={48} className={`mx-auto ${currentTheme.text} mb-4`} /><h3 className="text-2xl font-bold mb-2">API Key Required</h3>
+                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, select a Google AI API key. Some models may require a key from a billed Google Cloud project.</p>
+                        <button onClick={async () => { await (window as any).aistudio.openSelectKey(); setApiKeyOk(true); }} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>Select API Key</button>
+                        <p className={`text-xs ${textSecondary} mt-4`}>See the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`underline ${currentTheme.hoverText}`}>billing documentation</a>.</p>
+                    </div> ) : ( <>
+                        <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
+                            <MainWorkspace {...{ prompt, setPrompt, isGenerating, generationStatus, generationResult, error, currentTheme, cardBg, borderColor, textColor, textSecondary, activeTab, mode: creationMode, setMode: setCreationMode, audioMode, setAudioMode, sourceFile, onFileChange: handleFileChange, removeFile: () => setSourceFile(null), isRecording, startRecording, stopRecording }} />
+                            <SettingsPanel {...{ models: AI_MODELS, selectedModel, onModelChange: setSelectedModel, tones: TONE_OPTIONS, selectedTone, onToneChange: setSelectedTone, creativity, onCreativityChange: setCreativity, aspectRatios: ASPECT_RATIOS, selectedAspectRatio, onAspectRatioChange: setSelectedAspectRatio, isImagenSelected: selectedModel.id.includes('imagen'), useSearch, onUseSearchChange: setUseSearch, useMaps, onUseMapsChange: setUseMaps, useThinking, onUseThinkingChange: setUseThinking, isProModel: selectedModel.id.includes('2.5-pro'), cardBg, textColor, textSecondary, borderColor, currentTheme }} />
+                        </div>
+                        <footer className={`flex justify-between items-center p-4 border-t ${borderColor} flex-shrink-0`}>
+                            <div className="flex items-center gap-2">
+                                {generationResult && (<>
+                                    <button onClick={handleGenerate} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Regenerate"><RefreshCw size={18} /></button>
+                                    {generationResult.type === 'text' && (<button onClick={() => {navigator.clipboard.writeText(typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url); setCopied(true); setTimeout(()=>setCopied(false), 2000)}} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Copy">{copied ? <Check size={18} className={currentTheme.text}/> : <Copy size={18} />}</button>)}
+                                    {['image', 'video', 'audio'].includes(generationResult.type) && (<button onClick={()=>{const link=document.createElement('a'); link.href=typeof generationResult.content === 'string' ? generationResult.content : generationResult.content.url; link.download=`firesocial-ai-${generationResult.type}`; link.click()}} className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Download"><Download size={18} /></button>)}
+                                    <div className="w-px h-6 bg-gray-700 mx-2"></div>
+                                    <button className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Good"><ThumbsUp size={18} /></button>
+                                    <button className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary}`} title="Bad"><ThumbsDown size={18} /></button>
+                                </>)}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => { setPrompt(''); setGenerationResult(null); setError(null); }} className={`px-6 py-2 rounded-lg font-semibold text-sm ${cardBg} border ${borderColor} hover:bg-white/10`}>Reset</button>
+                                <button onClick={handleGenerate} disabled={isGenerating} className={`px-6 py-2 rounded-lg font-semibold text-sm bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white disabled:opacity-50 flex items-center gap-2`}>{isGenerating ? 'Generating...' : 'Create'} <Wand2 size={16}/></button>
+                            </div>
+                        </footer>
+                    </>)}
             </div>
         </div>
     );
 };
 
-// FIX: Add default export for AICreatorModal component.
 export default AICreatorModal;

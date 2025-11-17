@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Post, UserListItem, TrendingHashtag, Theme, Profile } from '../types';
 import { Heart, MessageSquare, Copy, Search, Mic, SlidersHorizontal, X } from 'lucide-react';
@@ -25,17 +23,12 @@ interface ExplorePageProps {
     currentTheme: Theme;
 }
 
-interface FilterModalProps {
+interface FilterModalProps extends Omit<ExplorePageProps, 'profile' | 'allUsers' | 'trendingHashtags' | 'onViewPost' | 'onViewProfile' | 'onViewHashtag' | 'following' | 'posts'> {
     show: boolean;
     onClose: () => void;
     activeFilters: { category: string, location: string };
     onApply: (filters: { category: string, location: string }) => void;
     locations: string[];
-    textColor: string;
-    textSecondary: string;
-    cardBg: string;
-    borderColor: string;
-    currentTheme: Theme;
 }
 
 
@@ -163,6 +156,24 @@ const ExplorePage: React.FC<ExplorePageProps> = (props) => {
 
     return (
         <div className="space-y-6">
+            <style>{`
+                .masonry-grid {
+                    column-gap: 1rem;
+                    column-count: 2;
+                }
+                @media (min-width: 768px) { .masonry-grid { column-count: 3; } }
+                .masonry-item {
+                    break-inside: avoid;
+                    margin-bottom: 1rem;
+                }
+                .horizontal-scroll {
+                    scroll-snap-type: x mandatory;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .horizontal-scroll > * {
+                    scroll-snap-align: start;
+                }
+            `}</style>
             <FilterModal 
                 show={showFilters} 
                 onClose={() => setShowFilters(false)} 
@@ -182,9 +193,9 @@ const ExplorePage: React.FC<ExplorePageProps> = (props) => {
                     <div className="flex-1 relative">
                         <Search size={20} className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} />
                         <input type="text" placeholder="Search for posts, users, tags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`w-full pl-12 pr-12 py-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`} />
-                        <button aria-label="Voice search" className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 ${textSecondary} hover:${textColor}`}><Mic size={20} /></button>
+                        <button className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 ${textSecondary} hover:${textColor}`}><Mic size={20} /></button>
                     </div>
-                    <button aria-label="Open filters" onClick={() => setShowFilters(true)} className={`p-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} hover:scale-105 transition-all`}>
+                    <button onClick={() => setShowFilters(true)} className={`p-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} hover:scale-105 transition-all`}>
                         <SlidersHorizontal size={20} />
                     </button>
                 </div>

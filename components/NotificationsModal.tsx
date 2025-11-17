@@ -96,7 +96,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({
                               <CheckCheck size={16} /> Mark all as read
                           </button>
                         }
-                        <button aria-label="Close" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
                     </div>
                 </div>
 

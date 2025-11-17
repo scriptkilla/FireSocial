@@ -64,7 +64,7 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
                         </>
                     ) : (
                         <>
-                            <button aria-label={comment.isLiked ? 'Unlike' : 'Like'} onClick={onLike} className={`flex items-center gap-1 transition-colors ${comment.isLiked ? currentTheme.text : textSecondary} ${currentTheme.hoverText}`}>
+                            <button onClick={onLike} className={`flex items-center gap-1 transition-colors ${comment.isLiked ? currentTheme.text : textSecondary} ${currentTheme.hoverText}`}>
                                 <Heart size={14} fill={comment.isLiked ? 'currentColor' : 'none'} />
                                 {comment.likes > 0 && <span>{comment.likes}</span>}
                             </button>
