@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Profile, Message, Theme, ChatMessage } from '../types';
-import { Send, Video, Mic, MoreHorizontal, Phone, Check, CheckCheck, Clock, AlertCircle, Paperclip, X, Trash2, Copy, Edit, Reply } from 'lucide-react';
+import { Send, Video, Mic, MoreHorizontal, Phone, Check, CheckCheck, Clock, AlertCircle, Paperclip, X, Trash2, Copy, Edit, Reply, Camera, StopCircle } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 const EMOJI_REACTIONS = ['❤️', '😂', '👍', '😢', '😮', '🔥'];
@@ -26,7 +27,6 @@ interface MessageModalProps {
 
 
 // --- Sub-component: ChatMessageBubble ---
-// Moved outside MessageModal to fix conditional hook rendering.
 interface ChatMessageBubbleProps {
     message: ChatMessage;
     isOwn: boolean;
@@ -148,6 +148,17 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
     
+    // Camera State
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const cameraStreamRef = useRef<MediaStream | null>(null);
+
+    // Recording State
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- Effects ---
@@ -163,6 +174,15 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
         setEditingMessage(null);
         setIsRecipientTyping(false);
     }, [chatHistory, messageUser]);
+
+    useEffect(() => {
+        return () => {
+             stopCamera();
+             if(isRecording) {
+                 mediaRecorderRef.current?.stop();
+             }
+        }
+    }, []);
     
     useLayoutEffect(() => {
         const scrollEl = scrollContainerRef.current;
@@ -216,6 +236,85 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
         }
     };
     
+    // --- Camera Functions ---
+    const startCamera = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            cameraStreamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+            setIsCameraOpen(true);
+        } catch (err) {
+            console.error("Camera error", err);
+            alert("Could not access camera. Please grant permissions.");
+        }
+    };
+
+    const stopCamera = () => {
+        if (cameraStreamRef.current) {
+            cameraStreamRef.current.getTracks().forEach(track => track.stop());
+            cameraStreamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        setIsCameraOpen(false);
+    };
+
+    const capturePhoto = () => {
+        if (videoRef.current && canvasRef.current) {
+            const video = videoRef.current;
+            const canvas = canvasRef.current;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            if(ctx) {
+                ctx.drawImage(video, 0, 0);
+                const url = canvas.toDataURL('image/png');
+                onSendMessage(chatWith.userId, '', 'image', { url });
+                stopCamera();
+            }
+        }
+    };
+
+    // --- Mic Functions ---
+    const handleMicClick = async () => {
+        if (isRecording) {
+            mediaRecorderRef.current?.stop();
+            setIsRecording(false);
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                mediaRecorderRef.current = mediaRecorder;
+                audioChunksRef.current = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunksRef.current.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                    const url = URL.createObjectURL(audioBlob);
+                     onSendMessage(chatWith.userId, '', 'voice', { 
+                        url, 
+                        duration: '0:05', // Mock duration
+                        waveform: [0.2, 0.4, 0.3, 0.7, 0.5, 0.8, 0.4, 0.2, 0.3] // Mock waveform
+                    });
+                    stream.getTracks().forEach(track => track.stop());
+                };
+
+                mediaRecorder.start();
+                setIsRecording(true);
+            } catch (e) {
+                console.error("Mic error", e);
+                alert("Could not access microphone.");
+            }
+        }
+    };
+
+
     const getRepliedMessage = (id: number): ChatMessage | undefined => {
         return history.find(m => m.id === id);
     };
@@ -235,7 +334,7 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
             <div
-                className={`${cardBg} backdrop-blur-xl ${textColor} rounded-3xl w-full max-w-2xl h-[80vh] border ${borderColor} shadow-2xl flex flex-col`}
+                className={`${cardBg} backdrop-blur-xl ${textColor} rounded-3xl w-full max-w-2xl h-[80vh] border ${borderColor} shadow-2xl flex flex-col overflow-hidden`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className={`border-b ${borderColor} p-4 flex items-center justify-between flex-shrink-0`}>
@@ -256,6 +355,19 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
                     </div>
                 </div>
                 
+                {isCameraOpen && (
+                    <div className="relative w-full bg-black aspect-video flex-shrink-0 flex items-center justify-center overflow-hidden">
+                         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                         <canvas ref={canvasRef} className="hidden" />
+                         <div className="absolute bottom-4 flex items-center gap-6">
+                            <button onClick={stopCamera} className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70"><X size={24} /></button>
+                            <button onClick={capturePhoto} className="p-1 rounded-full border-4 border-white hover:scale-105 transition-all">
+                                <div className="w-10 h-10 bg-white rounded-full"></div>
+                            </button>
+                         </div>
+                    </div>
+                )}
+
                 <div ref={scrollContainerRef} className="flex-grow min-h-0 overflow-y-auto p-4 space-y-4">
                      {hasMore && (
                         <div className="text-center">
@@ -306,7 +418,8 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
                         </div>
                     )}
                      <div className="flex gap-2 items-center">
-                        <button className={`p-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} hover:scale-110 transition-all`}><Paperclip size={20} /></button>
+                        <button onClick={startCamera} className={`p-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} hover:scale-110 transition-all`} title="Camera"><Camera size={20} /></button>
+                        <button className={`p-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} hover:scale-110 transition-all`} title="Attach File"><Paperclip size={20} /></button>
                         <input
                             type="text"
                             value={messageInput}
@@ -315,7 +428,9 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
                             placeholder="Type a message..."
                             className={`flex-1 px-4 py-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
                         />
-                        <button className={`p-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} hover:scale-110 transition-all`}><Mic size={20} /></button>
+                        <button onClick={handleMicClick} className={`p-3 rounded-2xl border ${borderColor} ${isRecording ? 'bg-red-500 text-white animate-pulse' : `bg-black/5 dark:bg-white/5 ${textColor}`} hover:scale-110 transition-all`}>
+                            {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                        </button>
                         <button onClick={handleSend} className={`px-6 py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg`}>
                             {editingMessage ? <Check size={20}/> : <Send size={20} />}
                         </button>

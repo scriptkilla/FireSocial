@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -21,7 +21,8 @@ import {
     INITIAL_FOLLOWING,
     INITIAL_FOLLOWERS,
     INITIAL_CHAT_HISTORY,
-    INITIAL_MARKETPLACE_PRODUCTS
+    INITIAL_MARKETPLACE_PRODUCTS,
+    INITIAL_COMMUNITIES
 } from '../data';
 
 // Components
@@ -51,6 +52,7 @@ import AddProductModal from './AddProductModal';
 import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
 import AIChatbotModal from './AIChatbotModal';
+import AvatarDisplay from './AvatarDisplay';
 
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks';
@@ -66,13 +68,21 @@ export const FireSocial: React.FC = () => {
     const [followers, setFollowers] = useState<UserListItem[]>(INITIAL_FOLLOWERS);
     const [chatHistories, setChatHistories] = useState<Record<number, ChatMessage[]>>(INITIAL_CHAT_HISTORY);
     const [marketplaceProducts, setMarketplaceProducts] = useState<Product[]>(INITIAL_MARKETPLACE_PRODUCTS);
+    const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
 
     // UI states
     const [activePage, setActivePage] = useState<Page>('home');
     const [themeColor, setThemeColor] = useState<ThemeColor>('orange');
     const [darkMode, setDarkMode] = useState(true);
     const [profileTab, setProfileTab] = useState('posts');
+    const [homeSearchQuery, setHomeSearchQuery] = useState('');
     
+    // Pull to Refresh State
+    const [pullStartY, setPullStartY] = useState(0);
+    const [pullMoveY, setPullMoveY] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const pullThreshold = 100;
+
     // Modal states
     const [viewingProfileUsername, setViewingProfileUsername] = useState<string | null>(null);
     const [showFollowList, setShowFollowList] = useState<FollowListType | null>(null);
@@ -107,7 +117,21 @@ export const FireSocial: React.FC = () => {
     const allUserListItems: UserListItem[] = useMemo(() => allUsers.map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: following.some(f => f.id === u.id) })), [allUsers, following]);
 
     const blockedUserIds = useMemo(() => new Set(profile.blockedAccounts.map(u => u.id)), [profile.blockedAccounts]);
-    const filteredPosts = useMemo(() => posts.filter(p => !blockedUserIds.has(p.userId)), [posts, blockedUserIds]);
+    
+    const filteredPosts = useMemo(() => {
+        return posts.filter(p => {
+            if (blockedUserIds.has(p.userId)) return false;
+            if (!homeSearchQuery) return true;
+            const query = homeSearchQuery.toLowerCase();
+            return (
+                p.content.toLowerCase().includes(query) ||
+                p.user.toLowerCase().includes(query) ||
+                p.username.toLowerCase().includes(query) ||
+                (p.category && p.category.toLowerCase().includes(query))
+            );
+        });
+    }, [posts, blockedUserIds, homeSearchQuery]);
+
     const viewingProfile = useMemo(() => allUsers.find(u => u.username === viewingProfileUsername) || profile, [viewingProfileUsername, allUsers, profile]);
 
     // --- EFFECTS ---
@@ -117,6 +141,54 @@ export const FireSocial: React.FC = () => {
 
     // --- HANDLERS ---
     
+    // Pull to Refresh Handlers
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (window.scrollY === 0) {
+            setPullStartY(e.touches[0].clientY);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (pullStartY > 0 && window.scrollY === 0) {
+            const touchY = e.touches[0].clientY;
+            const diff = touchY - pullStartY;
+            if (diff > 0) {
+                // Add resistance
+                setPullMoveY(Math.min(diff * 0.5, 150)); 
+            }
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullMoveY > 80 && !isRefreshing) {
+            setIsRefreshing(true);
+            setPullMoveY(80); // Snap to loading position
+            await refreshFeed();
+        } else {
+            setPullMoveY(0);
+        }
+        setPullStartY(0);
+    };
+
+    const refreshFeed = async () => {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Shuffle posts to simulate updates
+        setPosts(prev => {
+            const shuffled = [...prev];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        });
+        
+        setIsRefreshing(false);
+        setPullMoveY(0);
+    };
+
+
     const handleCreatePost = (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[]) => {
         const newPost: Post = {
             id: Date.now(),
@@ -267,6 +339,10 @@ export const FireSocial: React.FC = () => {
 
         setShowAddProductModal(false);
     };
+    
+    const toggleJoinCommunity = (communityId: number) => {
+        setCommunities(prev => prev.map(c => c.id === communityId ? { ...c, joined: !c.joined } : c));
+    };
 
     const handleViewProfile = (username: string) => {
         setViewingProfileUsername(username);
@@ -279,10 +355,102 @@ export const FireSocial: React.FC = () => {
         setViewingProfileUsername(null);
     };
     
+    const renderStoriesBar = () => {
+        const userStory = INITIAL_STORIES.find(s => s.isYours);
+        const otherStories = INITIAL_STORIES.filter(s => !s.isYours);
+
+        return (
+            <div className="flex gap-4 overflow-x-auto pb-4 mb-2 no-scrollbar">
+                {/* User Story / Create Story */}
+                <button 
+                    onClick={() => userStory && userStory.media.length > 0 ? setViewingStory(userStory) : setShowCreateStory(true)}
+                    className="flex flex-col items-center gap-2 flex-shrink-0"
+                >
+                    <div className={`relative p-1 rounded-full ${userStory && userStory.media.length > 0 ? `bg-gradient-to-tr ${currentTheme.from} ${currentTheme.to}` : `border-2 border-dashed ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}`}>
+                        <div className={`p-0.5 ${cardBg} rounded-full`}>
+                             <AvatarDisplay avatar={profile.avatar} size="w-14 h-14" />
+                        </div>
+                        {(!userStory || userStory.media.length === 0) && (
+                            <div className={`absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 border-2 ${darkMode ? 'border-gray-900' : 'border-white'}`}>
+                                <Plus size={14} />
+                            </div>
+                        )}
+                    </div>
+                    <span className={`text-xs font-medium ${textColor}`}>Your Story</span>
+                </button>
+
+                {/* Other Stories */}
+                {otherStories.map(story => (
+                    <button 
+                        key={story.id}
+                        onClick={() => setViewingStory(story)}
+                        className="flex flex-col items-center gap-2 flex-shrink-0"
+                    >
+                         <div className={`p-1 rounded-full ${story.viewed ? 'bg-gray-600' : 'bg-gradient-to-tr from-yellow-400 to-fuchsia-600'}`}>
+                            <div className={`p-0.5 ${cardBg} rounded-full`}>
+                                 <AvatarDisplay avatar={story.avatar} size="w-14 h-14" />
+                            </div>
+                        </div>
+                        <span className={`text-xs font-medium ${textColor} w-16 truncate text-center`}>{story.user}</span>
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
     const renderPage = () => {
         switch (activePage) {
             case 'home':
-                return <div className="space-y-6">{filteredPosts.map(post => <PostComponent key={post.id} {...postComponentProps} post={post} />)}</div>;
+                return (
+                    <div 
+                        className="space-y-6 touch-pan-y min-h-[80vh]"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                    >
+                         {/* Pull to Refresh Indicator */}
+                        <div 
+                            className={`flex justify-center items-center overflow-hidden transition-[height] duration-200 ease-out ${isRefreshing ? 'h-20' : ''}`}
+                            style={{ height: isRefreshing ? undefined : `${Math.max(0, pullMoveY)}px` }}
+                        >
+                             <div className={`p-3 rounded-full ${cardBg} border ${borderColor} shadow-lg transition-transform duration-200 ${isRefreshing ? 'animate-spin' : ''}`} style={{ transform: !isRefreshing ? `rotate(${pullMoveY * 3}deg)` : undefined }}>
+                                <Loader2 className={currentTheme.text} size={24} />
+                            </div>
+                        </div>
+
+                         {/* Search Bar */}
+                        <div className="relative">
+                            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} size={20} />
+                            <input 
+                                type="text" 
+                                placeholder="Search FireSocial..." 
+                                value={homeSearchQuery}
+                                onChange={(e) => setHomeSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                                className={`w-full pl-12 pr-14 py-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} placeholder-gray-500 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                            />
+                            {homeSearchQuery && (
+                                <button 
+                                    onClick={() => {
+                                        const activeElement = document.activeElement as HTMLElement;
+                                        if (activeElement) activeElement.blur();
+                                    }}
+                                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-lg hover:scale-105 transition-transform`}
+                                >
+                                    <ArrowRight size={18} />
+                                </button>
+                            )}
+                        </div>
+                        {renderStoriesBar()}
+                        {filteredPosts.length > 0 ? (
+                            filteredPosts.map(post => <PostComponent key={post.id} {...postComponentProps} post={post} />)
+                        ) : (
+                            <div className={`text-center py-10 ${textSecondary}`}>
+                                <p>No posts found matching "{homeSearchQuery}"</p>
+                            </div>
+                        )}
+                    </div>
+                );
             case 'explore':
                 return <ExplorePage posts={posts} profile={profile} allUsers={allUserListItems} trendingHashtags={INITIAL_TRENDING_HASHTAGS} following={following} onViewPost={setViewingPost} onViewProfile={handleViewProfile} onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
             case 'messages':
@@ -419,6 +587,25 @@ export const FireSocial: React.FC = () => {
                          <button onClick={() => setShowAIChatbot(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}><Bot size={20} /></button>
                         <button className={`p-3 rounded-xl hover:bg-white/10 text-red-500`}><LogOut size={20} /></button>
                     </div>
+
+                    {/* Trending Topics Widget */}
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                        <h3 className="font-bold mb-4">Trending Topics</h3>
+                        <div className="space-y-4">
+                            {INITIAL_TRENDING_HASHTAGS.map(hashtag => (
+                                <button key={hashtag.tag} onClick={() => alert(`Viewing ${hashtag.tag}`)} className="w-full flex items-center justify-between group">
+                                    <div className="text-left">
+                                        <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{hashtag.tag}</p>
+                                        <p className={`text-xs ${textSecondary}`}>{hashtag.posts.toLocaleString()} posts</p>
+                                    </div>
+                                    <div className={`p-2 rounded-full bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white transition-colors`}>
+                                        <TrendingUp size={16} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
                         <h3 className="font-bold mb-4">Suggestions</h3>
                         <div className="space-y-3">
@@ -433,6 +620,31 @@ export const FireSocial: React.FC = () => {
                             ))}
                         </div>
                         <button onClick={() => setShowSuggestions(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>View All</button>
+                    </div>
+                    
+                    {/* Communities Widget */}
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                        <h3 className="font-bold mb-4 flex items-center gap-2"><Users size={18} /> Communities</h3>
+                        <div className="space-y-4">
+                            {communities.map(group => (
+                                <div key={group.id} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <img src={group.image} alt={group.name} className="w-10 h-10 rounded-lg object-cover" />
+                                        <div>
+                                            <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{group.name}</p>
+                                            <p className={`text-xs ${textSecondary}`}>{group.members.toLocaleString()} members</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => toggleJoinCommunity(group.id)} 
+                                        className={`p-2 rounded-full transition-all ${group.joined ? `${cardBg} border ${borderColor} ${textSecondary}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}
+                                    >
+                                        {group.joined ? <Check size={14} /> : <Plus size={14} />}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <button className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>Explore More</button>
                     </div>
                 </aside>
             </div>

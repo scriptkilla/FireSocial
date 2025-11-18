@@ -1,3 +1,4 @@
+
 export interface Theme {
   from: string;
   to: string;
@@ -343,4 +344,13 @@ export interface ChatMessage {
 export type ActiveCall = {
     type: 'video' | 'voice';
     user: Message;
+}
+
+export interface Community {
+  id: number;
+  name: string;
+  image: string;
+  members: number;
+  joined: boolean;
+  category: string;
 }

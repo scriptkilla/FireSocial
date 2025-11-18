@@ -1,4 +1,5 @@
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product } from './types';
+
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
 const LOGGED_IN_USER_ID = 1001;
@@ -441,6 +442,13 @@ export const INITIAL_TRENDING_HASHTAGS: TrendingHashtag[] = [
 
 export const INITIAL_LIVE_USERS: LiveUser[] = [
     { id: 1002, name: 'Alex Rivera', username: '@alexrivera', avatar: '🎨', viewers: 1200 },
+];
+
+export const INITIAL_COMMUNITIES: Community[] = [
+  { id: 1, name: 'React Developers', image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=200&q=80', members: 12500, joined: true, category: 'Tech' },
+  { id: 2, name: 'Digital Art Showcase', image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=200&q=80', members: 8900, joined: true, category: 'Art' },
+  { id: 3, name: 'Travel & Adventure', image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=200&q=80', members: 45000, joined: false, category: 'Travel' },
+  { id: 4, name: 'Minimalist Design', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=80', members: 3200, joined: false, category: 'Design' },
 ];
 
 export const ALL_USERS_DATA: Profile[] = ALL_USERS_DATA_BASE.map(p => ({...p}));
