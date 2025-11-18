@@ -109,7 +109,16 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
     const handleGenerateReplies = async () => {
         setIsGeneratingReplies(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            // Robust API Key Retrieval
+            const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+            
+            if (!apiKey) {
+                alert("API Key missing. Please add your Google AI API Key in Settings > API Configuration.");
+                setIsGeneratingReplies(false);
+                return;
+            }
+
+            const ai = new GoogleGenAI({ apiKey });
             // Contextualize based on post content and type
             const prompt = `Read this social media post: "${post.content}". 
             Generate 3 short, distinct, and engaging replies (under 15 words each) that I could comment. 
@@ -127,7 +136,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
             }
         } catch (error) {
             console.error("AI Reply Gen Error:", error);
-            alert("Could not generate replies.");
+            alert("Could not generate replies. Check API Key settings.");
         } finally {
             setIsGeneratingReplies(false);
         }

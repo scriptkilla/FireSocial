@@ -547,7 +547,6 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
     };
     const [selectedModel, setSelectedModel] = useState<AIModel>(() => findModelById('gemini-2.5-flash'));
     
-    // Fix: Added a helper function to retrieve the developer's name for a given model ID.
     const getModelDeveloper = (modelId: string): string => {
         for (const family of AI_MODELS) {
             for (const category of family.categories) {
@@ -561,7 +560,25 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
 
 
     useEffect(() => {
-        if (show) { (async () => setApiKeyOk(await (window as any).aistudio.hasSelectedApiKey()))(); }
+        if (show) { 
+             const checkKey = async () => {
+                let hasKey = false;
+                try {
+                    if ((window as any).aistudio?.hasSelectedApiKey) {
+                        hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                    }
+                } catch (e) { console.error(e); }
+                
+                if (!hasKey) {
+                    // Fallback to process.env or localStorage
+                    const envKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined);
+                    const storageKey = localStorage.getItem('apiKey_google_ai');
+                    if (envKey || storageKey) hasKey = true;
+                }
+                setApiKeyOk(hasKey);
+            };
+            checkKey();
+        }
     }, [show]);
 
     const resetForTabChange = (tab: string) => {
@@ -592,12 +609,15 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                                 .some(m => m.id === selectedModel.id);
 
         if (!isGoogleModel) {
-            // Fix: Replaced `selectedModel.developer` with `getModelDeveloper(selectedModel.id)` to correctly retrieve the developer name, as the `developer` property does not exist on the `AIModel` type.
             setError(`Generation with ${selectedModel.name} (${getModelDeveloper(selectedModel.id)}) is not yet supported in this interface. Please select a model from the Gemini Series to proceed.`);
             return;
         }
-
-        if (selectedModel.id.includes('veo')) {
+        
+        // Robust API Key Retrieval
+        const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+        
+        // Only strict check for Veo if using AI Studio wrapper logic, otherwise rely on apiKey
+        if (selectedModel.id.includes('veo') && (window as any).aistudio?.hasSelectedApiKey) {
             const hasKey = await (window as any).aistudio.hasSelectedApiKey();
             if (!hasKey) {
                 await (window as any).aistudio.openSelectKey();
@@ -605,12 +625,15 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 if (!hasKeyAfter) { setError("An API key is required for video generation."); return; }
                 setApiKeyOk(true);
             }
+        } else if (!apiKey && !(window as any).aistudio?.hasSelectedApiKey) {
+             setError("API Key is missing. Please configure it in Settings.");
+             return;
         }
 
         setIsGenerating(true); setGenerationStatus('Initializing...'); setGenerationResult(null); setError(null);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY as string }); // Fallback if strict env key works
             const modelName = selectedModel.id;
             let config: any = { temperature: creativity };
             let contents: any = prompt;
@@ -647,7 +670,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 const link = op.response?.generatedVideos?.[0]?.video?.uri;
                 if (link) {
                     setGenerationStatus('Fetching video file...');
-                    const videoResp = await fetch(`${link}&key=${process.env.API_KEY}`);
+                    const videoResp = await fetch(`${link}&key=${apiKey || process.env.API_KEY}`);
                     const blob = await videoResp.blob();
                     setGenerationResult({ type: 'video', content: { url: URL.createObjectURL(blob) } });
                 } else throw new Error("Video generation failed to return a link.");
@@ -684,7 +707,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
         } catch (e: any) {
             console.error("AI generation error:", e);
             const msg = e.message || "An unknown error occurred.";
-            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please select a valid key."); }
+            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please select a valid key in Settings."); }
             else if (msg.includes("billing")) { setApiKeyOk(false); setError("This model requires a billed project. Please select a different API key."); }
             else setError(msg);
         } finally {
@@ -726,8 +749,18 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 
                 {!apiKeyOk ? ( <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <KeyRound size={48} className={`mx-auto ${currentTheme.text} mb-4`} /><h3 className="text-2xl font-bold mb-2">API Key Required</h3>
-                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, select a Google AI API key. Some models may require a key from a billed Google Cloud project.</p>
-                        <button onClick={async () => { await (window as any).aistudio.openSelectKey(); setApiKeyOk(true); }} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>Select API Key</button>
+                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, you need a Google AI API key. Please configure it in your Settings.</p>
+                        <button onClick={async () => { 
+                             if((window as any).aistudio?.openSelectKey) {
+                                 await (window as any).aistudio.openSelectKey(); 
+                                 setApiKeyOk(true);
+                             } else {
+                                 alert("Please go to Settings -> API Configuration to set your key.");
+                                 onClose();
+                             }
+                        }} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>
+                            Configure API Key
+                        </button>
                         <p className={`text-xs ${textSecondary} mt-4`}>See the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`underline ${currentTheme.hoverText}`}>billing documentation</a>.</p>
                     </div> ) : ( <>
                         <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">

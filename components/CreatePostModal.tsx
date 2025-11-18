@@ -85,7 +85,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         setShowAiMenu(false);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            // Robust API Key Retrieval
+            const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+            
+            if (!apiKey) {
+                alert("API Key missing. Please add your Google AI API Key in Settings > API Configuration.");
+                setIsAiLoading(false);
+                return;
+            }
+
+            const ai = new GoogleGenAI({ apiKey });
             let prompt = "";
             
             if (action === 'fix') {
@@ -106,7 +115,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
             }
         } catch (error) {
             console.error("AI Error:", error);
-            alert("Could not connect to AI. Please check your API configuration.");
+            alert("Could not connect to AI. Please check your API configuration in Settings.");
         } finally {
             setIsAiLoading(false);
         }

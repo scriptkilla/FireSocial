@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Bot, Send, User, Sparkles } from 'lucide-react';
 import { Theme } from '../types';
@@ -29,12 +30,24 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
 
     useEffect(() => {
         if (show) {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const chatInstance = ai.chats.create({
-                model: 'gemini-2.5-flash',
-            });
-            setChat(chatInstance);
-            setHistory([{ role: 'model', text: 'Hello! How can I help you today?' }]);
+            try {
+                // Robust API Key Retrieval
+                const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+                
+                if (apiKey) {
+                    const ai = new GoogleGenAI({ apiKey });
+                    const chatInstance = ai.chats.create({
+                        model: 'gemini-2.5-flash',
+                    });
+                    setChat(chatInstance);
+                    setHistory([{ role: 'model', text: 'Hello! How can I help you today?' }]);
+                } else {
+                    setHistory([{ role: 'model', text: 'Please set your Google AI API Key in Settings > API Configuration to use the chat.' }]);
+                }
+            } catch (e) {
+                console.error(e);
+                setHistory([{ role: 'model', text: 'Error initializing chat. Please check API configuration.' }]);
+            }
         } else {
             setChat(null);
             setHistory([]);
@@ -47,7 +60,12 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
     }, [history]);
 
     const handleSendMessage = async () => {
-        if (!input.trim() || isLoading || !chat) return;
+        if (!input.trim() || isLoading) return;
+
+        if (!chat) {
+            alert("Chat not initialized. Please check your API key.");
+            return;
+        }
 
         const userMessage: ChatMessage = { role: 'user', text: input };
         setHistory(prev => [...prev, userMessage]);
@@ -60,7 +78,7 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
             setHistory(prev => [...prev, modelMessage]);
         } catch (error) {
             console.error("Chatbot error:", error);
-            const errorMessage: ChatMessage = { role: 'model', text: 'Sorry, I encountered an error. Please try again.' };
+            const errorMessage: ChatMessage = { role: 'model', text: 'Sorry, I encountered an error. Please try again or check your API Key.' };
             setHistory(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
@@ -113,9 +131,9 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask me anything..."
                             className={`flex-1 px-4 py-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
-                            disabled={isLoading}
+                            disabled={isLoading || !chat}
                         />
-                        <button type="submit" disabled={isLoading || !input.trim()} className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`}>
+                        <button type="submit" disabled={isLoading || !input.trim() || !chat} className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`}>
                             <Send size={20} />
                         </button>
                     </form>
