@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search } from 'lucide-react';
 import { Profile, Theme, MediaItem } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 import { GoogleGenAI } from "@google/genai";
@@ -17,6 +17,19 @@ interface CreatePostModalProps {
     borderColor: string;
 }
 
+const EMOJIS = ['😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '🤪', '😎', '🥳', '🤔', '🤫', '🙄', '😴', '😭', '😤', '😡', '🤯', '😱', '👍', '👎', '👏', '🙏', '💪', '🔥', '✨', '❤️', '💔', '💯', '🚀'];
+
+const MOCK_GIFS = [
+    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbW5lenZyZHI5OXM2eW95b3h6b3dibW5wZ3AyZ3A0Z3A0Z3A0Z3A0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif',
+    'https://media.giphy.com/media/l0amJbWGDek2eZwVq/giphy.gif',
+    'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+    'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif',
+    'https://media.giphy.com/media/xT0GqgeTVaAdWZM7F6/giphy.gif',
+    'https://media.giphy.com/media/l41lFw057lAJcYt0Y/giphy.gif',
+    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
+    'https://media.giphy.com/media/d31w24pskwn843Qs/giphy.gif'
+];
+
 const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const { show, onClose, onCreatePost, profile, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
     const [content, setContent] = useState('');
@@ -25,8 +38,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const [pollOptions, setPollOptions] = useState(['', '']);
     const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
     
-    // AI State
+    // UI State
     const [showAiMenu, setShowAiMenu] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Camera State
@@ -78,6 +93,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         setContent('');
         setMedia([]);
         setShowPoll(false);
+        setShowEmojiPicker(false);
+        setShowGifPicker(false);
+        setShowAiMenu(false);
         setPollOptions(['', '']);
         onClose();
     }
@@ -92,6 +110,16 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         if (pollOptions.length < 4) {
             setPollOptions([...pollOptions, '']);
         }
+    };
+
+    const handleAddEmoji = (emoji: string) => {
+        setContent(prev => prev + emoji);
+        setShowEmojiPicker(false);
+    };
+
+    const handleAddGif = (url: string) => {
+        setMedia([...media, { type: 'image', url }]);
+        setShowGifPicker(false);
     };
 
     // --- Camera Functions ---
@@ -288,17 +316,44 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                     )}
 
                     {!isCameraOpen && (
-                    <div className={`flex items-center justify-between mt-4 pt-4 border-t ${borderColor}`}>
+                    <div className={`flex items-center justify-between mt-4 pt-4 border-t ${borderColor} relative`}>
                         <div className="flex gap-2 text-gray-400">
                             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,video/*" className="hidden" />
                             <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-white/10 rounded-full transition-colors text-green-400" title="Add Media"><ImageIcon size={20} /></button>
                             <button onClick={startCamera} className="p-2 hover:bg-white/10 rounded-full transition-colors text-blue-400" title="Use Camera"><Camera size={20} /></button>
+                            
+                            {/* GIF Button */}
+                            <div className="relative">
+                                <button 
+                                    onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); setShowAiMenu(false); }}
+                                    className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showGifPicker ? currentTheme.text : 'text-pink-400'}`}
+                                    title="Add GIF"
+                                >
+                                    <Sticker size={20} />
+                                </button>
+                                {showGifPicker && (
+                                    <div className={`absolute bottom-full mb-2 left-0 w-72 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-3 z-20 animate-in slide-in-from-bottom-2`}>
+                                        <div className="relative mb-2">
+                                            <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} />
+                                            <input type="text" placeholder="Search GIFs..." className={`w-full pl-9 pr-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 rounded-lg border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
+                                            {MOCK_GIFS.map((gif, i) => (
+                                                <button key={i} onClick={() => handleAddGif(gif)} className="hover:opacity-80 transition-opacity rounded-md overflow-hidden aspect-square">
+                                                    <img src={gif} alt="gif" className="w-full h-full object-cover" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             <button onClick={() => setShowPoll(!showPoll)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-orange-400" title="Create Poll"><BarChart2 size={20} /></button>
                             
                             {/* AI Button */}
                             <div className="relative">
                                 <button 
-                                    onClick={() => setShowAiMenu(!showAiMenu)} 
+                                    onClick={() => { setShowAiMenu(!showAiMenu); setShowEmojiPicker(false); setShowGifPicker(false); }} 
                                     className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showAiMenu ? currentTheme.text : 'text-purple-400'}`}
                                     title="AI Assist"
                                     disabled={!content.trim()}
@@ -306,7 +361,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <Wand2 size={20} />
                                 </button>
                                 {showAiMenu && (
-                                    <div className={`absolute bottom-full mb-2 left-0 w-48 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-1 z-10 flex flex-col animate-in slide-in-from-bottom-2`}>
+                                    <div className={`absolute bottom-full mb-2 left-0 w-48 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-1 z-20 flex flex-col animate-in slide-in-from-bottom-2`}>
                                         <button onClick={() => handleAiAction('fix')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
                                             <CheckIcon size={14} /> Fix Grammar
                                         </button>
@@ -320,7 +375,27 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                 )}
                             </div>
 
-                            <button className="p-2 hover:bg-white/10 rounded-full transition-colors text-yellow-400"><Smile size={20} /></button>
+                            {/* Emoji Button */}
+                            <div className="relative">
+                                <button 
+                                    onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); setShowAiMenu(false); }}
+                                    className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showEmojiPicker ? currentTheme.text : 'text-yellow-400'}`}
+                                    title="Add Emoji"
+                                >
+                                    <Smile size={20} />
+                                </button>
+                                {showEmojiPicker && (
+                                    <div className={`absolute bottom-full mb-2 left-0 w-64 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-2 z-20 animate-in slide-in-from-bottom-2`}>
+                                        <div className="grid grid-cols-6 gap-1">
+                                            {EMOJIS.map(emoji => (
+                                                <button key={emoji} onClick={() => handleAddEmoji(emoji)} className="p-2 text-xl hover:bg-white/10 rounded-lg transition-colors">
+                                                    {emoji}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <button 
                             onClick={handleSubmit}

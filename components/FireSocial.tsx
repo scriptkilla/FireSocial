@@ -8,7 +8,6 @@ import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
 import { 
-    LOGGED_IN_USER_USERNAME,
     ALL_USERS_DATA,
     INITIAL_POSTS,
     INITIAL_NOTIFICATIONS,
@@ -24,6 +23,9 @@ import {
     INITIAL_MARKETPLACE_PRODUCTS,
     INITIAL_COMMUNITIES
 } from '../data';
+
+// Auth
+import { useAuth } from './AuthContext';
 
 // Components
 import PostComponent from './PostComponent';
@@ -59,9 +61,13 @@ type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'mar
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
 export const FireSocial: React.FC = () => {
+    // --- AUTH CONTEXT ---
+    const { user: authUser, logout } = useAuth();
+
     // --- STATE MANAGEMENT ---
     // Data states
-    const [profile, setProfile] = useState<Profile>(() => ALL_USERS_DATA.find(u => u.username === LOGGED_IN_USER_USERNAME)!);
+    // Initialize profile with the authenticated user
+    const [profile, setProfile] = useState<Profile>(authUser!); 
     const [allUsers, setAllUsers] = useState<Profile[]>(ALL_USERS_DATA);
     const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
     const [following, setFollowing] = useState<UserListItem[]>(INITIAL_FOLLOWING);
@@ -138,6 +144,11 @@ export const FireSocial: React.FC = () => {
     useEffect(() => {
         document.documentElement.classList.toggle('dark', darkMode);
     }, [darkMode]);
+    
+    // Sync local profile state if auth user changes (though usually we just unmount)
+    useEffect(() => {
+        if (authUser) setProfile(authUser);
+    }, [authUser]);
 
     // --- HANDLERS ---
     
@@ -585,7 +596,7 @@ export const FireSocial: React.FC = () => {
                         <button onClick={() => setDarkMode(!darkMode)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}>{darkMode ? <Sun size={20} /> : <Moon size={20} />}</button>
                         <button onClick={() => setShowAnalytics(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}><BarChart2 size={20} /></button>
                          <button onClick={() => setShowAIChatbot(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}><Bot size={20} /></button>
-                        <button className={`p-3 rounded-xl hover:bg-white/10 text-red-500`}><LogOut size={20} /></button>
+                        <button onClick={logout} className={`p-3 rounded-xl hover:bg-white/10 text-red-500`} title="Log Out"><LogOut size={20} /></button>
                     </div>
 
                     {/* Trending Topics Widget */}
