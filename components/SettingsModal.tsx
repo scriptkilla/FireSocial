@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
-import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService, AIModelInfo } from '../constants';
+import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService } from '../constants';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELP CENTER DATA ---
@@ -221,26 +221,24 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
     const [customBaseUrl, setCustomBaseUrl] = useState('');
     const [connectionStatus, setConnectionStatus] = useState<'untested' | 'testing' | 'valid' | 'invalid'>('untested');
     
-    const availableCategories = API_VERSIONS[selectedService] || [];
-    const selectedCategory = availableCategories.find(cat => cat.models.some(m => m.id === apiVersion));
-    const selectedModelDetails = selectedCategory?.models.find(m => m.id === apiVersion);
+    const availableVersions = API_VERSIONS[selectedService] || [];
+    const selectedVersionDetails = availableVersions.find(v => v.name === apiVersion);
 
     useEffect(() => {
         const config = API_CONFIG[selectedService];
-        const savedKey = localStorage.getItem(config.storageKey) || '';
-        setApiKey(savedKey);
-        setConnectionStatus(savedKey ? 'untested' : 'invalid');
-
+        
         if (selectedService !== 'Custom') {
-            const categories = API_VERSIONS[selectedService] || [];
-            const allModels = categories.flatMap(c => c.models);
+            const versions = API_VERSIONS[selectedService] || [];
+            const savedKey = localStorage.getItem(config.storageKey);
             const savedVersion = localStorage.getItem(config.storageKey.replace('apiKey', 'apiVersion'));
             
-            const validSavedVersion = allModels.find(v => v.id === savedVersion);
+            setApiKey(savedKey || '');
+
+            const validSavedVersion = versions.find(v => v.name === savedVersion);
             if (validSavedVersion) {
                 setApiVersion(savedVersion!);
-            } else if (allModels.length > 0) {
-                const defaultVersion = allModels[0].id;
+            } else if (versions.length > 0) {
+                const defaultVersion = versions[0].name;
                 setApiVersion(defaultVersion);
                 localStorage.setItem(config.storageKey.replace('apiKey', 'apiVersion'), defaultVersion);
             } else {
@@ -248,11 +246,15 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                 localStorage.removeItem(config.storageKey.replace('apiKey', 'apiVersion'));
             }
         } else {
+            const savedKey = localStorage.getItem(config.storageKey);
             const savedBaseUrl = localStorage.getItem(config.baseUrlKey!);
             const savedModelName = localStorage.getItem(config.modelNameKey!);
+            setApiKey(savedKey || '');
             setCustomBaseUrl(savedBaseUrl || '');
             setCustomModelName(savedModelName || '');
         }
+
+        setConnectionStatus('untested');
     }, [selectedService]);
 
     const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -287,6 +289,7 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
             let isValid = false;
             if (selectedService === 'Custom') {
                 try {
+                    // Basic validation for URL and key
                     isValid = apiKey.trim().length > 10 && new URL(customBaseUrl.trim()).protocol.startsWith('http');
                 } catch (e) {
                     isValid = false;
@@ -294,7 +297,12 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
             } else {
                 isValid = apiKey.trim().length > 10;
             }
-            setConnectionStatus(isValid ? 'valid' : 'invalid');
+
+            if (isValid) {
+                setConnectionStatus('valid');
+            } else {
+                setConnectionStatus('invalid');
+            }
         }, 1500);
     };
 
@@ -352,27 +360,23 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                     </>
                 ) : (
                     <div>
-                        <label className={`block mb-2 text-sm ${textSecondary}`}>Model</label>
+                        <label className={`block mb-2 text-sm ${textSecondary}`}>Version</label>
                         <select
                             value={apiVersion}
                             onChange={handleApiVersionChange}
                             className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
-                            disabled={availableCategories.length === 0}
+                            disabled={availableVersions.length === 0}
                         >
-                            {availableCategories.map(category => (
-                                <optgroup key={category.name} label={category.name}>
-                                    {category.models.map(model => (
-                                        <option key={model.id} value={model.id}>
-                                            {model.name}
-                                        </option>
-                                    ))}
-                                </optgroup>
+                            {availableVersions.map(version => (
+                                <option key={version.name} value={version.name}>
+                                    {version.name}
+                                </option>
                             ))}
-                            {availableCategories.length === 0 && <option>No models available</option>}
+                            {availableVersions.length === 0 && <option>No versions available</option>}
                         </select>
-                        {selectedModelDetails && (
+                        {selectedVersionDetails && (
                             <p className={`text-xs mt-2 ${textSecondary}`}>
-                                {selectedModelDetails.description}
+                                {selectedVersionDetails.description}
                             </p>
                         )}
                     </div>

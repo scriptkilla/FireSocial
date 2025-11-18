@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Bot, Send, User, Sparkles } from 'lucide-react';
 import { Theme } from '../types';
 import { GoogleGenAI, Chat } from '@google/genai';
-import { API_CONFIG, API_VERSIONS, ApiService, AIModelInfo } from '../constants';
 import AvatarDisplay from './AvatarDisplay';
 
 interface AIChatbotModalProps {
@@ -20,90 +19,26 @@ type ChatMessage = {
     text: string;
 };
 
-// --- AI Router Logic (Scoped to this component) ---
-const getConfiguredServices = (): ApiService[] => {
-    return (Object.keys(API_CONFIG) as ApiService[]).filter(service =>
-        localStorage.getItem(API_CONFIG[service].storageKey)
-    );
-};
-
-const getModelProvider = (modelId: string): ApiService | null => {
-    for (const service of Object.keys(API_VERSIONS) as ApiService[]) {
-        for (const category of API_VERSIONS[service]) {
-            if (category.models.some(m => m.id === modelId)) {
-                return service;
-            }
-        }
-    }
-    return null;
-};
-
-const getBestChatModel = (configuredServices: ApiService[]): AIModelInfo => {
-    const CHAT_MODEL_PRIORITY = [
-        'gemini-2.5-flash',
-        'claude-haiku-4.5',
-        'gpt-4o-mini',
-        'gemini-2.5-pro',
-    ];
-    
-    for (const modelId of CHAT_MODEL_PRIORITY) {
-        const provider = getModelProvider(modelId);
-        if (provider && configuredServices.includes(provider)) {
-            for (const category of API_VERSIONS[provider]) {
-                const model = category.models.find(m => m.id === modelId);
-                if (model) return model;
-            }
-        }
-    }
-    // Fallback to default Gemini Flash model info
-    return { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Default chat model.' };
-};
-
 const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
     const { show, onClose, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
     const [chat, setChat] = useState<Chat | null>(null);
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (show) {
-            const configuredServices = getConfiguredServices();
-            if (configuredServices.length === 0) {
-                setError("No AI API key configured. Please add one in Settings > API Configuration.");
-                setHistory([{ role: 'model', text: 'AI Chatbot is offline. Please configure an API key.' }]);
-                return;
-            }
-            
-            const bestModel = getBestChatModel(configuredServices);
-            const provider = getModelProvider(bestModel.id);
-
-            if (provider !== 'Google AI') {
-                setError(`Chat is configured to use ${bestModel.name}, but only Google AI models are supported for execution.`);
-                setHistory([{ role: 'model', text: `Hello! I'm ready to chat using ${bestModel.name}. However, I can't send messages with this model in this environment. Please select a Google AI model in your settings to proceed.` }]);
-                return;
-            }
-
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-                const chatInstance = ai.chats.create({
-                    model: bestModel.id,
-                });
-                setChat(chatInstance);
-                setHistory([{ role: 'model', text: `Hello! I'm using ${bestModel.name}. How can I help you?` }]);
-                setError(null);
-            } catch (e: any) {
-                setError("Failed to initialize chat. Please check your Google AI API Key.");
-                setHistory([{ role: 'model', text: 'Could not connect to the AI. Please verify your API key in settings.' }]);
-            }
-
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const chatInstance = ai.chats.create({
+                model: 'gemini-2.5-flash',
+            });
+            setChat(chatInstance);
+            setHistory([{ role: 'model', text: 'Hello! How can I help you today?' }]);
         } else {
             setChat(null);
             setHistory([]);
             setInput('');
-            setError(null);
         }
     }, [show]);
 
@@ -112,7 +47,7 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
     }, [history]);
 
     const handleSendMessage = async () => {
-        if (!input.trim() || isLoading || !chat || error) return;
+        if (!input.trim() || isLoading || !chat) return;
 
         const userMessage: ChatMessage = { role: 'user', text: input };
         setHistory(prev => [...prev, userMessage]);
@@ -176,11 +111,11 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={error ? "Chat disabled." : "Ask me anything..."}
+                            placeholder="Ask me anything..."
                             className={`flex-1 px-4 py-3 bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
-                            disabled={isLoading || !!error}
+                            disabled={isLoading}
                         />
-                        <button type="submit" disabled={isLoading || !input.trim() || !!error} className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`}>
+                        <button type="submit" disabled={isLoading || !input.trim()} className={`p-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-semibold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-50`}>
                             <Send size={20} />
                         </button>
                     </form>
