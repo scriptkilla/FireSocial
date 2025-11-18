@@ -18,7 +18,7 @@ interface PostComponentProps {
     messages: Message[];
     allUsers: UserListItem[];
     // Handlers
-    onReaction: (postId: number, reactionType: string | null) => void;
+    onReaction: (postId: number, reactionType: string) => void;
     onBookmark: (postId: number) => void;
     onDelete: (postId: number) => void;
     onViewPost: (post: Post) => void;
@@ -70,6 +70,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 const PostComponent: React.FC<PostComponentProps> = (props) => {
     const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
+    const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [inlineComment, setInlineComment] = useState('');
     const [inlineCommentMentionQuery, setInlineCommentMentionQuery] = useState<string | null>(null);
     const inlineCommentInputRef = useRef<HTMLInputElement>(null);
@@ -130,7 +131,6 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const isOwnPost = post.userId === profile.id;
     const hasPurchased = profile.purchasedPostIds?.includes(post.id);
     const isLocked = post.isPaid && !isOwnPost && !hasPurchased;
-    const userReactionData = post.userReaction ? reactions.find(r => r.name === post.userReaction) : null;
 
     return (
         <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
@@ -228,64 +228,21 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     
                     {/* Post Actions */}
                     <div className="flex items-center justify-between">
-                        <div className="flex"> {/* Container for left-side actions */}
-                            
-                            {/* Like/Reaction Button Group */}
-                            <div className="relative group">
-                                {/* Picker that appears on hover */}
-                                <div className={`absolute bottom-full mb-2 -ml-2 p-1.5 ${cardBg} backdrop-blur-xl rounded-full border ${borderColor} shadow-xl flex gap-1 transition-all duration-300 scale-95 opacity-0 pointer-events-none group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto`}>
-                                    {reactions.map(reaction => (
-                                    <button 
-                                        key={reaction.name} 
-                                        onClick={() => onReaction(post.id, reaction.name)} 
-                                        className="text-3xl p-1 rounded-full hover:bg-white/10 transition-transform hover:scale-125"
-                                        title={reaction.name}
-                                    >
-                                        {reaction.emoji}
-                                    </button>
-                                    ))}
-                                </div>
-
-                                {/* Main Like Button */}
-                                <button 
-                                    onClick={() => onReaction(post.id, 'like')}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 ease-in-out active:scale-95 ${userReactionData ? userReactionData.color : textSecondary} hover:bg-red-500/10`}
-                                >
-                                    {userReactionData ? (
-                                    <span className="text-xl -ml-1 -mr-1">{userReactionData.emoji}</span>
-                                    ) : (
-                                    <Heart size={20} />
-                                    )}
-                                    <span className="font-semibold text-sm">{post.likes}</span>
-                                </button>
-                            </div>
-
-                            {/* Comment Button */}
-                            <button 
-                                onClick={() => onViewComments(post)} 
-                                className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 ease-in-out active:scale-95 ${textSecondary} hover:text-blue-500 hover:bg-blue-500/10`}
-                            >
-                                <MessageSquare size={20} />
-                                <span className="font-semibold text-sm">{post.comments}</span>
-                            </button>
-
-                            {/* Share Button */}
-                            <button 
-                                onClick={() => onShare(post)} 
-                                className={`flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-200 ease-in-out active:scale-95 ${textSecondary} hover:text-green-500 hover:bg-green-500/10`}
-                            >
-                                <Share2 size={20} />
-                                <span className="font-semibold text-sm">{post.shares}</span>
-                            </button>
-                        </div>
-
-                        {/* Bookmark Button */}
-                        <button 
-                            onClick={() => onBookmark(post.id)} 
-                            className={`p-3 rounded-full transition-all duration-200 ease-in-out active:scale-95 ${post.bookmarked ? 'text-yellow-500' : textSecondary} hover:bg-yellow-500/10`}
-                        >
-                            <Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} />
+                    <div className="flex gap-6">
+                        <div className="relative">
+                        <button onClick={() => setShowReactionPicker(prev => !prev)} className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all`}>
+                            {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} />}<span>{post.likes}</span>
                         </button>
+                        {showReactionPicker && (
+                            <div className={`absolute bottom-full mb-2 ${cardBg} backdrop-blur-xl rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
+                            {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
+                            </div>
+                        )}
+                        </div>
+                        <button onClick={() => onViewComments(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><MessageSquare size={20} /><span>{post.comments}</span></button>
+                        <button onClick={() => onShare(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><Share2 size={20} /><span>{post.shares}</span></button>
+                    </div>
+                    <button onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
                     </div>
                     
                     {/* Comment Section */}
