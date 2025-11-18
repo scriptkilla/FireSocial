@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { X, Image as ImageIcon, Video, BarChart2, UserPlus, MapPin, Globe, Users } from 'lucide-react';
 import { Profile, Theme } from '../types';
