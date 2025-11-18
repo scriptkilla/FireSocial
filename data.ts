@@ -449,6 +449,10 @@ export const INITIAL_COMMUNITIES: Community[] = [
   { id: 2, name: 'Digital Art Showcase', image: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?w=200&q=80', members: 8900, joined: true, category: 'Art' },
   { id: 3, name: 'Travel & Adventure', image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=200&q=80', members: 45000, joined: false, category: 'Travel' },
   { id: 4, name: 'Minimalist Design', image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&q=80', members: 3200, joined: false, category: 'Design' },
+  { id: 5, name: 'Indie Game Devs', image: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?w=200&q=80', members: 15400, joined: false, category: 'Gaming' },
+  { id: 6, name: 'Startup Founders', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=200&q=80', members: 6700, joined: false, category: 'Business' },
+  { id: 7, name: 'Photography Tips', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&q=80', members: 28900, joined: true, category: 'Photography' },
+  { id: 8, name: 'AI Enthusiasts', image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=200&q=80', members: 42000, joined: false, category: 'Tech' },
 ];
 
 export const ALL_USERS_DATA: Profile[] = ALL_USERS_DATA_BASE.map(p => ({...p}));

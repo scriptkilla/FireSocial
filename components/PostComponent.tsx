@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem } from '../types';
 import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock } from 'lucide-react';
@@ -73,12 +74,19 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [inlineComment, setInlineComment] = useState('');
     const [inlineCommentMentionQuery, setInlineCommentMentionQuery] = useState<string | null>(null);
+    const [activeButton, setActiveButton] = useState<string | null>(null);
     const inlineCommentInputRef = useRef<HTMLInputElement>(null);
 
     const handleMenuClick = (e: React.MouseEvent, action: () => void) => {
         e.stopPropagation();
         action();
         setShowPostOptions(false);
+    };
+
+    const handleButtonClick = (buttonId: string, callback: () => void) => {
+        setActiveButton(buttonId);
+        setTimeout(() => setActiveButton(null), 150);
+        callback();
     };
 
     const handleAddInlineComment = () => {
@@ -230,19 +238,43 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     <div className="flex items-center justify-between">
                     <div className="flex gap-6">
                         <div className="relative">
-                        <button onClick={() => setShowReactionPicker(prev => !prev)} className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all`}>
-                            {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} />}<span>{post.likes}</span>
+                        <button 
+                            onClick={() => handleButtonClick('like', () => setShowReactionPicker(prev => !prev))} 
+                            className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all duration-200 ${activeButton === 'like' ? 'scale-90' : ''}`}
+                        >
+                            {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} className={activeButton === 'like' ? 'fill-red-500 text-red-500' : ''} />}
+                            <span>{post.likes}</span>
                         </button>
                         {showReactionPicker && (
-                            <div className={`absolute bottom-full mb-2 bg-white dark:bg-gray-800 rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
-                            {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
+                            <div className={`absolute bottom-full mb-2 bg-white dark:bg-gray-800 rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2 z-10 animate-in zoom-in duration-200 origin-bottom-left`}>
+                            {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all hover:animate-bounce">{reaction.emoji}</button>))}
                             </div>
                         )}
                         </div>
-                        <button onClick={() => onViewComments(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><MessageSquare size={20} /><span>{post.comments}</span></button>
-                        <button onClick={() => onShare(post)} className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-colors`}><Share2 size={20} /><span>{post.shares}</span></button>
+                        
+                        <button 
+                            onClick={() => handleButtonClick('comment', () => onViewComments(post))} 
+                            className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-all duration-200 hover:scale-110 ${activeButton === 'comment' ? 'scale-90 text-blue-500' : ''}`}
+                        >
+                            <MessageSquare size={20} className={activeButton === 'comment' ? 'fill-current' : ''} />
+                            <span>{post.comments}</span>
+                        </button>
+                        
+                        <button 
+                            onClick={() => handleButtonClick('share', () => onShare(post))} 
+                            className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-all duration-200 hover:scale-110 ${activeButton === 'share' ? 'scale-90 text-green-500' : ''}`}
+                        >
+                            <Share2 size={20} className={activeButton === 'share' ? 'fill-current' : ''} />
+                            <span>{post.shares}</span>
+                        </button>
                     </div>
-                    <button onClick={() => onBookmark(post.id)} className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all`}><Bookmark size={20} fill={post.bookmarked ? 'currentColor' : 'none'} /></button>
+                    
+                    <button 
+                        onClick={() => handleButtonClick('bookmark', () => onBookmark(post.id))} 
+                        className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all duration-200 ${activeButton === 'bookmark' ? 'scale-90' : ''}`}
+                    >
+                        <Bookmark size={20} fill={post.bookmarked || activeButton === 'bookmark' ? 'currentColor' : 'none'} />
+                    </button>
                     </div>
                     
                     {/* Comment Section */}

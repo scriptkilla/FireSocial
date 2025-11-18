@@ -15,6 +15,7 @@ interface CommentModalProps {
     onDeleteComment: (postId: number, commentId: number) => void;
     onEditComment: (postId: number, commentId: number, newText: string) => void;
     allUsers: UserListItem[];
+    onViewProfile: (username: string) => void;
     // UI Props
     currentTheme: Theme;
     cardBg: string;
@@ -24,7 +25,7 @@ interface CommentModalProps {
 }
 
 const CommentModal: React.FC<CommentModalProps> = (props) => {
-    const { post, profile, onClose, onAddComment, onLikeComment, onDeleteComment, onEditComment, currentTheme, cardBg, textColor, textSecondary, borderColor, allUsers } = props;
+    const { post, profile, onClose, onAddComment, onLikeComment, onDeleteComment, onEditComment, currentTheme, cardBg, textColor, textSecondary, borderColor, allUsers, onViewProfile } = props;
     const [commentInput, setCommentInput] = useState('');
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [commentMentionQuery, setCommentMentionQuery] = useState<string | null>(null);
@@ -164,6 +165,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                                 onDelete={() => onDeleteComment(post.id, comment.id)}
                                 onEdit={(newText) => onEditComment(post.id, comment.id, newText)}
                                 onReply={handleReply}
+                                onViewProfile={onViewProfile}
                                 textColor={textColor}
                                 textSecondary={textSecondary}
                                 currentTheme={currentTheme}

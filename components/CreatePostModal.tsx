@@ -30,6 +30,8 @@ const MOCK_GIFS = [
     'https://media.giphy.com/media/d31w24pskwn843Qs/giphy.gif'
 ];
 
+const CHARACTER_LIMIT = 300;
+
 const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const { show, onClose, onCreatePost, profile, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
     const [content, setContent] = useState('');
@@ -51,6 +53,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const streamRef = useRef<MediaStream | null>(null);
     
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const remainingChars = CHARACTER_LIMIT - content.length;
+    const isOverLimit = remainingChars < 0;
 
     useEffect(() => {
         return () => {
@@ -74,7 +79,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     };
 
     const handleSubmit = () => {
-        if (!content.trim() && media.length === 0 && !showPoll) return;
+        if ((!content.trim() && media.length === 0 && !showPoll) || isOverLimit) return;
         
         const type = showPoll ? 'poll' : 'post';
         const validPollOptions = pollOptions.filter(o => o.trim() !== '');
@@ -257,8 +262,12 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     placeholder="What's on your mind?"
-                                    className={`w-full bg-transparent ${textColor} placeholder-gray-500 resize-none focus:outline-none text-lg min-h-[120px]`}
+                                    className={`w-full bg-transparent ${textColor} placeholder-gray-500 resize-none focus:outline-none text-lg min-h-[120px] pb-6 pr-2`}
                                 />
+                                <div className={`absolute bottom-2 right-2 text-xs font-medium pointer-events-none transition-colors ${isOverLimit ? 'text-red-500 font-bold' : textSecondary}`}>
+                                    {remainingChars}
+                                </div>
+
                                 {isAiLoading && (
                                     <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-lg">
                                         <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${cardBg} border ${borderColor} shadow-lg`}>
@@ -399,7 +408,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                         </div>
                         <button 
                             onClick={handleSubmit}
-                            disabled={!content.trim() && media.length === 0 && !showPoll}
+                            disabled={(!content.trim() && media.length === 0 && !showPoll) || isOverLimit}
                             className={`px-6 py-2 rounded-full font-bold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             Post

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Comment, Theme, Profile } from '../types';
 import { Heart, Edit, Trash2 } from 'lucide-react';
@@ -10,12 +11,13 @@ interface CommentComponentProps {
     onDelete: () => void;
     onEdit: (newText: string) => void;
     onReply: (username: string) => void;
+    onViewProfile: (username: string) => void;
     textColor: string;
     textSecondary: string;
     currentTheme: Theme;
 }
 
-const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, onLike, onDelete, onEdit, onReply, textColor, textSecondary, currentTheme }) => {
+const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, onLike, onDelete, onEdit, onReply, onViewProfile, textColor, textSecondary, currentTheme }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(comment.text);
 
@@ -30,11 +32,15 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
 
     return (
         <div className="flex items-start gap-3">
-            <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
+            <button onClick={() => onViewProfile(comment.username)} className="hover:scale-105 transition-transform">
+                <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
+            </button>
             <div className="flex-1">
                 <div className="bg-black/5 dark:bg-white/5 p-3 rounded-2xl">
                     <div className="flex items-center justify-between">
-                        <p className={`font-semibold text-sm ${textColor}`}>{comment.username}</p>
+                        <button onClick={() => onViewProfile(comment.username)} className={`font-semibold text-sm ${textColor} hover:underline`}>
+                            {comment.username}
+                        </button>
                         <p className={`text-xs ${textSecondary}`}>
                           {comment.time}
                           {comment.edited && <span className="italic"> (edited)</span>}

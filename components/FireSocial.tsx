@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
 // Types and Constants
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community } from '../types';
@@ -55,9 +55,11 @@ import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
 import AIChatbotModal from './AIChatbotModal';
 import AvatarDisplay from './AvatarDisplay';
+import CommunitiesModal from './CommunitiesModal';
+import CommunityPage from './CommunityPage';
 
 
-type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks';
+type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
 export const FireSocial: React.FC = () => {
@@ -91,6 +93,7 @@ export const FireSocial: React.FC = () => {
 
     // Modal states
     const [viewingProfileUsername, setViewingProfileUsername] = useState<string | null>(null);
+    const [viewingCommunity, setViewingCommunity] = useState<Community | null>(null);
     const [showFollowList, setShowFollowList] = useState<FollowListType | null>(null);
     const [showSettings, setShowSettings] = useState(false);
     const [showEditProfile, setShowEditProfile] = useState(false);
@@ -110,6 +113,13 @@ export const FireSocial: React.FC = () => {
     const [showAICreator, setShowAICreator] = useState(false);
     const [showGameCreator, setShowGameCreator] = useState(false);
     const [showAIChatbot, setShowAIChatbot] = useState(false);
+    const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
+
+    // Widget Layout State
+    const [widgetOrder, setWidgetOrder] = useState<string[]>(['trending', 'suggestions', 'communities']);
+    const [dragEnabledIndex, setDragEnabledIndex] = useState<number | null>(null);
+    const dragItem = useRef<number | null>(null);
+    const dragNode = useRef<HTMLDivElement | null>(null);
 
 
     // --- DERIVED STATE & MEMOS ---
@@ -139,6 +149,8 @@ export const FireSocial: React.FC = () => {
     }, [posts, blockedUserIds, homeSearchQuery]);
 
     const viewingProfile = useMemo(() => allUsers.find(u => u.username === viewingProfileUsername) || profile, [viewingProfileUsername, allUsers, profile]);
+    
+    const unreadNotificationsCount = INITIAL_NOTIFICATIONS.filter(n => !n.read).length;
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -185,18 +197,78 @@ export const FireSocial: React.FC = () => {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Shuffle posts to simulate updates
-        setPosts(prev => {
-            const shuffled = [...prev];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
-        });
+        // Select a random user (not the current profile)
+        const availableUsers = allUsers.filter(u => u.id !== profile.id);
+        const randomUser = availableUsers[Math.floor(Math.random() * availableUsers.length)];
+        
+        const randomContent = [
+             "Just spotted this amazing view! 🌅",
+             "Who else is working on something cool this weekend?",
+             "AI is changing the game rapidly. Thoughts? 🤖",
+             "Coffee time! ☕ What's your go-to order?",
+             "Just pushed a new update. Check it out! 🚀",
+             "Can't believe how fast this week went by! 😅",
+             "Exploring some new tech stacks today. #coding #devlife",
+             "The community here is absolutely on fire! 🔥"
+        ];
+        const randomText = randomContent[Math.floor(Math.random() * randomContent.length)];
+
+        const newPost: Post = {
+            id: Date.now(),
+            userId: randomUser.id,
+            user: randomUser.name,
+            username: randomUser.username,
+            avatar: randomUser.avatar,
+            content: randomText,
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            time: 'Just now',
+            reactions: {},
+            userReaction: null,
+            bookmarked: false,
+            views: 0,
+            category: 'Lifestyle'
+        };
+
+        setPosts(prev => [newPost, ...prev]);
         
         setIsRefreshing(false);
         setPullMoveY(0);
+    };
+    
+    // Drag and Drop Handlers for Widgets
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        dragItem.current = index;
+        dragNode.current = e.currentTarget as HTMLDivElement;
+        e.dataTransfer.effectAllowed = 'move';
+        // Add opacity to the dragged element
+        setTimeout(() => {
+            if (dragNode.current) dragNode.current.classList.add('opacity-50');
+        }, 0);
+    };
+
+    const handleDragEnter = (e: React.DragEvent, index: number) => {
+        e.preventDefault(); // Necessary to allow dropping
+        if (dragItem.current === null || dragItem.current === index) return;
+        
+        const newOrder = [...widgetOrder];
+        const draggedItemContent = newOrder[dragItem.current];
+        
+        // Remove from old position
+        newOrder.splice(dragItem.current, 1);
+        // Insert at new position
+        newOrder.splice(index, 0, draggedItemContent);
+        
+        dragItem.current = index;
+        setWidgetOrder(newOrder);
+    };
+    
+    const handleDragEnd = () => {
+        dragItem.current = null;
+        if (dragNode.current) dragNode.current.classList.remove('opacity-50');
+        dragNode.current = null;
+        setDragEnabledIndex(null);
     };
 
 
@@ -248,6 +320,7 @@ export const FireSocial: React.FC = () => {
     const handleDeletePost = (postId: number) => {
         if (window.confirm('Are you sure you want to delete this post?')) {
             setPosts(posts.filter(p => p.id !== postId));
+            if (viewingPost?.id === postId) setViewingPost(null);
         }
     };
 
@@ -354,11 +427,25 @@ export const FireSocial: React.FC = () => {
     const toggleJoinCommunity = (communityId: number) => {
         setCommunities(prev => prev.map(c => c.id === communityId ? { ...c, joined: !c.joined } : c));
     };
+    
+    const handleViewCommunity = (community: Community) => {
+        setViewingCommunity(community);
+        setActivePage('community');
+        setShowCommunitiesModal(false);
+        window.scrollTo(0, 0);
+    };
 
     const handleViewProfile = (username: string) => {
+        // Close any open modals to ensure we see the profile page
+        setCommentModalPost(null);
+        setViewingPost(null);
+        setViewingNotification(null);
+        setViewingProduct(null);
+        
         setViewingProfileUsername(username);
         setActivePage('profile');
         setProfileTab('posts');
+        window.scrollTo(0, 0);
     };
 
     const handleHomePageSelect = () => {
@@ -387,7 +474,7 @@ export const FireSocial: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <span className={`text-xs font-medium ${textColor}`}>Your Story</span>
+                    <span className={`text-xs font-medium ${textColor} w-20 truncate text-center`}>Your Story</span>
                 </button>
 
                 {/* Other Stories */}
@@ -408,13 +495,106 @@ export const FireSocial: React.FC = () => {
             </div>
         );
     };
+    
+    // --- Sidebar Widget Rendering ---
+    const renderWidget = (widgetId: string, index: number) => {
+        const Grip = (
+            <div 
+                className={`p-2 rounded-lg hover:bg-white/10 cursor-grab active:cursor-grabbing ${textSecondary} transition-colors`}
+                onMouseEnter={() => setDragEnabledIndex(index)}
+                onMouseLeave={() => setDragEnabledIndex(null)}
+                title="Drag to reorder"
+            >
+                <GripVertical size={20} />
+            </div>
+        );
+
+        switch(widgetId) {
+            case 'trending':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                         <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold">Trending Topics</h3>
+                            {Grip}
+                        </div>
+                        <div className="space-y-4">
+                            {INITIAL_TRENDING_HASHTAGS.map(hashtag => (
+                                <button key={hashtag.tag} onClick={() => alert(`Viewing ${hashtag.tag}`)} className="w-full flex items-center justify-between group">
+                                    <div className="text-left">
+                                        <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{hashtag.tag}</p>
+                                        <p className={`text-xs ${textSecondary}`}>{hashtag.posts.toLocaleString()} posts</p>
+                                    </div>
+                                    <div className={`p-2 rounded-full bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white transition-colors`}>
+                                        <TrendingUp size={16} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 'suggestions':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                        <div className="flex justify-between items-center mb-4">
+                             <h3 className="font-bold">Suggestions</h3>
+                             {Grip}
+                        </div>
+                        <div className="space-y-3">
+                            {INITIAL_FRIEND_SUGGESTIONS.slice(0, 3).map(s => (
+                                <div key={s.id} className="flex items-center justify-between">
+                                    <button onClick={() => handleViewProfile(s.username)} className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">{s.avatar}</div>
+                                        <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-gray-400">{s.username}</p></div>
+                                    </button>
+                                    <button className={`px-4 py-1.5 text-sm font-semibold rounded-full bg-white/10 text-white`}>Follow</button>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => setShowSuggestions(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>View All</button>
+                    </div>
+                );
+            case 'communities':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                         <div className="flex justify-between items-center mb-4">
+                             <h3 className="font-bold flex items-center gap-2"><Users size={18} /> Communities</h3>
+                             {Grip}
+                        </div>
+                        <div className="space-y-4">
+                            {communities.slice(0, 3).map(group => (
+                                <div key={group.id} 
+                                     onClick={() => handleViewCommunity(group)}
+                                     className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={group.image} alt={group.name} className="w-10 h-10 rounded-lg object-cover" />
+                                        <div>
+                                            <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{group.name}</p>
+                                            <p className={`text-xs ${textSecondary}`}>{group.members.toLocaleString()} members</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); toggleJoinCommunity(group.id); }} 
+                                        className={`p-2 rounded-full transition-all ${group.joined ? `${cardBg} border ${borderColor} ${textSecondary}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}
+                                    >
+                                        {group.joined ? <Check size={14} /> : <Plus size={14} />}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => setShowCommunitiesModal(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>Explore More</button>
+                    </div>
+                );
+            default: return null;
+        }
+    };
 
     const renderPage = () => {
         switch (activePage) {
             case 'home':
                 return (
                     <div 
-                        className="space-y-6 touch-pan-y min-h-[80vh]"
+                        className="space-y-6 touch-pan-y overscroll-none min-h-[80vh]"
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
@@ -476,6 +656,29 @@ export const FireSocial: React.FC = () => {
                 return <TrophyPage profile={viewingProfile} onBack={() => setActivePage('profile')} {...uiProps} />;
             case 'streaks':
                 return <StreakPage profile={viewingProfile} onBack={() => setActivePage('profile')} {...uiProps} />;
+            case 'community':
+                return viewingCommunity ? (
+                    <CommunityPage 
+                        community={viewingCommunity} 
+                        onBack={handleHomePageSelect} 
+                        onJoinToggle={toggleJoinCommunity} 
+                        posts={posts}
+                        profile={profile}
+                        allUsers={allUserListItems}
+                        onReaction={handleReaction}
+                        onBookmark={handleBookmark}
+                        onDeletePost={handleDeletePost}
+                        onViewPost={setViewingPost}
+                        onViewComments={setCommentModalPost}
+                        onAddComment={handleAddComment}
+                        onShare={(post) => alert(`Sharing ${post.id}`)}
+                        onViewProfile={handleViewProfile}
+                        onViewHashtag={(tag) => alert(`Viewing ${tag}`)}
+                        reactions={REACTIONS}
+                        messages={INITIAL_MESSAGES}
+                        {...uiProps}
+                    />
+                ) : <div>Community not found</div>;
             default: return <div>Not implemented</div>;
         }
     };
@@ -546,8 +749,10 @@ export const FireSocial: React.FC = () => {
                 <aside className="col-span-3 sticky top-4 hidden lg:flex flex-col gap-4">
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
                         <div className="pl-2 mb-6 flex items-center gap-3">
-                            <div className={`p-2 rounded-xl bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} shadow-lg`}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <div className={`p-2 rounded-xl bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} shadow-lg relative overflow-hidden`}>
+                                 {/* Glass overlay for logo */}
+                                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px] rounded-xl"></div>
+                                <svg className="relative z-10" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.1.2-2.2.5-3.3.3.3.5.5.5.8z"></path>
                                 </svg>
                             </div>
@@ -578,6 +783,10 @@ export const FireSocial: React.FC = () => {
                 
                 <aside className="col-span-3 sticky top-4 hidden lg:flex flex-col gap-4">
                      <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} flex justify-between items-center`}>
+                        <button onClick={() => setShowNotifications(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary} relative`}>
+                            <Bell size={20} />
+                            {unreadNotificationsCount > 0 && <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></div>}
+                        </button>
                         <button onClick={() => setShowSettings(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}><Settings size={20} /></button>
                         <button onClick={() => setDarkMode(!darkMode)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}>{darkMode ? <Sun size={20} /> : <Moon size={20} />}</button>
                         <button onClick={() => setShowAnalytics(true)} className={`p-3 rounded-xl hover:bg-white/10 ${textSecondary}`}><BarChart2 size={20} /></button>
@@ -585,64 +794,20 @@ export const FireSocial: React.FC = () => {
                         <button onClick={logout} className={`p-3 rounded-xl hover:bg-white/10 text-red-500`} title="Log Out"><LogOut size={20} /></button>
                     </div>
 
-                    {/* Trending Topics Widget */}
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
-                        <h3 className="font-bold mb-4">Trending Topics</h3>
-                        <div className="space-y-4">
-                            {INITIAL_TRENDING_HASHTAGS.map(hashtag => (
-                                <button key={hashtag.tag} onClick={() => alert(`Viewing ${hashtag.tag}`)} className="w-full flex items-center justify-between group">
-                                    <div className="text-left">
-                                        <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{hashtag.tag}</p>
-                                        <p className={`text-xs ${textSecondary}`}>{hashtag.posts.toLocaleString()} posts</p>
-                                    </div>
-                                    <div className={`p-2 rounded-full bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white transition-colors`}>
-                                        <TrendingUp size={16} />
-                                    </div>
-                                </button>
-                            ))}
+                    {/* Reorderable Widgets */}
+                    {widgetOrder.map((widgetId, index) => (
+                        <div
+                            key={widgetId}
+                            draggable={dragEnabledIndex === index}
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragEnter={(e) => handleDragEnter(e, index)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={(e) => e.preventDefault()} // Necessary to allow dropping
+                            className={`transition-all duration-200 ${dragItem.current === index ? 'opacity-50' : ''}`}
+                        >
+                            {renderWidget(widgetId, index)}
                         </div>
-                    </div>
-
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
-                        <h3 className="font-bold mb-4">Suggestions</h3>
-                        <div className="space-y-3">
-                            {INITIAL_FRIEND_SUGGESTIONS.slice(0, 3).map(s => (
-                                <div key={s.id} className="flex items-center justify-between">
-                                    <button onClick={() => handleViewProfile(s.username)} className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">{s.avatar}</div>
-                                        <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-gray-400">{s.username}</p></div>
-                                    </button>
-                                    <button className={`px-4 py-1.5 text-sm font-semibold rounded-full bg-white/10 text-white`}>Follow</button>
-                                </div>
-                            ))}
-                        </div>
-                        <button onClick={() => setShowSuggestions(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>View All</button>
-                    </div>
-                    
-                    {/* Communities Widget */}
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
-                        <h3 className="font-bold mb-4 flex items-center gap-2"><Users size={18} /> Communities</h3>
-                        <div className="space-y-4">
-                            {communities.map(group => (
-                                <div key={group.id} className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3">
-                                        <img src={group.image} alt={group.name} className="w-10 h-10 rounded-lg object-cover" />
-                                        <div>
-                                            <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{group.name}</p>
-                                            <p className={`text-xs ${textSecondary}`}>{group.members.toLocaleString()} members</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => toggleJoinCommunity(group.id)} 
-                                        className={`p-2 rounded-full transition-all ${group.joined ? `${cardBg} border ${borderColor} ${textSecondary}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}
-                                    >
-                                        {group.joined ? <Check size={14} /> : <Plus size={14} />}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                        <button className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>Explore More</button>
-                    </div>
+                    ))}
                 </aside>
             </div>
 
@@ -671,7 +836,28 @@ export const FireSocial: React.FC = () => {
             {showSettings && <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} profile={profile} setProfile={setProfile} onEditProfile={() => {setShowSettings(false); setShowEditProfile(true);}} setThemeColor={setThemeColor} allUsers={allUserListItems} onBlockToggle={handleBlockToggle} themeColor={themeColor} darkMode={darkMode} {...uiProps} />}
             {showEditProfile && <EditProfileModal profile={profile} onClose={() => setShowEditProfile(false)} onSave={handleSaveProfile} {...uiProps} />}
             {showFollowList && <FollowListModal listType={showFollowList.type} onClose={() => setShowFollowList(null)} followers={followers} following={following} onFollowToggle={handleFollowToggle} onViewProfile={handleViewProfile} {...uiProps} />}
-            {commentModalPost && <CommentModal post={commentModalPost} profile={profile} onClose={() => setCommentModalPost(null)} onAddComment={handleAddComment} onLikeComment={()=>{}} onDeleteComment={()=>{}} onEditComment={()=>{}} allUsers={allUserListItems} {...uiProps} />}
+            
+            {/* Viewing Post Modal */}
+            {viewingPost && (
+                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setViewingPost(null)}>
+                    <div className="relative w-full max-w-2xl my-8" onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => setViewingPost(null)} 
+                            className="absolute -top-12 right-0 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                         <PostComponent 
+                            {...postComponentProps} 
+                            post={viewingPost}
+                            isFollowing={following.some(u => u.id === viewingPost.userId)}
+                            isBlocked={blockedUserIds.has(viewingPost.userId)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {commentModalPost && <CommentModal post={commentModalPost} profile={profile} onClose={() => setCommentModalPost(null)} onAddComment={handleAddComment} onLikeComment={()=>{}} onDeleteComment={()=>{}} onEditComment={()=>{}} allUsers={allUserListItems} onViewProfile={handleViewProfile} {...uiProps} />}
             {messageUser && <MessageModal isOpen={!!messageUser} onClose={() => setMessageUser(null)} messageUser={messageUser} profile={profile} chatHistory={chatHistories[messageUser.userId] || []} onSendMessage={handleSendMessage} onDeleteMessage={()=>{}} onEditMessage={()=>{}} onReactToMessage={()=>{}} onStartCall={(user, type) => setActiveCall({ user, type })} {...uiProps} />}
             {activeCall && <CallModal call={activeCall} onEndCall={() => setActiveCall(null)} {...uiProps} />}
             {viewingStory && <StoryViewerModal stories={INITIAL_STORIES} startUser={viewingStory} profile={profile} onClose={() => setViewingStory(null)} onDeleteStory={()=>{}} />}
@@ -686,6 +872,7 @@ export const FireSocial: React.FC = () => {
             {showAICreator && <AICreatorModal show={showAICreator} onClose={() => setShowAICreator(false)} {...uiProps} />}
             {showGameCreator && <GameCreatorModal show={showGameCreator} onClose={() => setShowGameCreator(false)} onDeployGame={() => {}} {...uiProps} />}
             {showAIChatbot && <AIChatbotModal show={showAIChatbot} onClose={() => setShowAIChatbot(false)} {...uiProps} />}
+            {showCommunitiesModal && <CommunitiesModal show={showCommunitiesModal} onClose={() => setShowCommunitiesModal(false)} communities={communities} onJoinToggle={toggleJoinCommunity} onViewCommunity={handleViewCommunity} {...uiProps} />}
         </div>
     );
 };
