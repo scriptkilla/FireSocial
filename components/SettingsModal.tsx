@@ -4,7 +4,6 @@ import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRoun
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
 import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService, AIModelInfo } from '../constants';
 import AvatarDisplay from './AvatarDisplay';
-import { GoogleGenAI } from '@google/genai';
 
 // --- HELP CENTER DATA ---
 const HELP_ARTICLES = [
@@ -282,29 +281,8 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
         localStorage.setItem(API_CONFIG['Custom'].modelNameKey!, newName);
     };
 
-    const handleTestConnection = async () => {
+    const handleTestConnection = () => {
         setConnectionStatus('testing');
-    
-        if (selectedService === 'Google AI') {
-            if (!apiKey.trim()) {
-                setConnectionStatus('invalid');
-                return;
-            }
-            try {
-                const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
-                await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: 'test',
-                });
-                setConnectionStatus('valid');
-            } catch (error: any) {
-                console.error("API Test Failed:", error);
-                setConnectionStatus('invalid');
-            }
-            return;
-        }
-    
-        // Fallback for other services
         setTimeout(() => {
             let isValid = false;
             if (selectedService === 'Custom') {

@@ -1,4 +1,3 @@
-// Fix: Removed ApiService from this import as it's not defined in types.ts. It will be defined and exported in this file.
 import { Themes, Reaction, Achievement } from './types';
 
 export const THEMES: Themes = {
@@ -71,8 +70,6 @@ export const API_CONFIG: { [key: string]: { storageKey: string; url: string; bas
     modelNameKey: 'modelName_custom'
   }
 };
-
-// Fix: Defined and exported ApiService type here to be used across components.
 export type ApiService = keyof typeof API_CONFIG;
 
 export type AIModelInfo = { id: string; name: string; description: string };
@@ -173,15 +170,4 @@ export const API_VERSIONS: Record<string, { name: string; description: string, m
         ]}
     ],
     'Custom': [],
-};
-
-export const getModelDeveloper = (modelId: string): string => {
-    for (const [developer, versions] of Object.entries(API_VERSIONS)) {
-         for (const category of versions) {
-            if (category.models.some(m => m.id === modelId)) {
-                return developer;
-            }
-        }
-    }
-    return 'Unknown';
 };

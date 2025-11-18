@@ -1,7 +1,6 @@
 
 
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Bot, Wand2, Users, FileText, Palette, Cpu, Music, ShieldCheck, Play, UploadCloud, Code, Copy, Check } from 'lucide-react';
 import { Theme } from '../types';
@@ -254,15 +253,29 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
         return () => { isMounted.current = false; };
     }, []);
 
+    const getConfiguredServices = (): ApiService[] => {
+        const services: ApiService[] = [];
+        for (const service in API_CONFIG) {
+            const key = service as ApiService;
+            const config = API_CONFIG[key];
+            if (localStorage.getItem(config.storageKey)) {
+                services.push(key);
+            }
+        }
+        return services;
+    };
+
     useEffect(() => {
         if (show) {
             setError(null);
-            const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
-            if (googleApiKey) {
+            const configured = getConfiguredServices();
+            if (configured.includes('Google AI')) {
                 setApiKeyOk(true);
-            } else {
-                setApiKeyOk(false);
+            } else if (configured.length > 0) {
                 setError("The Game Creator Studio is powered by Google Gemini and requires a Google AI API key. Please add one in Settings to continue.");
+                setApiKeyOk(false);
+            } else {
+                 setApiKeyOk(false);
             }
         }
     }, [show]);
@@ -314,14 +327,7 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
         setLiveConversations([]);
         
         const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
-        if (!googleApiKey) {
-            setError("Could not find Google AI API key. Please configure it in settings.");
-            setIsGenerating(false);
-            return;
-        }
-        const ai = new GoogleGenAI({ apiKey: googleApiKey });
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
         const addActivity = (activity: Omit<Activity, 'timestamp'>) => {
             if(isMounted.current) setAgentActivities(prev => [{ ...activity, timestamp: getTime() }, ...prev]);

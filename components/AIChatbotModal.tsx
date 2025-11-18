@@ -87,11 +87,7 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
             }
 
             try {
-                const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
-                if (!googleApiKey) {
-                    throw new Error("Google AI API Key not found in settings.");
-                }
-                const ai = new GoogleGenAI({ apiKey: googleApiKey });
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
                 const chatInstance = ai.chats.create({
                     model: bestModel.id,
                 });
@@ -99,7 +95,7 @@ const AIChatbotModal: React.FC<AIChatbotModalProps> = (props) => {
                 setHistory([{ role: 'model', text: `Hello! I'm using ${bestModel.name}. How can I help you?` }]);
                 setError(null);
             } catch (e: any) {
-                setError(`Failed to initialize chat: ${e.message}. Please check your Google AI API Key.`);
+                setError("Failed to initialize chat. Please check your Google AI API Key.");
                 setHistory([{ role: 'model', text: 'Could not connect to the AI. Please verify your API key in settings.' }]);
             }
 
