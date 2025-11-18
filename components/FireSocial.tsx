@@ -1,10 +1,9 @@
 
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -42,6 +41,7 @@ import TrophyPage from './TrophyPage';
 import StreakPage from './StreakPage';
 import AnalyticsModal from './AnalyticsModal';
 import CreateStoryModal from './CreateStoryModal';
+import CreatePostModal from './CreatePostModal';
 import SuggestionsModal from './SuggestionsModal';
 import NotificationsModal from './NotificationsModal';
 import NotificationDetailModal from './NotificationDetailModal';
@@ -85,6 +85,7 @@ export const FireSocial: React.FC = () => {
     const [viewingStory, setViewingStory] = useState<Story | null>(null);
     const [showAnalytics, setShowAnalytics] = useState(false);
     const [showCreateStory, setShowCreateStory] = useState(false);
+    const [showCreatePost, setShowCreatePost] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [viewingNotification, setViewingNotification] = useState<Notification | null>(null);
@@ -116,6 +117,33 @@ export const FireSocial: React.FC = () => {
 
     // --- HANDLERS ---
     
+    const handleCreatePost = (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[]) => {
+        const newPost: Post = {
+            id: Date.now(),
+            userId: profile.id,
+            user: profile.name,
+            username: profile.username,
+            avatar: profile.avatar,
+            content: content,
+            media: media.length > 0 ? media : undefined,
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            time: 'Just now',
+            reactions: {},
+            userReaction: null,
+            bookmarked: false,
+            views: 0,
+            commentsData: [],
+            type: type,
+            pollOptions: pollOptions ? pollOptions.map((opt, i) => ({ id: i, text: opt, votes: 0 })) : undefined,
+            totalVotes: 0,
+            userVoted: null
+        };
+        setPosts([newPost, ...posts]);
+        setProfile(p => ({ ...p, posts: p.posts + 1 }));
+    };
+
     const handleReaction = (postId: number, reactionType: string) => {
         setPosts(posts.map(p => {
             if (p.id === postId) {
@@ -408,6 +436,14 @@ export const FireSocial: React.FC = () => {
                     </div>
                 </aside>
             </div>
+
+            {/* Floating Fire Button */}
+            <button
+                onClick={() => setShowCreatePost(true)}
+                className={`fixed bottom-24 right-4 lg:bottom-10 lg:right-10 w-16 h-16 rounded-full shadow-2xl z-50 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white hover:scale-110 transition-transform flex items-center justify-center animate-bounce`}
+            >
+                <span className="text-3xl">🔥</span>
+            </button>
             
             <footer className={`lg:hidden fixed bottom-0 left-0 right-0 ${cardBg} backdrop-blur-xl border-t ${borderColor} shadow-t-lg z-50`}>
                 <nav className="flex justify-start items-center p-1 overflow-x-auto no-scrollbar">
@@ -432,6 +468,7 @@ export const FireSocial: React.FC = () => {
             {viewingStory && <StoryViewerModal stories={INITIAL_STORIES} startUser={viewingStory} profile={profile} onClose={() => setViewingStory(null)} onDeleteStory={()=>{}} />}
             {showAnalytics && <AnalyticsModal show={showAnalytics} onClose={() => setShowAnalytics(false)} profile={profile} posts={posts} followers={followers} {...uiProps} />}
             {showCreateStory && <CreateStoryModal show={showCreateStory} onClose={() => setShowCreateStory(false)} onCreate={()=>{}} {...uiProps} />}
+            {showCreatePost && <CreatePostModal show={showCreatePost} onClose={() => setShowCreatePost(false)} onCreatePost={handleCreatePost} profile={profile} {...uiProps} />}
             {showSuggestions && <SuggestionsModal show={showSuggestions} onClose={() => setShowSuggestions(false)} suggestions={INITIAL_FRIEND_SUGGESTIONS} following={following} onFollowToggle={handleFollowToggle} onDismiss={()=>{}} onViewProfile={handleViewProfile} {...uiProps} />}
             {showNotifications && <NotificationsModal show={showNotifications} onClose={() => setShowNotifications(false)} notifications={INITIAL_NOTIFICATIONS} unreadCount={INITIAL_NOTIFICATIONS.filter(n=>!n.read).length} onMarkAllRead={()=>{}} onMarkOneRead={()=>{}} onViewNotification={(n) => {setShowNotifications(false); setViewingNotification(n);}} {...uiProps} />}
             {viewingNotification && <NotificationDetailModal show={!!viewingNotification} notification={viewingNotification} onClose={() => setViewingNotification(null)} allUsers={allUserListItems} posts={posts} onViewPost={(p)=>{setViewingNotification(null); setViewingPost(p);}} onViewProfile={(u)=>{setViewingNotification(null); handleViewProfile(u);}} {...uiProps} />}
