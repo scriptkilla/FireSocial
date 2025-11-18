@@ -1,8 +1,9 @@
 
 import React, { useState, useRef } from 'react';
-import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users } from 'lucide-react';
-import { Profile, Theme, Post, MediaItem } from '../types';
+import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles } from 'lucide-react';
+import { Profile, Theme, MediaItem } from '../types';
 import AvatarDisplay from './AvatarDisplay';
+import { GoogleGenAI } from "@google/genai";
 
 interface CreatePostModalProps {
     show: boolean;
@@ -23,6 +24,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const [showPoll, setShowPoll] = useState(false);
     const [pollOptions, setPollOptions] = useState(['', '']);
     const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
+    
+    // AI State
+    const [showAiMenu, setShowAiMenu] = useState(false);
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!show) return null;
@@ -71,6 +77,41 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         }
     };
 
+    // --- AI Integration ---
+    const handleAiAction = async (action: 'fix' | 'witty' | 'hashtags') => {
+        if (!content.trim()) return;
+        
+        setIsAiLoading(true);
+        setShowAiMenu(false);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            let prompt = "";
+            
+            if (action === 'fix') {
+                prompt = `Fix the grammar and spelling of the following text, keeping the tone natural: "${content}"`;
+            } else if (action === 'witty') {
+                prompt = `Rewrite the following text to be witty, engaging, and fun for a social media post: "${content}"`;
+            } else if (action === 'hashtags') {
+                prompt = `Read the following text and append 3-5 relevant, trending hashtags to the end of it. Return the full text with hashtags: "${content}"`;
+            }
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+            });
+
+            if (response.text) {
+                setContent(response.text.trim());
+            }
+        } catch (error) {
+            console.error("AI Error:", error);
+            alert("Could not connect to AI. Please check your API configuration.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
             <div 
@@ -98,12 +139,22 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                         </div>
                     </div>
 
-                    <textarea
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        placeholder="What's on your mind?"
-                        className={`w-full bg-transparent ${textColor} placeholder-gray-500 resize-none focus:outline-none text-lg min-h-[120px]`}
-                    />
+                    <div className="relative">
+                        <textarea
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="What's on your mind?"
+                            className={`w-full bg-transparent ${textColor} placeholder-gray-500 resize-none focus:outline-none text-lg min-h-[120px]`}
+                        />
+                         {isAiLoading && (
+                            <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-lg">
+                                <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${cardBg} border ${borderColor} shadow-lg`}>
+                                    <Loader2 className={`animate-spin ${currentTheme.text}`} size={16} />
+                                    <span className="text-sm font-semibold">AI is writing...</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {media.length > 0 && (
                         <div className="flex gap-2 overflow-x-auto py-2 mb-2">
@@ -152,10 +203,35 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                     <div className={`flex items-center justify-between mt-4 pt-4 border-t ${borderColor}`}>
                         <div className="flex gap-2 text-gray-400">
                             <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*,video/*" className="hidden" />
-                            <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-white/10 rounded-full transition-colors text-green-400"><ImageIcon size={20} /></button>
-                            <button onClick={() => setShowPoll(!showPoll)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-orange-400"><BarChart2 size={20} /></button>
+                            <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-white/10 rounded-full transition-colors text-green-400" title="Add Media"><ImageIcon size={20} /></button>
+                            <button onClick={() => setShowPoll(!showPoll)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-orange-400" title="Create Poll"><BarChart2 size={20} /></button>
+                            
+                            {/* AI Button */}
+                            <div className="relative">
+                                <button 
+                                    onClick={() => setShowAiMenu(!showAiMenu)} 
+                                    className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showAiMenu ? currentTheme.text : 'text-purple-400'}`}
+                                    title="AI Assist"
+                                    disabled={!content.trim()}
+                                >
+                                    <Wand2 size={20} />
+                                </button>
+                                {showAiMenu && (
+                                    <div className={`absolute bottom-full mb-2 left-0 w-48 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-1 z-10 flex flex-col animate-in slide-in-from-bottom-2`}>
+                                        <button onClick={() => handleAiAction('fix')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                            <Check size={14} /> Fix Grammar
+                                        </button>
+                                        <button onClick={() => handleAiAction('witty')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                            <Sparkles size={14} /> Make it Witty
+                                        </button>
+                                        <button onClick={() => handleAiAction('hashtags')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                            <Users size={14} /> Add Hashtags
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             <button className="p-2 hover:bg-white/10 rounded-full transition-colors text-yellow-400"><Smile size={20} /></button>
-                            <button className="p-2 hover:bg-white/10 rounded-full transition-colors text-red-400"><MapPin size={20} /></button>
                         </div>
                         <button 
                             onClick={handleSubmit}
@@ -170,5 +246,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         </div>
     );
 };
+
+function Check({ size }: { size: number }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>;
+}
 
 export default CreatePostModal;
