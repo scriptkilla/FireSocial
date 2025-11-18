@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Theme, Comment, UserListItem } from '../types';
 import { X, Send } from 'lucide-react';

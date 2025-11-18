@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Message, GroupChat, Theme } from '../types';
 import { Search, Users, MessageSquare as MessageSquareIcon } from 'lucide-react';

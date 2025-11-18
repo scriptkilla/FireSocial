@@ -65,7 +65,6 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
     const [votedPolls, setVotedPolls] = useState<Record<number, number>>({});
     
     const touchStartX = useRef(0);
-    // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> to ensure compatibility with browser environments where setTimeout returns a number, resolving the 'Cannot find namespace NodeJS' error.
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const currentUserStory = usersWithStories[currentUserIndex];
@@ -242,7 +241,7 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
                 </div>
 
                 {/* Media Content */}
-                <div className="absolute inset-0">
+                <div className="absolute inset-0" onClick={handleTap}>
                     {currentMediaItem.type === 'image' && <img src={currentMediaItem.url} alt="Story" className="w-full h-full object-cover" />}
                     {currentMediaItem.type === 'video' && <video src={currentMediaItem.url} autoPlay onEnded={goToNextMedia} className="w-full h-full object-cover" />}
                 </div>
@@ -273,27 +272,19 @@ const StoryViewerModal: React.FC<StoryViewerModalProps> = ({ stories, startUser,
                                 <span className="text-sm font-semibold">{currentUserStory.views?.toLocaleString() || 0} views</span>
                             </div>
                         ) : (
-                             <div className="flex-1 relative">
-                                <input type="text" placeholder="Send message" className="w-full bg-black/30 backdrop-blur-sm text-white placeholder:text-white/70 rounded-full py-3 px-4 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-white/50" />
-                                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2"><Send size={20} className="text-white"/></button>
-                            </div>
+                             <>
+                                <div className="flex-1 relative">
+                                    <input type="text" placeholder="Send message" className="w-full bg-black/30 backdrop-blur-sm text-white placeholder-white/70 rounded-full px-4 py-2 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50" />
+                                    <button className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white hover:bg-white/20 rounded-full"><Send size={20} /></button>
+                                </div>
+                                <button onClick={() => handleReaction('❤️')} className="text-3xl hover:scale-125 transition-transform">❤️</button>
+                                <button onClick={() => handleReaction('🔥')} className="text-3xl hover:scale-125 transition-transform">🔥</button>
+                                <button onClick={() => handleReaction('😂')} className="text-3xl hover:scale-125 transition-transform">😂</button>
+                            </>
                         )}
-                        <div className="flex items-center gap-2">
-                            {['❤️', '😂', '🔥', '👏'].map(emoji => (
-                                <button key={emoji} onClick={(e) => { e.stopPropagation(); handleReaction(emoji); }} className="text-3xl hover:scale-125 transition-transform">
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
-                {/* Navigation Taps */}
-                <div className="absolute inset-0 flex z-10" onClick={handleTap}>
-                    <div className="w-1/3 h-full cursor-pointer"></div>
-                    <div className="w-1/3 h-full"></div>
-                    <div className="w-1/3 h-full cursor-pointer"></div>
-                </div>
             </div>
         </div>
     );

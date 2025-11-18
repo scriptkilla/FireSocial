@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Bot, Send, User, Sparkles } from 'lucide-react';
 import { Theme } from '../types';

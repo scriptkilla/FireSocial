@@ -82,7 +82,6 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
   ],
   tipJar: { enabled: true, suggestedAmounts: [3, 5, 10, 25], customAmount: true, totalTips: 245.50, tipCount: 42 },
   paidPosts: [
-    // Fix: Removed invalid 'previewText' property.
     { id: 10, price: 3, currency: 'USD', purchaseCount: 28, revenue: 84 }
   ],
   products: [
@@ -92,7 +91,6 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
     totalEarnings: 892.25,
     monthlyEarnings: [245, 312, 178, 157],
     topEarningPosts: [
-      // Fix: Removed invalid 'previewText' property.
       { id: 10, price: 3, currency: 'USD', purchaseCount: 28, revenue: 84 }
     ],
     subscriberGrowth: [12, 18, 24, 32],

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, PhoneOff, User, PhoneCall, AlertTriangle } from 'lucide-react';
 import { ActiveCall, Theme } from '../types';
