@@ -1,13 +1,10 @@
 
 
-
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -54,7 +51,6 @@ import AddProductModal from './AddProductModal';
 import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
 import AIChatbotModal from './AIChatbotModal';
-import CreatePostModal from './CreatePostModal';
 
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks';
@@ -97,7 +93,6 @@ export const FireSocial: React.FC = () => {
     const [showAICreator, setShowAICreator] = useState(false);
     const [showGameCreator, setShowGameCreator] = useState(false);
     const [showAIChatbot, setShowAIChatbot] = useState(false);
-    const [showCreatePostModal, setShowCreatePostModal] = useState(false);
 
 
     // --- DERIVED STATE & MEMOS ---
@@ -143,28 +138,6 @@ export const FireSocial: React.FC = () => {
         if (window.confirm('Are you sure you want to delete this post?')) {
             setPosts(posts.filter(p => p.id !== postId));
         }
-    };
-    
-    const handleAddPost = (content: string, media?: { file: File, type: 'image' | 'video' }) => {
-        const newPost: Post = {
-            id: Date.now(),
-            userId: profile.id,
-            user: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            content,
-            likes: 0,
-            comments: 0,
-            shares: 0,
-            time: 'Just now',
-            reactions: {},
-            userReaction: null,
-            bookmarked: false,
-            views: 0,
-            media: media ? [{ type: media.type, url: URL.createObjectURL(media.file) }] : [],
-        };
-        setPosts(prevPosts => [newPost, ...prevPosts]);
-        setShowCreatePostModal(false);
     };
 
     const handleAddComment = (postId: number, commentText: string, replyToUsername?: string) => {
@@ -349,7 +322,8 @@ export const FireSocial: React.FC = () => {
     );
     
     const MobileNavItem: React.FC<{ page: Page | string, label: string, icon: React.ElementType, current: Page, onClick: () => void }> = ({ page, label, icon: Icon, current, onClick }) => (
-        <button onClick={onClick} className={`relative flex flex-col items-center justify-center h-16 w-full transition-colors ${current === page ? currentTheme.text : textSecondary}`}>
+        <button onClick={onClick} className={`relative flex flex-col items-center gap-1 p-2 rounded-lg w-20 flex-shrink-0 transition-colors ${current === page ? currentTheme.text : textSecondary}`}>
+            {current === page && <div className={`absolute -top-px left-1/2 -translate-x-1/2 h-1 w-8 rounded-full bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}`}></div>}
             <Icon size={24} />
             <span className="text-xs font-medium truncate">{label}</span>
         </button>
@@ -394,9 +368,6 @@ export const FireSocial: React.FC = () => {
                             <NavItem page="marketplace" label="Marketplace" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
                             <NavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                         </nav>
-                         <button onClick={() => setShowCreatePostModal(true)} className={`w-full text-center py-4 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold text-lg hover:scale-105 transition-all duration-300 shadow-lg mt-4`}>
-                            Create
-                         </button>
                     </div>
                      <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} space-y-2`}>
                         <button onClick={() => setShowAICreator(true)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-gray-400 hover:text-white hover:bg-white/5`}>
@@ -438,16 +409,15 @@ export const FireSocial: React.FC = () => {
                 </aside>
             </div>
             
-             <footer className={`lg:hidden fixed bottom-0 left-0 right-0 ${cardBg} backdrop-blur-xl border-t ${borderColor} shadow-t-lg z-50`}>
-                <nav className="flex justify-around items-center h-16">
+            <footer className={`lg:hidden fixed bottom-0 left-0 right-0 ${cardBg} backdrop-blur-xl border-t ${borderColor} shadow-t-lg z-50`}>
+                <nav className="flex justify-start items-center p-1 overflow-x-auto no-scrollbar">
                     <MobileNavItem page="home" label="Home" icon={Home} current={activePage} onClick={handleHomePageSelect} />
                     <MobileNavItem page="explore" label="Explore" icon={Compass} current={activePage} onClick={() => setActivePage('explore')} />
-                    
-                    <button onClick={() => setShowCreatePostModal(true)} className={`w-16 h-16 -mt-8 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} rounded-full text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform`}>
-                        <Plus size={32} />
-                    </button>
-
+                    <MobileNavItem page="notifications" label="Alerts" icon={Bell} current={activePage} onClick={() => setShowNotifications(true)} />
                     <MobileNavItem page="messages" label="DMs" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
+                    <MobileNavItem page="marketplace" label="Market" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
+                    <MobileNavItem page="ai-creator" label="AI Create" icon={Bot} current={activePage} onClick={() => setShowAICreator(true)} />
+                    <MobileNavItem page="game-studio" label="Games" icon={Gamepad2} current={activePage} onClick={() => setShowGameCreator(true)} />
                     <MobileNavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                 </nav>
             </footer>
@@ -470,7 +440,6 @@ export const FireSocial: React.FC = () => {
             {showAICreator && <AICreatorModal show={showAICreator} onClose={() => setShowAICreator(false)} {...uiProps} />}
             {showGameCreator && <GameCreatorModal show={showGameCreator} onClose={() => setShowGameCreator(false)} onDeployGame={() => {}} {...uiProps} />}
             {showAIChatbot && <AIChatbotModal show={showAIChatbot} onClose={() => setShowAIChatbot(false)} {...uiProps} />}
-            {showCreatePostModal && <CreatePostModal show={showCreatePostModal} onClose={() => setShowCreatePostModal(false)} onAddPost={handleAddPost} profile={profile} {...uiProps} />}
         </div>
     );
 };
