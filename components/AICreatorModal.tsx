@@ -364,7 +364,7 @@ const SettingsPanel: React.FC<{
                     <button onClick={() => setDropdown(d => d === 'model' ? null : 'model')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
                         <span>{selectedModel.name}</span> <ChevronDown size={16} />
                     </button>
-                    {dropdown === 'model' && (<div className={`absolute top-full mt-1 w-full ${cardBg} border ${borderColor} rounded-lg shadow-xl z-10 max-h-64 overflow-y-auto`}>
+                    {dropdown === 'model' && (<div className={`absolute top-full mt-1 w-full bg-white dark:bg-gray-800 border ${borderColor} rounded-lg shadow-xl z-10 max-h-64 overflow-y-auto`}>
                         {models.map(family => (
                             <div key={family.family}>
                                 <h4 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 sticky top-0 bg-inherit">{family.family}</h4>
@@ -374,7 +374,7 @@ const SettingsPanel: React.FC<{
                                             {family.categories.length > 1 && <h5 className="px-3 pt-1 text-xs font-semibold text-gray-500">{category.category}</h5>}
                                             {category.models.map(m => (
                                                 <li key={m.id}>
-                                                    <button onClick={() => { onModelChange(m); setDropdown(null); }} className={`w-full text-left px-3 py-2 hover:bg-white/10 text-sm`}>
+                                                    <button onClick={() => { onModelChange(m); setDropdown(null); }} className={`w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 text-sm`}>
                                                         <p className={selectedModel.id === m.id ? currentTheme.text : textColor}>{m.name}</p>
                                                         <p className="text-xs text-gray-500">{m.description}</p>
                                                     </button>
@@ -397,8 +397,8 @@ const SettingsPanel: React.FC<{
                 <button onClick={() => setDropdown(d => d === 'tone' ? null : 'tone')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
                     <span>{selectedTone}</span> <ChevronDown size={16} />
                 </button>
-                {dropdown === 'tone' && (<div className={`absolute top-full mt-1 w-full ${cardBg} border ${borderColor} rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto`}><ul>
-                    {tones.map(t => (<li key={t}><button onClick={() => { onToneChange(t); setDropdown(null); }} className={`w-full text-left p-2 hover:bg-white/10 text-sm ${selectedTone === t ? currentTheme.text : textColor}`}>{t}</button></li>))}
+                {dropdown === 'tone' && (<div className={`absolute top-full mt-1 w-full bg-white dark:bg-gray-800 border ${borderColor} rounded-lg shadow-xl z-10 max-h-48 overflow-y-auto`}><ul>
+                    {tones.map(t => (<li key={t}><button onClick={() => { onToneChange(t); setDropdown(null); }} className={`w-full text-left p-2 hover:bg-black/5 dark:hover:bg-white/10 text-sm ${selectedTone === t ? currentTheme.text : textColor}`}>{t}</button></li>))}
                 </ul></div>)}
             </div></SettingItem>
             <SettingItem label="Creativity">

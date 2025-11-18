@@ -191,7 +191,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                     )}
                     
                     {commentMentionQuery !== null && (
-                        <div className={`absolute bottom-full mb-2 w-full max-w-sm ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
+                        <div className={`absolute bottom-full mb-2 w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
                             <ul className="max-h-48 overflow-y-auto">
                                 {allUsers
                                     .filter(user =>
@@ -201,7 +201,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                                     .slice(0, 5)
                                     .map(user => (
                                     <li key={user.id}>
-                                        <button onClick={() => handleCommentMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-white/10">
+                                        <button onClick={() => handleCommentMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10">
                                             <AvatarDisplay avatar={user.avatar} size="w-10 h-10" />
                                             <div>
                                                 <p className={textColor}>{user.name}</p>

@@ -73,10 +73,10 @@ const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
                         <input type="text" placeholder="Search products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`w-full pl-12 pr-4 py-3 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`} />
                     </div>
                     <div className="flex gap-4">
-                        <select value={category} onChange={e => setCategory(e.target.value as any)} className={`px-4 py-3 bg-transparent ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
+                        <select value={category} onChange={e => setCategory(e.target.value as any)} className={`px-4 py-3 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
                             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className={`px-4 py-3 bg-transparent ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
+                         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className={`px-4 py-3 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
                             {SORT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>

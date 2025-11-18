@@ -157,7 +157,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                         <MoreHorizontal size={20} />
                     </button>
                     {showPostOptions && (
-                        <div className={`absolute right-0 mt-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-xl w-52 z-10 overflow-hidden`}>
+                        <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-xl w-52 z-10 overflow-hidden`}>
                             {isOwnPost ? (
                                 <>
                                     <MenuItem icon={Edit} label="Edit Post" onClick={(e) => handleMenuClick(e, () => alert('Edit functionality not implemented yet.'))} className="rounded-t-2xl" />
@@ -234,7 +234,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             {post.userReaction ? reactions.find(r => r.name === post.userReaction)?.emoji : <Heart size={20} />}<span>{post.likes}</span>
                         </button>
                         {showReactionPicker && (
-                            <div className={`absolute bottom-full mb-2 ${cardBg} backdrop-blur-xl rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
+                            <div className={`absolute bottom-full mb-2 bg-white dark:bg-gray-800 rounded-2xl p-2 border ${borderColor} shadow-xl flex gap-2`}>
                             {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all">{reaction.emoji}</button>))}
                             </div>
                         )}
@@ -278,7 +278,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             <AvatarDisplay avatar={profile.avatar} size="w-8 h-8" fontSize="text-base" />
                             <form onSubmit={(e) => { e.preventDefault(); handleAddInlineComment(); }} className="flex-1 flex gap-2 items-center relative">
                                 {inlineCommentMentionQuery !== null && (
-                                    <div className={`absolute bottom-full mb-2 w-full max-w-sm ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
+                                    <div className={`absolute bottom-full mb-2 w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
                                         <ul className="max-h-48 overflow-y-auto">
                                         {allUsers
                                                 .filter(user =>
@@ -288,7 +288,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                                                 .slice(0, 5)
                                                 .map(user => (
                                                 <li key={user.id}>
-                                                    <button onClick={() => handleInlineMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-white/10">
+                                                    <button onClick={() => handleInlineMentionSelect(user.username)} className="w-full text-left flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10">
                                                         <AvatarDisplay avatar={user.avatar} size="w-10 h-10" />
                                                         <div>
                                                             <p className={textColor}>{user.name}</p>

@@ -332,7 +332,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <Sticker size={20} />
                                 </button>
                                 {showGifPicker && (
-                                    <div className={`absolute bottom-full mb-2 left-0 w-72 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-3 z-20 animate-in slide-in-from-bottom-2`}>
+                                    <div className={`absolute bottom-full mb-2 left-0 w-72 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-3 z-20 animate-in slide-in-from-bottom-2`}>
                                         <div className="relative mb-2">
                                             <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} />
                                             <input type="text" placeholder="Search GIFs..." className={`w-full pl-9 pr-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 rounded-lg border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
@@ -361,14 +361,14 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <Wand2 size={20} />
                                 </button>
                                 {showAiMenu && (
-                                    <div className={`absolute bottom-full mb-2 left-0 w-48 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-1 z-20 flex flex-col animate-in slide-in-from-bottom-2`}>
-                                        <button onClick={() => handleAiAction('fix')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                    <div className={`absolute bottom-full mb-2 left-0 w-48 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-1 z-20 flex flex-col animate-in slide-in-from-bottom-2`}>
+                                        <button onClick={() => handleAiAction('fix')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
                                             <CheckIcon size={14} /> Fix Grammar
                                         </button>
-                                        <button onClick={() => handleAiAction('witty')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                        <button onClick={() => handleAiAction('witty')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
                                             <Sparkles size={14} /> Make it Witty
                                         </button>
-                                        <button onClick={() => handleAiAction('hashtags')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-left">
+                                        <button onClick={() => handleAiAction('hashtags')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
                                             <Users size={14} /> Add Hashtags
                                         </button>
                                     </div>
@@ -385,10 +385,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <Smile size={20} />
                                 </button>
                                 {showEmojiPicker && (
-                                    <div className={`absolute bottom-full mb-2 left-0 w-64 ${cardBg} backdrop-blur-xl border ${borderColor} rounded-xl shadow-xl p-2 z-20 animate-in slide-in-from-bottom-2`}>
+                                    <div className={`absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-2 z-20 animate-in slide-in-from-bottom-2`}>
                                         <div className="grid grid-cols-6 gap-1">
                                             {EMOJIS.map(emoji => (
-                                                <button key={emoji} onClick={() => handleAddEmoji(emoji)} className="p-2 text-xl hover:bg-white/10 rounded-lg transition-colors">
+                                                <button key={emoji} onClick={() => handleAddEmoji(emoji)} className="p-2 text-xl hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors">
                                                     {emoji}
                                                 </button>
                                             ))}

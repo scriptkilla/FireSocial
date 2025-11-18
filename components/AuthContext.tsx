@@ -8,8 +8,8 @@ import { ALL_USERS_DATA_BASE } from '../data';
 // 1. Go to Google Cloud Console -> APIs & Services -> Credentials.
 // 2. Create an OAuth 2.0 Client ID (Web Application).
 // 3. Add your domain (e.g., http://localhost:5173) to "Authorized JavaScript origins".
-// 4. Paste the Client ID below.
-const REAL_GOOGLE_CLIENT_ID = ""; 
+// 4. Paste the Client ID below or set REACT_APP_GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID in your environment.
+const REAL_GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.REACT_APP_GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || ""; 
 
 interface AuthContextType {
   user: Profile | null;
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
           // --- FALLBACK SIMULATION ---
           // Runs if no Client ID is provided or script fails to load
-          console.log("Running Google Auth Simulation (No Client ID configured)");
+          console.warn("Running Google Auth Simulation. To enable Real Login, set REACT_APP_GOOGLE_CLIENT_ID or add your ID to AuthContext.tsx.");
           return new Promise<void>((resolve) => {
               setTimeout(() => {
                   const googleUser: Profile = {

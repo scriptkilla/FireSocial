@@ -327,7 +327,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                     <MoreHorizontal size={20} />
                                 </button>
                                 {showProfileOptions && (
-                                    <div className={`absolute right-0 mt-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} shadow-xl w-48 z-10 overflow-hidden`}>
+                                    <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-xl w-48 z-10 overflow-hidden`}>
                                         <button onClick={() => { onBlockToggle(profileToDisplay.id, profileToDisplay.username); setShowProfileOptions(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 text-red-500`}>
                                             <UserMinus size={16} />
                                             <span>{isBlocked ? 'Unblock' : 'Block'}</span>
