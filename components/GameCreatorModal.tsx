@@ -1,10 +1,12 @@
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Bot, Wand2, Users, FileText, Palette, Cpu, Music, ShieldCheck, Play, UploadCloud, Code, Copy, Check } from 'lucide-react';
 import { Theme } from '../types';
 import { GoogleGenAI, Modality } from '@google/genai';
-import { API_CONFIG } from '../constants';
+import { API_CONFIG, ApiService } from '../constants';
 
 
 // Props definition
@@ -255,26 +257,13 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
     useEffect(() => {
         if (show) {
             setError(null);
-            const checkKey = async () => {
-                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-                if (isMounted.current) {
-                    if (hasKey) {
-                        setApiKeyOk(true);
-                    } else {
-                        // The official key selection isn't done. Check localStorage for a better message.
-                        const otherApiKeysConfigured = Object.entries(API_CONFIG)
-                            .filter(([service]) => service !== 'Google AI')
-                            .some(([, config]) => !!localStorage.getItem(config.storageKey));
-                        
-                        if (otherApiKeysConfigured && !localStorage.getItem(API_CONFIG['Google AI'].storageKey)) {
-                            // User has other APIs set up but not Google's. Guide them.
-                             setError("The Game Creator Studio is powered by Google Gemini and requires a Google AI API key. Please add one in Settings to continue.");
-                        }
-                        setApiKeyOk(false);
-                    }
-                }
-            };
-            checkKey();
+            const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
+            if (googleApiKey) {
+                setApiKeyOk(true);
+            } else {
+                setApiKeyOk(false);
+                setError("The Game Creator Studio is powered by Google Gemini and requires a Google AI API key. Please add one in Settings to continue.");
+            }
         }
     }, [show]);
 
@@ -325,7 +314,14 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
         setLiveConversations([]);
         
         const getTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+        
+        const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
+        if (!googleApiKey) {
+            setError("Could not find Google AI API key. Please configure it in settings.");
+            setIsGenerating(false);
+            return;
+        }
+        const ai = new GoogleGenAI({ apiKey: googleApiKey });
 
         const addActivity = (activity: Omit<Activity, 'timestamp'>) => {
             if(isMounted.current) setAgentActivities(prev => [{ ...activity, timestamp: getTime() }, ...prev]);
@@ -502,19 +498,15 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
                 {!error && !apiKeyOk && (
                      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <KeyRound size={48} className={`mx-auto ${currentTheme.text} mb-4`} />
-                        <h3 className="text-2xl font-bold mb-2">API Key Required</h3>
+                        <h3 className="text-2xl font-bold mb-2">Google AI API Key Required</h3>
                         <p className={`${textSecondary} mb-6 max-w-md`}>
-                            The Game Creator Studio uses advanced AI models and requires a Google AI API key to function. Please select a key to begin.
+                            The Game Creator Studio is powered by Google Gemini and requires a configured Google AI API key to function. Please go to Settings > API Configuration to add your key.
                         </p>
                         <button
-                            onClick={async () => {
-                                await (window as any).aistudio.openSelectKey();
-                                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-                                if(isMounted.current) setApiKeyOk(hasKey);
-                            }}
+                            onClick={onClose}
                             className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}
                         >
-                            Select Your API Key
+                            Go to Settings
                         </button>
                     </div>
                 )}

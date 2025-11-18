@@ -1,8 +1,12 @@
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Text, Image as ImageIcon, Video, Mic, Code, Bot, Settings, ChevronDown, Sparkles, Wand2, RefreshCw, Download, Copy, ThumbsUp, ThumbsDown, Check, AlertTriangle, KeyRound, UploadCloud, File, Map, Search, BrainCircuit, Play, StopCircle } from 'lucide-react';
 import { Theme } from '../types';
 import { GoogleGenAI, Modality, GroundingChunk } from "@google/genai";
+// Fix: Imported API_VERSIONS instead of the non-existent AI_MODELS to fix reference errors.
+import { API_CONFIG, API_VERSIONS, getModelDeveloper } from '../constants';
 
 interface AICreatorModalProps {
     show: boolean;
@@ -61,252 +65,6 @@ type AIModel = {
     name: string;
     description: string;
 };
-type AIModelCategory = {
-    category: string;
-    models: AIModel[];
-};
-type AIModelFamily = {
-    family: string;
-    developer: string;
-    description: string;
-    accessType: string;
-    categories: AIModelCategory[];
-};
-
-const AI_MODELS: AIModelFamily[] = [
-    {
-        family: 'Gemini Series',
-        developer: 'Google DeepMind',
-        description: 'Native multi-modal understanding, massive context windows, strong in reasoning.',
-        accessType: 'Proprietary',
-        categories: [
-            {
-                category: 'Text & Chat',
-                models: [
-                    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Most capable model for complex tasks.' },
-                    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Fast and efficient for general use.' },
-                ]
-            },
-            {
-                category: 'Image',
-                models: [
-                    { id: 'imagen-4.0-generate-001', name: 'Imagen 4', description: 'Highest-quality image generation.' },
-                    { id: 'gemini-2.5-flash-image', name: 'Nano Banana', description: 'Generate and edit images quickly.' },
-                ]
-            },
-            {
-                category: 'Video',
-                models: [
-                    { id: 'veo-3.1-generate-preview', name: 'Veo 3.1', description: 'High-quality video generation.' },
-                    { id: 'veo-3.1-fast-generate-preview', name: 'Veo 3.1 Fast', description: 'Faster video generation.' },
-                ]
-            },
-            {
-                category: 'Audio',
-                models: [
-                    { id: 'gemini-2.5-flash-preview-tts', name: 'TTS', description: 'Text-to-speech generation.' },
-                ]
-            },
-        ]
-    },
-    {
-        family: 'GPT Series',
-        developer: 'OpenAI',
-        description: 'State-of-the-art performance, strong multi-modal and reasoning abilities.',
-        accessType: 'Proprietary',
-        categories: [
-             {
-                category: 'GPT-5.1 Series',
-                models: [
-                    { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Newest series; conversational, intelligent, with "Instant" & "Thinking" variants.' },
-                    { id: 'gpt-5.1-chat', name: 'GPT-5.1 Chat', description: 'Chat-optimized version of the newest GPT-5.1 model.' },
-                    { id: 'gpt-5.1-codex', name: 'GPT-5.1 Codex', description: 'Code-optimized version of the newest GPT-5.1 model.' },
-                ]
-            },
-            {
-                category: 'GPT-4o Series',
-                models: [
-                    { id: 'gpt-4o', name: 'GPT-4o', description: 'Balanced multimodal (text/image) model, updated to be more intuitive.' },
-                    { id: 'gpt-4o-mini', name: 'GPT-4o mini', description: 'A smaller, faster, and more affordable version of GPT-4o.' },
-                ]
-            },
-            {
-                category: 'o-Series (Reasoning)',
-                 models: [
-                    { id: 'o3-mini', name: 'o3-mini', description: 'Advanced reasoning model for complex STEM and logic problems.' },
-                    { id: 'o4-mini', name: 'o4-mini', description: 'Next-gen advanced reasoning model for complex problems.' },
-                ]
-            },
-             {
-                category: 'Legacy & Specialized',
-                 models: [
-                    { id: 'gpt-5', name: 'GPT-5', description: 'Predecessor to the GPT-5.1 series.' },
-                    { id: 'gpt-4.5', name: 'GPT-4.5', description: 'Research preview focusing on broad knowledge and natural interaction.' },
-                ]
-            },
-        ]
-    },
-    {
-        family: 'Claude Series',
-        developer: 'Anthropic',
-        description: 'Focus on safety, reliability, and advanced reasoning; known for long context windows.',
-        accessType: 'Proprietary',
-        categories: [
-             {
-                category: 'Text & Chat',
-                models: [
-                    { id: 'claude-opus-4.1', name: 'Claude Opus 4.1', description: 'Most intelligent for specialized reasoning, high precision. Use cases: Advanced reasoning, real-world coding, complex research.' },
-                    { id: 'claude-sonnet-4.5', name: 'Claude Sonnet 4.5', description: 'Best balance of intelligence/speed/cost, top for coding/agents. Use cases: Complex AI agents, code generation, computer use, financial analysis.' },
-                    { id: 'claude-haiku-4.5', name: 'Claude Haiku 4.5', description: 'Fastest model, near-frontier intelligence, cost-effective. Use cases: Live customer chats, content moderation, quick queries.' },
-                ]
-            },
-        ]
-    },
-    {
-        family: 'Llama Series',
-        developer: 'Meta',
-        description: 'Powerful open models, strong performance for their size, large community.',
-        accessType: 'Open License',
-        categories: [
-             {
-                category: 'Llama 4 Series',
-                models: [
-                    { id: 'llama-4', name: 'Llama 4 🚀', description: 'Scout (17B), Maverick (17B). Powers Meta AI assistant; multimodal (text+images); open weights & cloud APIs.' },
-                ]
-            },
-            {
-                category: 'Llama 3 Series',
-                models: [
-                    { id: 'llama-3.3', name: 'Llama 3.3', description: '70B. High-performance, text-only; efficient for summarization, Q&A.' },
-                    { id: 'llama-3.2', name: 'Llama 3.2', description: '1B, 3B, Vision 11B, Vision 90B. Includes first open-weight vision models; small text models for mobile/edge devices.' },
-                    { id: 'llama-3.1', name: 'Llama 3.1', description: '8B, 70B, 405B. Large-scale open-weight models; 405B is a frontier-level model for advanced reasoning.' },
-                ]
-            },
-        ]
-    },
-     {
-        family: 'Grok Series',
-        developer: 'xAI',
-        description: 'Integrated with real-time platform data, features "reasoning" modes.',
-        accessType: 'Proprietary',
-        categories: [
-             {
-                category: 'Grok 4 Series',
-                models: [
-                    { id: 'grok-4', name: 'Grok 4', description: 'Current flagship; native tool use, 256k context, voice mode with live camera.' },
-                    { id: 'grok-4-heavy', name: 'Grok 4 Heavy', description: 'Uses multi-agent parallel reasoning for complex tasks.' },
-                    { id: 'grok-4-fast', name: 'Grok 4 Fast', description: 'Balances speed and intelligence for quicker responses.' },
-                ]
-            },
-            {
-                category: 'Grok 3 Series',
-                models: [
-                    { id: 'grok-3', name: 'Grok 3', description: '"Reasoning model"; introduced Think mode, DeepSearch, and voice support.' },
-                    { id: 'grok-3-mini', name: 'Grok 3 mini', description: 'Faster version of Grok 3.' },
-                ]
-            },
-            {
-                category: 'Older Versions',
-                models: [
-                    { id: 'grok-2', name: 'Grok 2', description: 'Major performance upgrade; image generation; Grok-2 mini for faster responses.' },
-                    { id: 'grok-1.5', name: 'Grok 1.5', description: 'Improved reasoning; 128k token context window.' },
-                    { id: 'grok-1', name: 'Grok 1', description: 'First version; witty tone; real-time X integration.' },
-                ]
-            }
-        ]
-    },
-    {
-        family: 'DeepSeek Series',
-        developer: 'DeepSeek',
-        description: 'Competitive open-source reasoning models, strong performance.',
-        accessType: 'Open Source (MIT)',
-        categories: [
-             {
-                category: 'Text & Chat',
-                models: [
-                    { id: 'deepseek-v3.2-exp', name: 'DeepSeek-V3.2-Exp', description: 'Experimental (Sept \'25); Efficient long-context processing. Cost-effective.' },
-                    { id: 'deepseek-v3.1', name: 'DeepSeek-V3.1', description: 'Hybrid model (Aug \'25); Faster reasoning and stronger agent/tool use.' },
-                    { id: 'deepseek-r1-0528', name: 'DeepSeek-R1-0528', description: 'R1 upgrade (May \'25); Stronger reasoning, less hallucination, supports system prompts.' },
-                    { id: 'deepseek-v3-0324', name: 'DeepSeek-V3-0324', description: 'V3 update (March \'25); Surpasses GPT-4.5 in math/coding, better tool use.' },
-                    { id: 'deepseek-r1', name: 'DeepSeek-R1', description: 'Specialized "reasoning model" for complex problem-solving and logic.' },
-                    { id: 'deepseek-v3', name: 'DeepSeek-V3', description: 'General-purpose model with strong coding/math abilities and 128K context.' },
-                ]
-            },
-        ]
-    },
-    {
-        family: 'Mistral AI',
-        developer: 'Mistral AI',
-        description: 'High-performance open and optimized models, known for efficiency and customization.',
-        accessType: 'Varies (Open & Proprietary)',
-        categories: [
-            {
-                category: 'Reasoning (Magistral)',
-                models: [
-                    { id: 'magistral-medium-1.2', name: 'Magistral Medium 1.2', description: 'Enterprise reasoning model for advanced tasks.' },
-                    { id: 'magistral-small-1.2', name: 'Magistral Small 1.2', description: 'Open-weight counterpart for advanced reasoning.' },
-                ]
-            },
-            {
-                category: 'Enterprise & General',
-                models: [
-                    { id: 'mistral-medium-3', name: 'Mistral Medium 3', description: 'Balances high performance with lower cost; strong in coding & STEM.' },
-                    { id: 'mistral-small-3.2', name: 'Mistral Small 3.2', description: 'Leader in small models; some versions have image understanding.' },
-                ]
-            },
-            {
-                category: 'Coding',
-                models: [
-                    { id: 'devstral-medium', name: 'Devstral Medium', description: 'AI model designed for software engineering tasks.' },
-                    { id: 'devstral-small-1.1', name: 'Devstral Small 1.1', description: 'Smaller, open-source model for coding.' },
-                    { id: 'codestral-2508', name: 'Codestral 2508', description: 'Specialized model for code generation.' },
-                ]
-            },
-            {
-                category: 'Audio (Voxtral)',
-                models: [
-                    { id: 'voxtral-small', name: 'Voxtral Small', description: 'Open-source audio model for chat and transcription.' },
-                    { id: 'voxtral-mini', name: 'Voxtral Mini', description: 'A more compact version of Voxtral for audio tasks.' },
-                ]
-            },
-            {
-                category: 'Edge (Ministral)',
-                models: [
-                    { id: 'ministral-8b', name: 'Ministral 8B', description: 'Small model optimized for edge devices like phones.' },
-                    { id: 'ministral-3b', name: 'Ministral 3B', description: 'A very compact model for on-device tasks.' },
-                ]
-            },
-            {
-                category: 'Multimodal (Pixtral)',
-                models: [
-                    { id: 'pixtral-large', name: 'Pixtral Large', description: 'Can understand both text and images.' },
-                ]
-            },
-            {
-                category: 'Specialized',
-                models: [
-                    { id: 'mistral-ocr', name: 'Mistral OCR', description: 'Special-purpose model for text recognition in images.' },
-                    { id: 'mistral-saba', name: 'Mistral Saba', description: 'A specialized model focused on the Arabic language.' },
-                ]
-            },
-        ]
-    },
-    {
-        family: 'Others',
-        developer: 'Various',
-        description: 'Includes efficient and specialized models from other leading AI companies.',
-        accessType: 'Varies (Open & Proprietary)',
-        categories: [
-             {
-                category: 'Text & Chat',
-                models: [
-                    { id: 'falcon-3', name: 'Falcon 3', description: 'Next-gen open model from TII.' },
-                    { id: 'qwen3', name: 'Qwen3', description: 'Large language model from Alibaba Cloud.' },
-                ]
-            },
-        ]
-    },
-];
 
 const TONE_OPTIONS = ['Professional', 'Casual', 'Funny', 'Persuasive', 'Witty', 'Bold', 'Empathetic'];
 const ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"];
@@ -329,7 +87,7 @@ const CreationTabs: React.FC<{ activeTab: string, onTabChange: (tab: string) => 
 );
 
 const SettingsPanel: React.FC<{
-    models: AIModelFamily[]; selectedModel: AIModel; onModelChange: (model: AIModel) => void;
+    selectedModel: AIModel; onModelChange: (model: AIModel) => void;
     tones: string[]; selectedTone: string; onToneChange: (tone: string) => void;
     creativity: number; onCreativityChange: (value: number) => void;
     aspectRatios: string[]; selectedAspectRatio: string; onAspectRatioChange: (ratio: string) => void;
@@ -341,7 +99,7 @@ const SettingsPanel: React.FC<{
     // UI props
     cardBg: string; textColor: string; textSecondary: string; borderColor: string; currentTheme: Theme;
 }> = (props) => {
-    const { models, selectedModel, onModelChange, tones, selectedTone, onToneChange, creativity, onCreativityChange, aspectRatios, selectedAspectRatio, onAspectRatioChange, isImagenSelected, useSearch, onUseSearchChange, useMaps, onUseMapsChange, useThinking, onUseThinkingChange, isProModel, cardBg, textColor, textSecondary, borderColor, currentTheme } = props;
+    const { selectedModel, onModelChange, tones, selectedTone, onToneChange, creativity, onCreativityChange, aspectRatios, selectedAspectRatio, onAspectRatioChange, isImagenSelected, useSearch, onUseSearchChange, useMaps, onUseMapsChange, useThinking, onUseThinkingChange, isProModel, cardBg, textColor, textSecondary, borderColor, currentTheme } = props;
     const [dropdown, setDropdown] = useState<'model' | 'tone' | null>(null);
 
     const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -365,14 +123,14 @@ const SettingsPanel: React.FC<{
                         <span>{selectedModel.name}</span> <ChevronDown size={16} />
                     </button>
                     {dropdown === 'model' && (<div className={`absolute top-full mt-1 w-full ${cardBg} border ${borderColor} rounded-lg shadow-xl z-10 max-h-64 overflow-y-auto`}>
-                        {models.map(family => (
-                            <div key={family.family}>
-                                <h4 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 sticky top-0 bg-inherit">{family.family}</h4>
+                        {Object.entries(API_VERSIONS).map(([developer, families]) => (
+                            <div key={developer}>
+                                <h4 className="px-3 pt-2 pb-1 text-xs font-bold text-gray-400 sticky top-0 bg-inherit">{developer}</h4>
                                 <ul>
-                                    {family.categories.map(category => (
-                                        <React.Fragment key={category.category}>
-                                            {family.categories.length > 1 && <h5 className="px-3 pt-1 text-xs font-semibold text-gray-500">{category.category}</h5>}
-                                            {category.models.map(m => (
+                                    {families.map(family => (
+                                        <React.Fragment key={family.name}>
+                                            {families.length > 1 && <h5 className="px-3 pt-1 text-xs font-semibold text-gray-500">{family.name}</h5>}
+                                            {family.models.map(m => (
                                                 <li key={m.id}>
                                                     <button onClick={() => { onModelChange(m); setDropdown(null); }} className={`w-full text-left px-3 py-2 hover:bg-white/10 text-sm`}>
                                                         <p className={selectedModel.id === m.id ? currentTheme.text : textColor}>{m.name}</p>
@@ -537,31 +295,21 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
     const audioChunksRef = useRef<Blob[]>([]);
 
     const findModelById = (id: string) => {
-        for (const family of AI_MODELS) {
-            for (const category of family.categories) {
+        for (const family of Object.values(API_VERSIONS)) {
+            for (const category of family) {
                 const model = category.models.find(m => m.id === id);
                 if (model) return model;
             }
         }
-        return AI_MODELS[0].categories[0].models[0];
+        return API_VERSIONS['Google AI'][0].models[0];
     };
     const [selectedModel, setSelectedModel] = useState<AIModel>(() => findModelById('gemini-2.5-flash'));
     
-    // Fix: Added a helper function to retrieve the developer's name for a given model ID.
-    const getModelDeveloper = (modelId: string): string => {
-        for (const family of AI_MODELS) {
-            for (const category of family.categories) {
-                if (category.models.some(m => m.id === modelId)) {
-                    return family.developer;
-                }
-            }
-        }
-        return 'Unknown';
-    };
-
-
     useEffect(() => {
-        if (show) { (async () => setApiKeyOk(await (window as any).aistudio.hasSelectedApiKey()))(); }
+        if (show) { 
+            const googleApiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
+            setApiKeyOk(!!googleApiKey);
+        }
     }, [show]);
 
     const resetForTabChange = (tab: string) => {
@@ -587,30 +335,28 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
         if (audioMode === 'transcribe' && !sourceFile) { setError("Please record or upload audio to transcribe."); return; }
         if (!prompt.trim() && !(sourceFile && creationMode !== 'generate')) { setError("A prompt is required."); return; }
 
-        const isGoogleModel = AI_MODELS.find(f => f.developer === 'Google DeepMind')
-                                ?.categories.flatMap(c => c.models)
-                                .some(m => m.id === selectedModel.id);
+        const developer = getModelDeveloper(selectedModel.id);
+        const isGoogleModel = developer === 'Google AI';
 
-        if (!isGoogleModel) {
-            // Fix: Replaced `selectedModel.developer` with `getModelDeveloper(selectedModel.id)` to correctly retrieve the developer name, as the `developer` property does not exist on the `AIModel` type.
-            setError(`Generation with ${selectedModel.name} (${getModelDeveloper(selectedModel.id)}) is not yet supported in this interface. Please select a model from the Gemini Series to proceed.`);
+        setIsGenerating(true); setGenerationStatus('Initializing...'); setGenerationResult(null); setError(null);
+        
+        const apiKey = localStorage.getItem(API_CONFIG['Google AI'].storageKey);
+
+        if (isGoogleModel && !apiKey) {
+            setError(`A Google AI API key is required to use the ${selectedModel.name} model. Please add one in Settings.`);
+            setIsGenerating(false);
+            setApiKeyOk(false);
             return;
         }
 
-        if (selectedModel.id.includes('veo')) {
-            const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-            if (!hasKey) {
-                await (window as any).aistudio.openSelectKey();
-                const hasKeyAfter = await (window as any).aistudio.hasSelectedApiKey();
-                if (!hasKeyAfter) { setError("An API key is required for video generation."); return; }
-                setApiKeyOk(true);
-            }
+        if (!isGoogleModel) {
+            setError(`Generation with ${selectedModel.name} (${developer}) is not yet supported. Please select a model from Google AI to proceed.`);
+            setIsGenerating(false);
+            return;
         }
 
-        setIsGenerating(true); setGenerationStatus('Initializing...'); setGenerationResult(null); setError(null);
-
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: apiKey! });
             const modelName = selectedModel.id;
             let config: any = { temperature: creativity };
             let contents: any = prompt;
@@ -629,7 +375,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 config.numberOfImages = 1; config.outputMimeType = 'image/jpeg'; config.aspectRatio = selectedAspectRatio;
                 const resp = await ai.models.generateImages({ model: modelName, prompt, config });
                 const b64 = resp.generatedImages?.[0]?.image?.imageBytes;
-                if (b64) setGenerationResult({ type: 'image', content: `data:image/jpeg;base64,${b64}` });
+                if (b64) setGenerationResult({ type: 'image', content: { url: `data:image/jpeg;base64,${b64}`} });
                 else throw new Error("API did not return an image.");
             } else if (modelName.includes('veo')) {
                 config = { numberOfVideos: 1, resolution: '720p', aspectRatio: selectedAspectRatio as any };
@@ -638,16 +384,16 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 if (sourceFile?.type === 'image') payload.image = { imageBytes: sourceFile.base64, mimeType: sourceFile.file.type };
 
                 setGenerationStatus('Submitting video request...');
-                let op = await (ai.models as any).generateVideos(payload);
+                let op = await ai.models.generateVideos(payload);
                 setGenerationStatus('Generating video... this can take minutes.');
                 while (!op.done) {
                     await new Promise(r => setTimeout(r, 10000));
-                    op = await (ai.operations as any).getVideosOperation({ operation: op });
+                    op = await ai.operations.getVideosOperation({operation: op});
                 }
                 const link = op.response?.generatedVideos?.[0]?.video?.uri;
                 if (link) {
                     setGenerationStatus('Fetching video file...');
-                    const videoResp = await fetch(`${link}&key=${process.env.API_KEY}`);
+                    const videoResp = await fetch(`${link}&key=${apiKey}`);
                     const blob = await videoResp.blob();
                     setGenerationResult({ type: 'video', content: { url: URL.createObjectURL(blob) } });
                 } else throw new Error("Video generation failed to return a link.");
@@ -684,8 +430,8 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
         } catch (e: any) {
             console.error("AI generation error:", e);
             const msg = e.message || "An unknown error occurred.";
-            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please select a valid key."); }
-            else if (msg.includes("billing")) { setApiKeyOk(false); setError("This model requires a billed project. Please select a different API key."); }
+            if (msg.includes("API key not valid")) { setApiKeyOk(false); setError("API key is invalid. Please add a valid key in Settings."); }
+            else if (msg.includes("billing")) { setApiKeyOk(false); setError("This model may require a billed project. Please check your API key's project settings."); }
             else setError(msg);
         } finally {
             setIsGenerating(false);
@@ -726,13 +472,12 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                 
                 {!apiKeyOk ? ( <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
                         <KeyRound size={48} className={`mx-auto ${currentTheme.text} mb-4`} /><h3 className="text-2xl font-bold mb-2">API Key Required</h3>
-                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, select a Google AI API key. Some models may require a key from a billed Google Cloud project.</p>
-                        <button onClick={async () => { await (window as any).aistudio.openSelectKey(); setApiKeyOk(true); }} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>Select API Key</button>
-                        <p className={`text-xs ${textSecondary} mt-4`}>See the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className={`underline ${currentTheme.hoverText}`}>billing documentation</a>.</p>
+                        <p className={`${textSecondary} mb-6 max-w-md`}>To use the AI Creator Studio, a Google AI API key is required. Please add one in Settings.</p>
+                        <button onClick={onClose} className={`px-6 py-3 rounded-lg font-semibold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform`}>Go to Settings</button>
                     </div> ) : ( <>
                         <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
                             <MainWorkspace {...{ prompt, setPrompt, isGenerating, generationStatus, generationResult, error, currentTheme, cardBg, borderColor, textColor, textSecondary, activeTab, mode: creationMode, setMode: setCreationMode, audioMode, setAudioMode, sourceFile, onFileChange: handleFileChange, removeFile: () => setSourceFile(null), isRecording, startRecording, stopRecording }} />
-                            <SettingsPanel {...{ models: AI_MODELS, selectedModel, onModelChange: setSelectedModel, tones: TONE_OPTIONS, selectedTone, onToneChange: setSelectedTone, creativity, onCreativityChange: setCreativity, aspectRatios: ASPECT_RATIOS, selectedAspectRatio, onAspectRatioChange: setSelectedAspectRatio, isImagenSelected: selectedModel.id.includes('imagen'), useSearch, onUseSearchChange: setUseSearch, useMaps, onUseMapsChange: setUseMaps, useThinking, onUseThinkingChange: setUseThinking, isProModel: selectedModel.id.includes('2.5-pro'), cardBg, textColor, textSecondary, borderColor, currentTheme }} />
+                            <SettingsPanel {...{ selectedModel, onModelChange: setSelectedModel, tones: TONE_OPTIONS, selectedTone, onToneChange: setSelectedTone, creativity, onCreativityChange: setCreativity, aspectRatios: ASPECT_RATIOS, selectedAspectRatio, onAspectRatioChange: setSelectedAspectRatio, isImagenSelected: selectedModel.id.includes('imagen'), useSearch, onUseSearchChange: setUseSearch, useMaps, onUseMapsChange: setUseMaps, useThinking, onUseThinkingChange: setUseThinking, isProModel: selectedModel.id.includes('2.5-pro'), cardBg, textColor, textSecondary, borderColor, currentTheme }} />
                         </div>
                         <footer className={`flex justify-between items-center p-4 border-t ${borderColor} flex-shrink-0`}>
                             <div className="flex items-center gap-2">

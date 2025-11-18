@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
-import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService } from '../constants';
+import { THEMES as ThemeConstants, API_CONFIG, API_VERSIONS, ApiService, AIModelInfo } from '../constants';
 import AvatarDisplay from './AvatarDisplay';
+import { GoogleGenAI } from '@google/genai';
 
 // --- HELP CENTER DATA ---
 const HELP_ARTICLES = [
@@ -221,24 +222,26 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
     const [customBaseUrl, setCustomBaseUrl] = useState('');
     const [connectionStatus, setConnectionStatus] = useState<'untested' | 'testing' | 'valid' | 'invalid'>('untested');
     
-    const availableVersions = API_VERSIONS[selectedService] || [];
-    const selectedVersionDetails = availableVersions.find(v => v.name === apiVersion);
+    const availableCategories = API_VERSIONS[selectedService] || [];
+    const selectedCategory = availableCategories.find(cat => cat.models.some(m => m.id === apiVersion));
+    const selectedModelDetails = selectedCategory?.models.find(m => m.id === apiVersion);
 
     useEffect(() => {
         const config = API_CONFIG[selectedService];
-        
+        const savedKey = localStorage.getItem(config.storageKey) || '';
+        setApiKey(savedKey);
+        setConnectionStatus(savedKey ? 'untested' : 'invalid');
+
         if (selectedService !== 'Custom') {
-            const versions = API_VERSIONS[selectedService] || [];
-            const savedKey = localStorage.getItem(config.storageKey);
+            const categories = API_VERSIONS[selectedService] || [];
+            const allModels = categories.flatMap(c => c.models);
             const savedVersion = localStorage.getItem(config.storageKey.replace('apiKey', 'apiVersion'));
             
-            setApiKey(savedKey || '');
-
-            const validSavedVersion = versions.find(v => v.name === savedVersion);
+            const validSavedVersion = allModels.find(v => v.id === savedVersion);
             if (validSavedVersion) {
                 setApiVersion(savedVersion!);
-            } else if (versions.length > 0) {
-                const defaultVersion = versions[0].name;
+            } else if (allModels.length > 0) {
+                const defaultVersion = allModels[0].id;
                 setApiVersion(defaultVersion);
                 localStorage.setItem(config.storageKey.replace('apiKey', 'apiVersion'), defaultVersion);
             } else {
@@ -246,15 +249,11 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                 localStorage.removeItem(config.storageKey.replace('apiKey', 'apiVersion'));
             }
         } else {
-            const savedKey = localStorage.getItem(config.storageKey);
             const savedBaseUrl = localStorage.getItem(config.baseUrlKey!);
             const savedModelName = localStorage.getItem(config.modelNameKey!);
-            setApiKey(savedKey || '');
             setCustomBaseUrl(savedBaseUrl || '');
             setCustomModelName(savedModelName || '');
         }
-
-        setConnectionStatus('untested');
     }, [selectedService]);
 
     const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,13 +282,33 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
         localStorage.setItem(API_CONFIG['Custom'].modelNameKey!, newName);
     };
 
-    const handleTestConnection = () => {
+    const handleTestConnection = async () => {
         setConnectionStatus('testing');
+    
+        if (selectedService === 'Google AI') {
+            if (!apiKey.trim()) {
+                setConnectionStatus('invalid');
+                return;
+            }
+            try {
+                const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
+                await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: 'test',
+                });
+                setConnectionStatus('valid');
+            } catch (error: any) {
+                console.error("API Test Failed:", error);
+                setConnectionStatus('invalid');
+            }
+            return;
+        }
+    
+        // Fallback for other services
         setTimeout(() => {
             let isValid = false;
             if (selectedService === 'Custom') {
                 try {
-                    // Basic validation for URL and key
                     isValid = apiKey.trim().length > 10 && new URL(customBaseUrl.trim()).protocol.startsWith('http');
                 } catch (e) {
                     isValid = false;
@@ -297,12 +316,7 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
             } else {
                 isValid = apiKey.trim().length > 10;
             }
-
-            if (isValid) {
-                setConnectionStatus('valid');
-            } else {
-                setConnectionStatus('invalid');
-            }
+            setConnectionStatus(isValid ? 'valid' : 'invalid');
         }, 1500);
     };
 
@@ -360,23 +374,27 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                     </>
                 ) : (
                     <div>
-                        <label className={`block mb-2 text-sm ${textSecondary}`}>Version</label>
+                        <label className={`block mb-2 text-sm ${textSecondary}`}>Model</label>
                         <select
                             value={apiVersion}
                             onChange={handleApiVersionChange}
                             className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
-                            disabled={availableVersions.length === 0}
+                            disabled={availableCategories.length === 0}
                         >
-                            {availableVersions.map(version => (
-                                <option key={version.name} value={version.name}>
-                                    {version.name}
-                                </option>
+                            {availableCategories.map(category => (
+                                <optgroup key={category.name} label={category.name}>
+                                    {category.models.map(model => (
+                                        <option key={model.id} value={model.id}>
+                                            {model.name}
+                                        </option>
+                                    ))}
+                                </optgroup>
                             ))}
-                            {availableVersions.length === 0 && <option>No versions available</option>}
+                            {availableCategories.length === 0 && <option>No models available</option>}
                         </select>
-                        {selectedVersionDetails && (
+                        {selectedModelDetails && (
                             <p className={`text-xs mt-2 ${textSecondary}`}>
-                                {selectedVersionDetails.description}
+                                {selectedModelDetails.description}
                             </p>
                         )}
                     </div>
