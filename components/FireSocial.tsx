@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 // Types and Constants
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction } from '../types';
@@ -136,7 +136,7 @@ export const FireSocial: React.FC = () => {
     const [tipModalRecipient, setTipModalRecipient] = useState<Profile | null>(null);
 
     // Widget Layout State
-    const [widgetOrder, setWidgetOrder] = useState<string[]>(['trending', 'suggestions', 'communities']);
+    const [widgetOrder, setWidgetOrder] = useState<string[]>(['weather', 'stocks', 'crypto', 'trending', 'suggestions', 'communities']);
     const [dragEnabledIndex, setDragEnabledIndex] = useState<number | null>(null);
     const dragItem = useRef<number | null>(null);
     const dragNode = useRef<HTMLDivElement | null>(null);
@@ -859,9 +859,115 @@ export const FireSocial: React.FC = () => {
         );
 
         switch(widgetId) {
+            case 'weather':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} text-white relative overflow-hidden mb-4`}>
+                        {/* Background gradient based on time/weather */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 opacity-80 dark:opacity-40"></div>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="font-bold text-lg flex items-center gap-2"><MapPin size={16}/> San Francisco</h3>
+                                    <p className="text-xs opacity-80">California, USA</p>
+                                </div>
+                                {Grip}
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-4xl font-bold">72°</span>
+                                    <span className="text-sm font-medium">Sunny</span>
+                                </div>
+                                <Sun size={48} className="text-yellow-300 animate-pulse" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20">
+                                <div className="text-center">
+                                    <Wind size={16} className="mx-auto mb-1 opacity-80"/>
+                                    <span className="text-xs">8 mph</span>
+                                </div>
+                                <div className="text-center">
+                                    <Droplets size={16} className="mx-auto mb-1 opacity-80"/>
+                                    <span className="text-xs">42%</span>
+                                </div>
+                                <div className="text-center">
+                                    <CloudRain size={16} className="mx-auto mb-1 opacity-80"/>
+                                    <span className="text-xs">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'stocks':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold flex items-center gap-2"><Activity size={18} /> Live Stocks</h3>
+                            {Grip}
+                        </div>
+                        <div className="space-y-3">
+                            {[
+                                { sym: 'AAPL', name: 'Apple', price: '182.50', change: '+1.25%', up: true },
+                                { sym: 'TSLA', name: 'Tesla', price: '175.30', change: '-2.40%', up: false },
+                                { sym: 'NVDA', name: 'Nvidia', price: '890.00', change: '+3.10%', up: true },
+                            ].map(stock => (
+                                <div key={stock.sym} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${stock.up ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                            {stock.sym}
+                                        </div>
+                                        <div>
+                                            <p className={`font-bold text-sm ${textColor}`}>{stock.name}</p>
+                                            <p className={`text-xs ${textSecondary}`}>{stock.price}</p>
+                                        </div>
+                                    </div>
+                                    <div className={`text-right ${stock.up ? 'text-green-500' : 'text-red-500'}`}>
+                                        <p className="font-bold text-sm">{stock.change}</p>
+                                        <p className="text-xs flex items-center justify-end gap-0.5">
+                                            {stock.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            case 'crypto':
+                return (
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold flex items-center gap-2"><Bitcoin size={18} /> Crypto</h3>
+                            {Grip}
+                        </div>
+                        <div className="space-y-3">
+                            {[
+                                { sym: 'BTC', name: 'Bitcoin', price: '68,400', change: '+5.2%', up: true, icon: '₿' },
+                                { sym: 'ETH', name: 'Ethereum', price: '3,500', change: '+2.1%', up: true, icon: 'Ξ' },
+                                { sym: 'SOL', name: 'Solana', price: '145.20', change: '-0.8%', up: false, icon: '◎' },
+                            ].map(coin => (
+                                <div key={coin.sym} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${coin.sym === 'BTC' ? 'from-orange-400 to-yellow-500' : coin.sym === 'ETH' ? 'from-blue-400 to-purple-500' : 'from-purple-500 to-indigo-600'} text-white`}>
+                                            {coin.icon}
+                                        </div>
+                                        <div>
+                                            <p className={`font-bold text-sm ${textColor}`}>{coin.name}</p>
+                                            <p className={`text-xs ${textSecondary}`}>{coin.sym}</p>
+                                        </div>
+                                    </div>
+                                    <div className={`text-right ${coin.up ? 'text-green-500' : 'text-red-500'}`}>
+                                        <p className="font-bold text-sm">${coin.price}</p>
+                                        <p className="text-xs flex items-center justify-end gap-0.5">
+                                            {coin.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                            {coin.change}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
             case 'trending':
                 return (
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
                          <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold">Trending Topics</h3>
                             {Grip}
@@ -883,7 +989,7 @@ export const FireSocial: React.FC = () => {
                 );
             case 'suggestions':
                 return (
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
                         <div className="flex justify-between items-center mb-4">
                              <h3 className="font-bold">Suggestions</h3>
                              {Grip}
@@ -904,7 +1010,7 @@ export const FireSocial: React.FC = () => {
                 );
             case 'communities':
                 return (
-                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>
+                    <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
                          <div className="flex justify-between items-center mb-4">
                              <h3 className="font-bold flex items-center gap-2"><Users size={18} /> Communities</h3>
                              {Grip}

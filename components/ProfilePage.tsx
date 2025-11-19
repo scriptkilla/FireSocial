@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
 import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail } from 'lucide-react';
@@ -684,30 +683,30 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
 
             {/* --- Sticky Tab Navigation --- */}
             <div className="sticky top-4 z-30 -mx-2 sm:mx-0 mb-6">
-                 <div className={`${cardBg} backdrop-blur-xl rounded-[2.5rem] border ${borderColor} shadow-lg py-4 px-2 sm:px-6`}>
-                    <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar px-2 sm:justify-center pb-2 pt-2 snap-x">
+                 <div className={`${cardBg} backdrop-blur-xl rounded-[2rem] border ${borderColor} shadow-lg py-2 px-2 sm:px-4`}>
+                    <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar px-2 sm:justify-center pb-1 pt-1 snap-x">
                         {TABS.map((tab) => {
                             const isActive = activeTab === tab.id;
                             return (
                                 <button
                                     key={tab.id}
                                     onClick={() => onTabChange(tab.id)}
-                                    className={`group flex flex-col items-center gap-2 flex-shrink-0 transition-all duration-300 snap-center outline-none`}
+                                    className={`group flex flex-col items-center gap-1 flex-shrink-0 transition-all duration-300 snap-center outline-none`}
                                 >
                                     <div className={`
-                                        relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-500
+                                        relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-500
                                         ${isActive 
-                                            ? `text-white shadow-xl scale-110` 
+                                            ? `text-white shadow-md scale-110` 
                                             : `${textSecondary} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:scale-105`
                                         }
                                     `}>
                                         {isActive && (
                                             <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${currentTheme.from} ${currentTheme.to} opacity-100`} />
                                         )}
-                                        <tab.icon size={20} className="relative z-10" strokeWidth={isActive ? 2.5 : 2} />
+                                        <tab.icon size={16} className="relative z-10" strokeWidth={isActive ? 2.5 : 2} />
                                         
                                     </div>
-                                    <span className={`text-xs font-bold tracking-wide transition-all duration-300 ${isActive ? `${textColor} scale-105` : `${textSecondary} group-hover:${textColor}`}`}>
+                                    <span className={`text-[10px] sm:text-xs font-bold tracking-wide transition-all duration-300 ${isActive ? `${textColor} scale-105` : `${textSecondary} group-hover:${textColor}`}`}>
                                         {tab.label}
                                     </span>
                                 </button>
