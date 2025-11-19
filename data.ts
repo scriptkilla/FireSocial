@@ -1,5 +1,6 @@
 
 
+
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
@@ -102,7 +103,18 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
       { date: '2024-01-13', amount: 25 },
     ]
   },
-  payoutMethod: 'stripe', payoutEmail: 'payout@example.com', minimumPayout: 50, nextPayoutDate: '2024-02-01', balance: 342.75
+  payoutMethod: 'stripe', payoutEmail: 'payout@example.com', minimumPayout: 50, nextPayoutDate: '2024-02-01', balance: 342.75,
+  wallet: {
+    paymentMethods: [
+      { id: 'pm_1', type: 'card', name: 'Visa ending in 4242', last4: '4242', expiry: '12/25' },
+      { id: 'pm_2', type: 'bank', name: 'Chase Bank', last4: '9876' }
+    ],
+    transactions: [
+      { id: 'txn_1', type: 'earning', amount: 15.00, date: '2024-01-20', status: 'completed', description: 'Product Sale: FireSocial UI Kit' },
+      { id: 'txn_2', type: 'tip_received', amount: 5.00, date: '2024-01-19', status: 'completed', description: 'Tip from @alexrivera' },
+      { id: 'txn_3', type: 'withdrawal', amount: 50.00, date: '2024-01-15', status: 'completed', description: 'Withdrawal to Bank' }
+    ]
+  }
 };
 
 const BASE_USERS: Profile[] = [

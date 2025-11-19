@@ -1,8 +1,10 @@
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product } from '../types';
+import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
 // Fix: Imported the 'Users' icon from lucide-react.
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- SUB-COMPONENTS for Monetization ---
@@ -67,6 +69,11 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
 const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization, onUpdate: (updated: CreatorMonetization) => void, currentTheme: Theme, cardBg: string, borderColor: string, textColor: string, textSecondary: string, onAddNewProductClick: () => void }> = (props) => {
     const { monetization, onUpdate, currentTheme, cardBg, borderColor, textColor, textSecondary, onAddNewProductClick } = props;
     const [activeTab, setActiveTab] = useState('overview');
+    const [depositAmount, setDepositAmount] = useState('');
+    const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [showDepositModal, setShowDepositModal] = useState(false);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
 
     if (!monetization.enabled) {
         return (
@@ -81,6 +88,67 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
         );
     }
     
+    const handleDeposit = () => {
+        const amount = parseFloat(depositAmount);
+        if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
+        if (!selectedPaymentMethod) { alert("Please select a payment method."); return; }
+
+        const newTransaction: WalletTransaction = {
+            id: `txn_${Date.now()}`,
+            type: 'deposit',
+            amount: amount,
+            date: new Date().toISOString().split('T')[0],
+            status: 'completed',
+            description: 'Deposit via Card/Bank'
+        };
+
+        const updatedWallet = {
+            paymentMethods: monetization.wallet?.paymentMethods || [],
+            transactions: [newTransaction, ...(monetization.wallet?.transactions || [])]
+        };
+
+        onUpdate({
+            ...monetization,
+            balance: monetization.balance + amount,
+            wallet: updatedWallet
+        });
+        
+        setDepositAmount('');
+        setShowDepositModal(false);
+        alert("Deposit successful!");
+    };
+
+    const handleWithdraw = () => {
+        const amount = parseFloat(withdrawAmount);
+        if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
+        if (amount > monetization.balance) { alert("Insufficient funds."); return; }
+        if (!selectedPaymentMethod) { alert("Please select a destination."); return; }
+
+        const newTransaction: WalletTransaction = {
+            id: `txn_${Date.now()}`,
+            type: 'withdrawal',
+            amount: amount,
+            date: new Date().toISOString().split('T')[0],
+            status: 'completed',
+            description: 'Withdrawal to Card/Bank'
+        };
+
+        const updatedWallet = {
+            paymentMethods: monetization.wallet?.paymentMethods || [],
+            transactions: [newTransaction, ...(monetization.wallet?.transactions || [])]
+        };
+
+        onUpdate({
+            ...monetization,
+            balance: monetization.balance - amount,
+            wallet: updatedWallet
+        });
+
+        setWithdrawAmount('');
+        setShowWithdrawModal(false);
+        alert("Withdrawal initiated!");
+    };
+
     const StatCard: React.FC<{label: string, value: string | number, icon: React.ReactNode}> = ({label, value, icon}) => (
         <div className={`${cardBg} p-4 rounded-xl border ${borderColor}`}>
             <div className="flex items-center gap-3 text-sm text-gray-400 mb-2">{icon} {label}</div>
@@ -92,17 +160,138 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
         <div className="space-y-6">
             <div className="flex gap-4 border-b border-gray-500/20 overflow-x-auto">
                 <button onClick={() => setActiveTab('overview')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'overview' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Overview</button>
+                <button onClick={() => setActiveTab('wallet')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'wallet' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Wallet</button>
                 <button onClick={() => setActiveTab('subscriptions')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'subscriptions' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Subscriptions</button>
                 <button onClick={() => setActiveTab('tips')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'tips' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Tip Jar</button>
                 <button onClick={() => setActiveTab('products')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'products' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Products</button>
             </div>
             
             {activeTab === 'overview' && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard label="Available Balance" value={`$${monetization.balance}`} icon={<DollarSign size={16}/>} />
+                <StatCard label="Available Balance" value={`$${monetization.balance.toFixed(2)}`} icon={<DollarSign size={16}/>} />
                 <StatCard label="This Month" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={16}/>} />
                 <StatCard label="Subscribers" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={16}/>} />
                 <StatCard label="Total Tips" value={monetization.tipJar.tipCount} icon={<Heart size={16}/>} />
             </div>}
+            
+            {activeTab === 'wallet' && (
+                <div className="space-y-6">
+                    <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} flex flex-col items-center justify-center text-center`}>
+                        <p className={`${textSecondary} text-lg mb-2`}>Current Balance</p>
+                        <h2 className={`text-5xl font-bold mb-6 ${textColor}`}>${monetization.balance.toFixed(2)}</h2>
+                        <div className="flex gap-4 w-full max-w-md">
+                             <button onClick={() => setShowDepositModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
+                                <ArrowDownLeft size={20} /> Deposit
+                            </button>
+                            <button onClick={() => setShowWithdrawModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
+                                <ArrowUpRight size={20} /> Withdraw
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className={`${cardBg} p-5 rounded-2xl border ${borderColor}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg">Payment Methods</h3>
+                                <button className={`text-sm font-semibold ${currentTheme.text} hover:underline`}>+ Add New</button>
+                            </div>
+                            <div className="space-y-3">
+                                {monetization.wallet?.paymentMethods.map(pm => (
+                                    <div key={pm.id} className={`flex items-center justify-between p-3 rounded-xl border ${borderColor} bg-black/5 dark:bg-white/5`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300`}>
+                                                {pm.type === 'card' ? <CreditCard size={20} /> : <Building size={20} />}
+                                            </div>
+                                            <div>
+                                                <p className={`font-semibold ${textColor}`}>{pm.name}</p>
+                                                <p className={`text-xs ${textSecondary}`}>{pm.type === 'card' ? `Expires ${pm.expiry}` : 'Bank Account'}</p>
+                                            </div>
+                                        </div>
+                                        <button className={`p-2 hover:bg-red-500/10 rounded-full text-gray-400 hover:text-red-500`}><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
+                                {(!monetization.wallet?.paymentMethods || monetization.wallet.paymentMethods.length === 0) && <p className={textSecondary}>No payment methods added.</p>}
+                            </div>
+                        </div>
+
+                        <div className={`${cardBg} p-5 rounded-2xl border ${borderColor}`}>
+                            <h3 className="font-bold text-lg mb-4">Recent Transactions</h3>
+                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                                {monetization.wallet?.transactions.map(txn => (
+                                    <div key={txn.id} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-full ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                                            </div>
+                                            <div>
+                                                <p className={`${textColor} font-medium`}>{txn.description}</p>
+                                                <p className={textSecondary}>{txn.date}</p>
+                                            </div>
+                                        </div>
+                                        <span className={`font-bold ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'text-green-500' : 'text-red-500'}`}>
+                                            {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? '+' : '-'}${txn.amount.toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                                {(!monetization.wallet?.transactions || monetization.wallet.transactions.length === 0) && <p className={textSecondary}>No transactions yet.</p>}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Deposit Modal */}
+                    {showDepositModal && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                            <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
+                                <h3 className="text-xl font-bold mb-4">Deposit Funds</h3>
+                                <div className="mb-4">
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount</label>
+                                    <div className="relative">
+                                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
+                                        <input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
+                                    </div>
+                                </div>
+                                <div className="mb-6">
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Source</label>
+                                    <select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
+                                        <option value="">Select a card or bank</option>
+                                        {monetization.wallet?.paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowDepositModal(false)} className={`flex-1 py-2 rounded-lg border ${borderColor} hover:bg-white/10`}>Cancel</button>
+                                    <button onClick={handleDeposit} className="flex-1 py-2 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600">Deposit</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Withdraw Modal */}
+                    {showWithdrawModal && (
+                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                            <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
+                                <h3 className="text-xl font-bold mb-4">Withdraw Funds</h3>
+                                <div className="mb-4">
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount</label>
+                                    <div className="relative">
+                                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
+                                        <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
+                                    </div>
+                                </div>
+                                <div className="mb-6">
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Destination</label>
+                                    <select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
+                                        <option value="">Select a card or bank</option>
+                                        {monetization.wallet?.paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowWithdrawModal(false)} className={`flex-1 py-2 rounded-lg border ${borderColor} hover:bg-white/10`}>Cancel</button>
+                                    <button onClick={handleWithdraw} className="flex-1 py-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600">Withdraw</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             
             {activeTab === 'subscriptions' && <div className="space-y-4">
                 <h3 className="font-bold text-lg">Your Subscription Tiers</h3>
@@ -175,6 +364,7 @@ interface ProfilePageProps {
     onViewStreaks: () => void;
     onPurchasePost: (postId: number) => void;
     onShowAddProductModal: () => void;
+    onUpdateProfileMonetization?: (updatedMonetization: CreatorMonetization) => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -185,7 +375,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -424,7 +614,16 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                         </div>
                     ) : <p className={`${textSecondary} text-center py-8`}>You have no scheduled posts.</p>)}
                     {activeTab === 'monetization' && isOwnProfile && profileToDisplay.creatorMonetization && (
-                        <CreatorMonetizationDashboard monetization={profileToDisplay.creatorMonetization} onUpdate={() => {}} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} textColor={textColor} textSecondary={textSecondary} onAddNewProductClick={onShowAddProductModal} />
+                        <CreatorMonetizationDashboard 
+                            monetization={profileToDisplay.creatorMonetization} 
+                            onUpdate={onUpdateProfileMonetization || (() => {})} 
+                            currentTheme={currentTheme} 
+                            cardBg={cardBg} 
+                            borderColor={borderColor} 
+                            textColor={textColor} 
+                            textSecondary={textSecondary} 
+                            onAddNewProductClick={onShowAddProductModal} 
+                        />
                     )}
                 </div>
             </div>

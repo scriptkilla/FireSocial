@@ -163,6 +163,23 @@ export interface CreatorAnalytics {
   tipHistory: { date: string; amount: number }[];
 }
 
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'bank';
+  name: string;
+  last4: string;
+  expiry?: string; // MM/YY for cards
+}
+
+export interface WalletTransaction {
+  id: string;
+  type: 'deposit' | 'withdrawal' | 'tip_received' | 'tip_sent' | 'earning';
+  amount: number;
+  date: string;
+  status: 'completed' | 'pending' | 'failed';
+  description: string;
+}
+
 export interface CreatorMonetization {
   enabled: boolean;
   subscriptionTiers: SubscriptionTier[];
@@ -175,6 +192,10 @@ export interface CreatorMonetization {
   minimumPayout: number;
   nextPayoutDate: string;
   balance: number;
+  wallet?: {
+    paymentMethods: PaymentMethod[];
+    transactions: WalletTransaction[];
+  };
 }
 
 export interface Profile {

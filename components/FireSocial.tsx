@@ -3,6 +3,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
@@ -684,7 +686,9 @@ export const FireSocial: React.FC = () => {
             case 'marketplace':
                 return <MarketplacePage products={marketplaceProducts} onViewProduct={setViewingProduct} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} onOpenCart={() => setShowCartModal(true)} cartItemCount={cart.length} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
             case 'profile':
-                return <ProfilePage profileToDisplay={viewingProfile} isOwnProfile={viewingProfile.id === profile.id} posts={posts} scheduledPosts={[]} onDeleteScheduledPost={() => {}} activeTab={profileTab} onTabChange={setProfileTab} onEditProfile={() => setShowEditProfile(true)} onFollow={handleFollowToggle} onBlockToggle={handleBlockToggle} isFollowing={following.some(u => u.id === viewingProfile.id)} isBlocked={blockedUserIds.has(viewingProfile.id)} onShowFollowers={() => setShowFollowList({type: 'followers', user: viewingProfile})} onShowFollowing={() => setShowFollowList({type: 'following', user: viewingProfile})} onViewPost={setViewingPost} onViewComments={setCommentModalPost} onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} onViewProfile={handleViewProfile} onViewAchievements={() => setActivePage('achievements')} onViewTrophies={() => setActivePage('trophies')} onViewStreaks={() => setActivePage('streaks')} allAchievements={ALL_ACHIEVEMENTS} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} currentTheme={currentTheme} onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} onShowAddProductModal={() => setShowAddProductModal(true)} />;
+                return <ProfilePage profileToDisplay={viewingProfile} isOwnProfile={viewingProfile.id === profile.id} posts={posts} scheduledPosts={[]} onDeleteScheduledPost={() => {}} activeTab={profileTab} onTabChange={setProfileTab} onEditProfile={() => setShowEditProfile(true)} onFollow={handleFollowToggle} onBlockToggle={handleBlockToggle} isFollowing={following.some(u => u.id === viewingProfile.id)} isBlocked={blockedUserIds.has(viewingProfile.id)} onShowFollowers={() => setShowFollowList({type: 'followers', user: viewingProfile})} onShowFollowing={() => setShowFollowList({type: 'following', user: viewingProfile})} onViewPost={setViewingPost} onViewComments={setCommentModalPost} onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} onViewProfile={handleViewProfile} onViewAchievements={() => setActivePage('achievements')} onViewTrophies={() => setActivePage('trophies')} onViewStreaks={() => setActivePage('streaks')} allAchievements={ALL_ACHIEVEMENTS} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} currentTheme={currentTheme} onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} onShowAddProductModal={() => setShowAddProductModal(true)} 
+                onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
+                />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
             case 'trophies':
