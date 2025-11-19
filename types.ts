@@ -57,6 +57,14 @@ export interface UserListItem {
   followedByYou: boolean;
 }
 
+export interface CommentAttachment {
+  type: 'image' | 'video' | 'file';
+  url: string;
+  name?: string;
+  size?: string;
+  mimeType?: string;
+}
+
 export interface Comment {
   id: number;
   userId: number;
@@ -68,6 +76,7 @@ export interface Comment {
   isLiked: boolean;
   replyTo?: string;
   edited?: boolean;
+  attachment?: CommentAttachment;
 }
 
 export interface Post {

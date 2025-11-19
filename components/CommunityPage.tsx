@@ -1,7 +1,9 @@
 
+
+
 import React from 'react';
 import { ArrowLeft, Users, Plus, Check } from 'lucide-react';
-import { Community, Post, Profile, UserListItem, Theme, Reaction, Message } from '../types';
+import { Community, Post, Profile, UserListItem, Theme, Reaction, Message, CommentAttachment } from '../types';
 import PostComponent from './PostComponent';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -19,7 +21,7 @@ interface CommunityPageProps {
     onDeletePost: (postId: number) => void;
     onViewPost: (post: Post) => void;
     onViewComments: (post: Post) => void;
-    onAddComment: (postId: number, text: string) => void;
+    onAddComment: (postId: number, text: string, replyToUsername?: string, attachment?: CommentAttachment) => void;
     onShare: (post: Post) => void;
     onViewProfile: (username: string) => void;
     onViewHashtag: (tag: string) => void;

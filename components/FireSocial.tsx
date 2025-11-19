@@ -1,11 +1,13 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -330,7 +332,7 @@ export const FireSocial: React.FC = () => {
         }
     };
 
-    const handleAddComment = (postId: number, commentText: string, replyToUsername?: string) => {
+    const handleAddComment = (postId: number, commentText: string, replyToUsername?: string, attachment?: CommentAttachment) => {
         setPosts(posts.map(p => {
             if (p.id === postId) {
                 const newComment: Comment = {
@@ -342,7 +344,8 @@ export const FireSocial: React.FC = () => {
                     time: 'Just now',
                     likes: 0,
                     isLiked: false,
-                    replyTo: replyToUsername
+                    replyTo: replyToUsername,
+                    attachment: attachment
                 };
                 return {
                     ...p,

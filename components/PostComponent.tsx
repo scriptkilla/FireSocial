@@ -1,9 +1,12 @@
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Post, Profile, Reaction, Theme, Message, UserListItem } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock } from 'lucide-react';
+import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2 } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
+import { GoogleGenAI } from "@google/genai";
 
 interface PostComponentProps {
     post: Post;
@@ -24,7 +27,7 @@ interface PostComponentProps {
     onDelete: (postId: number) => void;
     onViewPost: (post: Post) => void;
     onViewComments: (post: Post) => void;
-    onAddComment: (postId: number, commentText: string) => void;
+    onAddComment: (postId: number, commentText: string, replyToUsername?: string, attachment?: CommentAttachment) => void;
     onHide: (postId: number) => void;
     onMute: (username: string) => void;
     onReport: (postId: number) => void;
@@ -39,6 +42,16 @@ interface PostComponentProps {
     isFollowing: boolean;
     isBlocked: boolean;
 }
+
+const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '🙌', '😭', '🤔'];
+
+const MOCK_GIFS = [
+    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbW5lenZyZHI5OXM2eW95b3h6b3dibW5wZ3AyZ3A0Z3A0Z3A0Z3A0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif',
+    'https://media.giphy.com/media/l0amJbWGDek2eZwVq/giphy.gif',
+    'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
+    'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif',
+];
+
 
 const MenuItem: React.FC<{icon: React.ElementType, label: string, onClick: (e: React.MouseEvent) => void, className?: string}> = ({ icon: Icon, label, onClick, className = '' }) => (
     <button onClick={onClick} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 ${className}`}>
@@ -77,6 +90,18 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const inlineCommentInputRef = useRef<HTMLInputElement>(null);
 
+    // Comment Attachments & Tools
+    const [commentAttachment, setCommentAttachment] = useState<CommentAttachment | null>(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
+    const [showAiMenu, setShowAiMenu] = useState(false);
+    const [isAiLoading, setIsAiLoading] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const emojiRef = useRef<HTMLDivElement>(null);
+    const gifRef = useRef<HTMLDivElement>(null);
+    const aiRef = useRef<HTMLDivElement>(null);
+
     // Refs for click outside logic
     const optionsRef = useRef<HTMLDivElement>(null);
     const reactionRef = useRef<HTMLDivElement>(null);
@@ -89,11 +114,20 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
             if (showReactionPicker && reactionRef.current && !reactionRef.current.contains(event.target as Node)) {
                 setShowReactionPicker(false);
             }
+             if (showEmojiPicker && emojiRef.current && !emojiRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+            if (showGifPicker && gifRef.current && !gifRef.current.contains(event.target as Node)) {
+                setShowGifPicker(false);
+            }
+            if (showAiMenu && aiRef.current && !aiRef.current.contains(event.target as Node)) {
+                setShowAiMenu(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showPostOptions, showReactionPicker]);
+    }, [showPostOptions, showReactionPicker, showEmojiPicker, showGifPicker, showAiMenu]);
 
     const handleMenuClick = (e: React.MouseEvent, action: () => void) => {
         e.stopPropagation();
@@ -108,9 +142,10 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     };
 
     const handleAddInlineComment = () => {
-        if (inlineComment.trim()) {
-            onAddComment(post.id, inlineComment.trim());
+        if (inlineComment.trim() || commentAttachment) {
+            onAddComment(post.id, inlineComment.trim(), undefined, commentAttachment || undefined);
             setInlineComment('');
+            setCommentAttachment(null);
         }
     };
     
@@ -153,6 +188,46 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         }
         setInlineCommentMentionQuery(null);
     };
+    
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video' | 'file') => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            setCommentAttachment({ 
+                type, 
+                url, 
+                name: file.name,
+                size: (file.size / 1024).toFixed(1) + ' KB',
+                mimeType: file.type
+            });
+        }
+        // Reset file input
+        if(fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleAddGif = (url: string) => {
+        setCommentAttachment({ type: 'image', url });
+        setShowGifPicker(false);
+    };
+
+    const handleAiGenerate = async (prompt: string) => {
+        setIsAiLoading(true);
+        setShowAiMenu(false);
+        try {
+             const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+             if (!apiKey) { alert("API Key missing"); return; }
+             
+             const ai = new GoogleGenAI({ apiKey });
+             const result = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
+             setInlineComment(prev => prev + (prev ? ' ' : '') + result.text);
+        } catch (e) {
+            console.error(e);
+            alert("AI generation failed");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
 
     const isOwnPost = post.userId === profile.id;
     const hasPurchased = profile.purchasedPostIds?.includes(post.id);
@@ -312,6 +387,13 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                                                     {comment.text}
                                                 </span>
                                             </p>
+                                            {/* Very brief attachment indicator for comment preview */}
+                                            {comment.attachment && <p className="text-xs text-blue-400 italic flex items-center gap-1 mt-0.5">
+                                                {comment.attachment.type === 'image' && <ImageIcon size={10}/>}
+                                                {comment.attachment.type === 'video' && <Video size={10}/>}
+                                                {comment.attachment.type === 'file' && <FileText size={10}/>}
+                                                Attached {comment.attachment.type}
+                                            </p>}
                                         </div>
                                     </div>
                                 ))}
@@ -324,9 +406,17 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             </button>
                         )}
 
-                        <div className="flex items-center gap-2 pt-2">
+                        <div className="flex items-start gap-2 pt-2">
                             <AvatarDisplay avatar={profile.avatar} size="w-8 h-8" fontSize="text-base" />
-                            <form onSubmit={(e) => { e.preventDefault(); handleAddInlineComment(); }} className="flex-1 flex gap-2 items-center relative">
+                            <form onSubmit={(e) => { e.preventDefault(); handleAddInlineComment(); }} className="flex-1 relative">
+                                {commentAttachment && (
+                                    <div className="mb-2 p-2 rounded-lg bg-black/10 dark:bg-white/10 border border-gray-600 flex items-center gap-2 relative w-fit">
+                                        {commentAttachment.type === 'image' && <img src={commentAttachment.url} className="w-12 h-12 object-cover rounded" alt="att" />}
+                                        {commentAttachment.type === 'video' && <video src={commentAttachment.url} className="w-12 h-12 object-cover rounded" />}
+                                        {commentAttachment.type === 'file' && <FileText size={24} className={textSecondary} />}
+                                        <button onClick={() => setCommentAttachment(null)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><X size={10}/></button>
+                                    </div>
+                                )}
                                 {inlineCommentMentionQuery !== null && (
                                     <div className={`absolute bottom-full mb-2 w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-lg z-50 overflow-hidden`}>
                                         <ul className="max-h-48 overflow-y-auto">
@@ -350,17 +440,64 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                                         </ul>
                                     </div>
                                 )}
-                                <input 
-                                    ref={inlineCommentInputRef}
-                                    type="text" 
-                                    placeholder="Add a comment..." 
-                                    value={inlineComment}
-                                    onChange={handleInlineCommentChange}
-                                    className={`flex-1 px-4 py-2 text-sm bg-black/5 dark:bg-white/5 rounded-full border ${borderColor} ${textColor} placeholder-gray-400 focus:outline-none focus:ring-1 ${currentTheme.ring}`}
-                                />
-                                <button type="submit" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim()}>
-                                    <Send size={18} />
-                                </button>
+                                <div className={`flex items-center bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} pr-2`}>
+                                    <input 
+                                        ref={inlineCommentInputRef}
+                                        type="text" 
+                                        placeholder="Add a comment..." 
+                                        value={inlineComment}
+                                        onChange={handleInlineCommentChange}
+                                        className={`flex-1 px-4 py-2 text-sm bg-transparent rounded-l-2xl ${textColor} placeholder-gray-400 focus:outline-none focus:ring-0`}
+                                    />
+                                    {/* Compact Toolbar */}
+                                    <div className="flex items-center gap-1">
+                                         {/* Hidden File Inputs */}
+                                         <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, 'image')} accept="image/*" />
+                                         <input type="file" className="hidden" id={`video-upload-${post.id}`} onChange={(e) => handleFileSelect(e, 'video')} accept="video/*" />
+                                         <input type="file" className="hidden" id={`file-upload-${post.id}`} onChange={(e) => handleFileSelect(e, 'file')} />
+
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-blue-400" title="Image"><ImageIcon size={16}/></button>
+                                        <label htmlFor={`video-upload-${post.id}`} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-purple-400 cursor-pointer" title="Video"><Video size={16}/></label>
+                                        <label htmlFor={`file-upload-${post.id}`} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-green-400 cursor-pointer" title="File"><FileText size={16}/></label>
+                                        
+                                        <div className="relative" ref={gifRef}>
+                                            <button type="button" onClick={() => setShowGifPicker(!showGifPicker)} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-pink-400" title="GIF"><Sticker size={16}/></button>
+                                            {showGifPicker && (
+                                                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-xl border border-gray-700 z-50 grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
+                                                    {MOCK_GIFS.map((gif, i) => (
+                                                        <img key={i} src={gif} alt="gif" className="w-full h-auto rounded cursor-pointer hover:opacity-80" onClick={() => handleAddGif(gif)} />
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="relative" ref={aiRef}>
+                                            <button type="button" onClick={() => setShowAiMenu(!showAiMenu)} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-orange-400" title="AI Assistant"><Bot size={16}/></button>
+                                            {showAiMenu && (
+                                                <div className="absolute bottom-full right-0 mb-2 w-40 bg-white dark:bg-gray-800 py-1 rounded-lg shadow-xl border border-gray-700 z-50 flex flex-col">
+                                                    {isAiLoading ? <div className="p-2 flex items-center gap-2 text-xs"><Loader2 size={12} className="animate-spin"/> Thinking...</div> : <>
+                                                    <button onClick={() => handleAiGenerate("Write a positive and engaging comment about this post.")} className="px-3 py-2 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700">Positive Reply</button>
+                                                    <button onClick={() => handleAiGenerate("Write a witty and funny comment about this post.")} className="px-3 py-2 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700">Witty Reply</button>
+                                                    <button onClick={() => handleAiGenerate("Check this comment for grammar errors: " + inlineComment)} className="px-3 py-2 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700">Fix Grammar</button>
+                                                    </>}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="relative" ref={emojiRef}>
+                                            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-yellow-400" title="Emoji"><Smile size={16}/></button>
+                                             {showEmojiPicker && (
+                                                <div className="absolute bottom-full right-0 mb-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-xl border border-gray-700 z-50 grid grid-cols-4 gap-1">
+                                                    {EMOJIS.map(e => <button key={e} onClick={() => {setInlineComment(c => c + e); setShowEmojiPicker(false);}} className="text-xl hover:scale-125 transition-transform">{e}</button>)}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button type="submit" className={`${textSecondary} hover:${currentTheme.text} p-2 rounded-full disabled:opacity-50`} disabled={!inlineComment.trim() && !commentAttachment}>
+                                            <Send size={18} />
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>

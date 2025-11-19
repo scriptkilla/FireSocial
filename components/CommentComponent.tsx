@@ -1,7 +1,9 @@
 
+
+
 import React, { useState } from 'react';
 import { Comment, Theme, Profile } from '../types';
-import { Heart, Edit, Trash2 } from 'lucide-react';
+import { Heart, Edit, Trash2, Paperclip } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 interface CommentComponentProps {
@@ -29,6 +31,37 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
     };
 
     const isOwnComment = comment.userId === profile.id;
+
+    const renderAttachment = () => {
+        if (!comment.attachment) return null;
+        
+        const { type, url, name, size } = comment.attachment;
+        
+        if (type === 'image') {
+            return (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-700 max-w-xs">
+                    <img src={url} alt="Comment attachment" className="w-full h-auto object-cover" />
+                </div>
+            );
+        } else if (type === 'video') {
+            return (
+                <div className="mt-2 rounded-lg overflow-hidden border border-gray-700 max-w-xs">
+                    <video src={url} controls className="w-full h-auto" />
+                </div>
+            );
+        } else if (type === 'file') {
+             return (
+                <div className="mt-2 p-2 rounded-lg bg-black/10 dark:bg-white/10 border border-gray-700 flex items-center gap-2 max-w-xs">
+                    <Paperclip size={16} className={textSecondary} />
+                    <div className="flex-1 overflow-hidden">
+                        <p className={`text-sm font-medium truncate ${textColor}`}>{name || 'Attached File'}</p>
+                        {size && <p className={`text-xs ${textSecondary}`}>{size}</p>}
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="flex items-start gap-3">
@@ -61,6 +94,8 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
                             {comment.text}
                         </p>
                     )}
+                    
+                    {!isEditing && renderAttachment()}
                 </div>
                 <div className="flex items-center gap-4 mt-1 px-2 text-xs font-semibold">
                     {isEditing ? (
