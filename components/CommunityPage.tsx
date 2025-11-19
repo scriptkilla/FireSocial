@@ -1,6 +1,5 @@
 
 
-
 import React from 'react';
 import { ArrowLeft, Users, Plus, Check } from 'lucide-react';
 import { Community, Post, Profile, UserListItem, Theme, Reaction, Message, CommentAttachment } from '../types';
@@ -23,6 +22,8 @@ interface CommunityPageProps {
     onViewComments: (post: Post) => void;
     onAddComment: (postId: number, text: string, replyToUsername?: string, attachment?: CommentAttachment) => void;
     onShare: (post: Post) => void;
+    onRepost: (postId: number) => void;
+    onQuote: (post: Post) => void;
     onViewProfile: (username: string) => void;
     onViewHashtag: (tag: string) => void;
     // UI
@@ -78,6 +79,8 @@ const CommunityPage: React.FC<CommunityPageProps> = (props) => {
                                 post={post} 
                                 {...props}
                                 onDelete={props.onDeletePost}
+                                onRepost={props.onRepost}
+                                onQuote={props.onQuote}
                                 isFollowing={false} // Simplified
                                 isBlocked={false}
                                 onPurchasePost={() => {}} // Simplified

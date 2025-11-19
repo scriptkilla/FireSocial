@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame } from 'lucide-react';
 
@@ -58,6 +59,7 @@ import AvatarDisplay from './AvatarDisplay';
 import CommunitiesModal from './CommunitiesModal';
 import CommunityPage from './CommunityPage';
 import CartModal from './CartModal';
+import ShareModal from './ShareModal';
 
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
@@ -73,6 +75,7 @@ export const FireSocial: React.FC = () => {
     const [profile, setProfile] = useState<Profile>(authUser!); 
     const [allUsers, setAllUsers] = useState<Profile[]>(ALL_USERS_DATA);
     const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+    const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
     const [following, setFollowing] = useState<UserListItem[]>(INITIAL_FOLLOWING);
     const [followers, setFollowers] = useState<UserListItem[]>(INITIAL_FOLLOWERS);
     const [chatHistories, setChatHistories] = useState<Record<number, ChatMessage[]>>(INITIAL_CHAT_HISTORY);
@@ -117,6 +120,8 @@ export const FireSocial: React.FC = () => {
     const [showAIChatbot, setShowAIChatbot] = useState(false);
     const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
     const [showCartModal, setShowCartModal] = useState(false);
+    const [sharePost, setSharePost] = useState<Post | null>(null);
+    const [quotingPost, setQuotingPost] = useState<Post | null>(null);
 
     // Widget Layout State
     const [widgetOrder, setWidgetOrder] = useState<string[]>(['trending', 'suggestions', 'communities']);
@@ -282,31 +287,70 @@ export const FireSocial: React.FC = () => {
     };
 
 
-    const handleCreatePost = (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[]) => {
-        const newPost: Post = {
-            id: Date.now(),
-            userId: profile.id,
-            user: profile.name,
-            username: profile.username,
-            avatar: profile.avatar,
-            content: content,
-            media: media.length > 0 ? media : undefined,
-            likes: 0,
-            comments: 0,
-            shares: 0,
-            time: 'Just now',
-            reactions: {},
-            userReaction: null,
-            bookmarked: false,
-            views: 0,
-            commentsData: [],
-            type: type,
-            pollOptions: pollOptions ? pollOptions.map((opt, i) => ({ id: i, text: opt, votes: 0 })) : undefined,
-            totalVotes: 0,
-            userVoted: null
-        };
-        setPosts([newPost, ...posts]);
-        setProfile(p => ({ ...p, posts: p.posts + 1 }));
+    const handleCreatePost = (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[], scheduledTime?: string) => {
+        if (scheduledTime) {
+            const newScheduledPost: ScheduledPost = {
+                scheduledId: Date.now(),
+                scheduledTime: scheduledTime,
+                postData: {
+                    userId: profile.id,
+                    user: profile.name,
+                    username: profile.username,
+                    avatar: profile.avatar,
+                    content: content,
+                    media: media.length > 0 ? media : undefined,
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                    reactions: {},
+                    userReaction: null,
+                    bookmarked: false,
+                    views: 0,
+                    commentsData: [],
+                    type: type,
+                    pollOptions: pollOptions ? pollOptions.map((opt, i) => ({ id: i, text: opt, votes: 0 })) : undefined,
+                    totalVotes: 0,
+                    userVoted: null,
+                    quotedPost: quotingPost || undefined
+                }
+            };
+            setScheduledPosts(prev => [newScheduledPost, ...prev]);
+            // Switch to profile scheduled tab to show the user
+            setViewingProfileUsername(profile.username);
+            setActivePage('profile');
+            setProfileTab('scheduled');
+        } else {
+            const newPost: Post = {
+                id: Date.now(),
+                userId: profile.id,
+                user: profile.name,
+                username: profile.username,
+                avatar: profile.avatar,
+                content: content,
+                media: media.length > 0 ? media : undefined,
+                likes: 0,
+                comments: 0,
+                shares: 0,
+                time: 'Just now',
+                reactions: {},
+                userReaction: null,
+                bookmarked: false,
+                views: 0,
+                commentsData: [],
+                type: type,
+                pollOptions: pollOptions ? pollOptions.map((opt, i) => ({ id: i, text: opt, votes: 0 })) : undefined,
+                totalVotes: 0,
+                userVoted: null,
+                quotedPost: quotingPost || undefined
+            };
+            setPosts([newPost, ...posts]);
+            setProfile(p => ({ ...p, posts: p.posts + 1 }));
+        }
+        setQuotingPost(null);
+    };
+    
+    const handleDeleteScheduledPost = (scheduledId: number) => {
+        setScheduledPosts(prev => prev.filter(p => p.scheduledId !== scheduledId));
     };
 
     const handleReaction = (postId: number, reactionType: string) => {
@@ -332,6 +376,25 @@ export const FireSocial: React.FC = () => {
             setPosts(posts.filter(p => p.id !== postId));
             if (viewingPost?.id === postId) setViewingPost(null);
         }
+    };
+    
+    const handleReshare = () => {
+        if (sharePost) {
+            setPosts(prev => prev.map(p => p.id === sharePost.id ? { ...p, shares: p.shares + 1 } : p));
+            // In a real app, we might create a new post that references this one.
+        }
+    };
+
+    // New handler for instant repost from the dropdown
+    const handleInstantRepost = (postId: number) => {
+         setPosts(prev => prev.map(p => p.id === postId ? { ...p, shares: p.shares + 1 } : p));
+         // Optional: show a brief toast notification here
+    };
+    
+    // New handler for quote post from the dropdown
+    const handleQuotePost = (post: Post) => {
+        setQuotingPost(post);
+        setShowCreatePost(true);
     };
 
     const handleAddComment = (postId: number, commentText: string, replyToUsername?: string, attachment?: CommentAttachment) => {
@@ -723,8 +786,8 @@ export const FireSocial: React.FC = () => {
                     profileToDisplay={viewingProfile} 
                     isOwnProfile={viewingProfile.id === profile.id} 
                     posts={posts} 
-                    scheduledPosts={[]} 
-                    onDeleteScheduledPost={() => {}} 
+                    scheduledPosts={scheduledPosts} 
+                    onDeleteScheduledPost={handleDeleteScheduledPost} 
                     activeTab={profileTab} 
                     onTabChange={setProfileTab} 
                     onEditProfile={() => setShowEditProfile(true)} 
@@ -775,9 +838,11 @@ export const FireSocial: React.FC = () => {
                         onViewPost={setViewingPost}
                         onViewComments={setCommentModalPost}
                         onAddComment={handleAddComment}
-                        onShare={(post) => alert(`Sharing ${post.id}`)}
+                        onShare={(post) => setSharePost(post)}
                         onViewProfile={handleViewProfile}
                         onViewHashtag={(tag) => alert(`Viewing ${tag}`)}
+                        onRepost={handleInstantRepost}
+                        onQuote={handleQuotePost}
                         reactions={REACTIONS}
                         messages={INITIAL_MESSAGES}
                         {...uiProps}
@@ -804,8 +869,10 @@ export const FireSocial: React.FC = () => {
         onHide: (id: number) => alert(`Hiding post ${id}`),
         onMute: (username: string) => alert(`Muting ${username}`),
         onReport: (id: number) => alert(`Reporting post ${id}`),
-        onShare: (post: Post) => alert(`Sharing post ${post.id}`),
-        onCopyLink: (id: number) => navigator.clipboard.writeText(`/post/${id}`),
+        onShare: (post: Post) => setSharePost(post),
+        onRepost: handleInstantRepost,
+        onQuote: handleQuotePost,
+        onCopyLink: (id: number) => { navigator.clipboard.writeText(`https://firesocial.app/post/${id}`); alert("Link copied!"); },
         onFollowToggle: handleFollowToggle,
         onBlockToggle: handleBlockToggle,
         onVotePoll: (postId: number, optionId: number) => {
@@ -977,7 +1044,7 @@ export const FireSocial: React.FC = () => {
             {viewingStory && <StoryViewerModal stories={INITIAL_STORIES} startUser={viewingStory} profile={profile} onClose={() => setViewingStory(null)} onDeleteStory={()=>{}} />}
             {showAnalytics && <AnalyticsModal show={showAnalytics} onClose={() => setShowAnalytics(false)} profile={profile} posts={posts} followers={followers} {...uiProps} />}
             {showCreateStory && <CreateStoryModal show={showCreateStory} onClose={() => setShowCreateStory(false)} onCreate={()=>{}} {...uiProps} />}
-            {showCreatePost && <CreatePostModal show={showCreatePost} onClose={() => setShowCreatePost(false)} onCreatePost={handleCreatePost} profile={profile} {...uiProps} />}
+            {showCreatePost && <CreatePostModal show={showCreatePost} onClose={() => {setShowCreatePost(false); setQuotingPost(null);}} onCreatePost={handleCreatePost} profile={profile} quotingPost={quotingPost} {...uiProps} />}
             {showSuggestions && <SuggestionsModal show={showSuggestions} onClose={() => setShowSuggestions(false)} suggestions={INITIAL_FRIEND_SUGGESTIONS} following={following} onFollowToggle={handleFollowToggle} onDismiss={()=>{}} onViewProfile={handleViewProfile} {...uiProps} />}
             {showNotifications && <NotificationsModal show={showNotifications} onClose={() => setShowNotifications(false)} notifications={INITIAL_NOTIFICATIONS} unreadCount={INITIAL_NOTIFICATIONS.filter(n=>!n.read).length} onMarkAllRead={()=>{}} onMarkOneRead={()=>{}} onViewNotification={(n) => {setShowNotifications(false); setViewingNotification(n);}} {...uiProps} />}
             {viewingNotification && <NotificationDetailModal show={!!viewingNotification} notification={viewingNotification} onClose={() => setViewingNotification(null)} allUsers={allUserListItems} posts={posts} onViewPost={(p)=>{setViewingNotification(null); setViewingPost(p);}} onViewProfile={(u)=>{setViewingNotification(null); handleViewProfile(u);}} {...uiProps} />}
@@ -988,6 +1055,7 @@ export const FireSocial: React.FC = () => {
             {showAIChatbot && <AIChatbotModal show={showAIChatbot} onClose={() => setShowAIChatbot(false)} {...uiProps} />}
             {showCommunitiesModal && <CommunitiesModal show={showCommunitiesModal} onClose={() => setShowCommunitiesModal(false)} communities={communities} onJoinToggle={toggleJoinCommunity} onViewCommunity={handleViewCommunity} {...uiProps} />}
             {showCartModal && <CartModal show={showCartModal} onClose={() => setShowCartModal(false)} cartItems={cart} onRemoveItem={handleRemoveFromCart} onCheckout={handleCheckout} {...uiProps} />}
+            {sharePost && <ShareModal show={!!sharePost} onClose={() => setSharePost(null)} post={sharePost} onReshare={handleReshare} {...uiProps} />}
         </div>
     );
 };

@@ -1,4 +1,5 @@
 
+
 export interface Theme {
   from: string;
   to: string;
@@ -112,6 +113,7 @@ export interface Post {
     currency: string;
     purchasers: number[]; // user IDs
   };
+  quotedPost?: Post;
 }
 
 export interface SubscriptionTier {

@@ -1,9 +1,8 @@
 
 
-
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search, Lightbulb } from 'lucide-react';
-import { Profile, Theme, MediaItem } from '../types';
+import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search, Lightbulb, Calendar } from 'lucide-react';
+import { Profile, Theme, MediaItem, Post } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 import { GoogleGenAI } from "@google/genai";
 import { GIPHY_API_KEY } from '../constants';
@@ -11,13 +10,14 @@ import { GIPHY_API_KEY } from '../constants';
 interface CreatePostModalProps {
     show: boolean;
     onClose: () => void;
-    onCreatePost: (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[]) => void;
+    onCreatePost: (content: string, media: MediaItem[], type: 'post' | 'poll', pollOptions?: string[], scheduledTime?: string) => void;
     profile: Profile;
     currentTheme: Theme;
     cardBg: string;
     textColor: string;
     textSecondary: string;
     borderColor: string;
+    quotingPost?: Post | null;
 }
 
 const EMOJIS = ['😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '🤪', '😎', '🥳', '🤔', '🤫', '🙄', '😴', '😭', '😤', '😡', '🤯', '😱', '👍', '👎', '👏', '🙏', '💪', '🔥', '✨', '❤️', '💔', '💯', '🚀'];
@@ -25,12 +25,14 @@ const EMOJIS = ['😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '🤪', 
 const CHARACTER_LIMIT = 300;
 
 const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
-    const { show, onClose, onCreatePost, profile, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
+    const { show, onClose, onCreatePost, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, quotingPost } = props;
     const [content, setContent] = useState('');
     const [media, setMedia] = useState<MediaItem[]>([]);
     const [showPoll, setShowPoll] = useState(false);
     const [pollOptions, setPollOptions] = useState(['', '']);
     const [privacy, setPrivacy] = useState<'public' | 'followers' | 'private'>('public');
+    const [scheduledTime, setScheduledTime] = useState('');
+    const [showScheduler, setShowScheduler] = useState(false);
     
     // UI State
     const [showAiMenu, setShowAiMenu] = useState(false);
@@ -118,7 +120,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     };
 
     const handleSubmit = () => {
-        if ((!content.trim() && media.length === 0 && !showPoll) || isOverLimit) return;
+        if ((!content.trim() && media.length === 0 && !showPoll && !quotingPost) || isOverLimit) return;
         
         const type = showPoll ? 'poll' : 'post';
         const validPollOptions = pollOptions.filter(o => o.trim() !== '');
@@ -128,7 +130,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
             return;
         }
 
-        onCreatePost(content, media, type, showPoll ? validPollOptions : undefined);
+        onCreatePost(content, media, type, showPoll ? validPollOptions : undefined, scheduledTime || undefined);
         handleClose();
     };
 
@@ -140,6 +142,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         setShowEmojiPicker(false);
         setShowGifPicker(false);
         setShowAiMenu(false);
+        setShowScheduler(false);
+        setScheduledTime('');
         setPollOptions(['', '']);
         onClose();
     }
@@ -294,7 +298,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                 onClick={e => e.stopPropagation()}
             >
                 <div className={`flex justify-between items-center p-4 border-b ${borderColor}`}>
-                    <h2 className="text-xl font-bold">Create Post</h2>
+                    <h2 className="text-xl font-bold">{quotingPost ? 'Quote Post' : 'Create Post'}</h2>
                     <button onClick={handleClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
                 </div>
 
@@ -350,6 +354,17 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     </div>
                                 )}
                             </div>
+
+                            {quotingPost && (
+                                <div className={`mt-2 mb-4 p-3 rounded-xl border ${borderColor} bg-black/5 dark:bg-white/5`}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <AvatarDisplay avatar={quotingPost.avatar} size="w-5 h-5" />
+                                        <span className={`font-bold text-xs ${textColor}`}>{quotingPost.user}</span>
+                                        <span className={`text-xs ${textSecondary}`}>@{quotingPost.username}</span>
+                                    </div>
+                                    <p className={`text-sm ${textColor} line-clamp-3`}>{quotingPost.content}</p>
+                                </div>
+                            )}
                         </>
                     )}
 
@@ -394,6 +409,21 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <button onClick={addPollOption} className={`text-sm ${currentTheme.text} font-semibold hover:underline`}>+ Add Option</button>
                                 )}
                             </div>
+                        </div>
+                    )}
+                    
+                    {!isCameraOpen && showScheduler && (
+                        <div className={`mb-4 p-3 rounded-xl border ${borderColor} bg-black/5`}>
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-semibold">Schedule Post</span>
+                                <button onClick={() => { setShowScheduler(false); setScheduledTime(''); }} className="text-red-400 hover:text-red-500"><X size={16}/></button>
+                            </div>
+                            <input 
+                                type="datetime-local"
+                                value={scheduledTime}
+                                onChange={(e) => setScheduledTime(e.target.value)}
+                                className={`w-full px-3 py-2 bg-transparent border ${borderColor} rounded-lg focus:outline-none focus:ring-1 ${currentTheme.ring} ${textColor} [color-scheme:dark]`}
+                            />
                         </div>
                     )}
 
@@ -444,6 +474,9 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
 
                             <button onClick={() => setShowPoll(!showPoll)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-orange-400" title="Create Poll"><BarChart2 size={20} /></button>
                             
+                             {/* Schedule Button */}
+                            <button onClick={() => { setShowScheduler(!showScheduler); setShowPoll(false); }} className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showScheduler ? currentTheme.text : 'text-teal-400'}`} title="Schedule Post"><Calendar size={20} /></button>
+
                             {/* AI Button */}
                             <div className="relative" ref={aiRef}>
                                 <button 
@@ -508,10 +541,10 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                         </div>
                         <button 
                             onClick={handleSubmit}
-                            disabled={(!content.trim() && media.length === 0 && !showPoll) || isOverLimit}
+                            disabled={(!content.trim() && media.length === 0 && !showPoll && !quotingPost) || isOverLimit}
                             className={`px-6 py-2 rounded-full font-bold text-white bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} hover:scale-105 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                            Post
+                            {scheduledTime ? 'Schedule' : 'Post'}
                         </button>
                     </div>
                     )}

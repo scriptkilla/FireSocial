@@ -665,7 +665,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                     className={`group flex flex-col items-center gap-2 flex-shrink-0 transition-all duration-300 snap-center outline-none`}
                                 >
                                     <div className={`
-                                        relative w-16 h-16 sm:w-18 sm:h-18 rounded-full flex items-center justify-center transition-all duration-500
+                                        relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-500
                                         ${isActive 
                                             ? `text-white shadow-xl scale-110` 
                                             : `${textSecondary} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:scale-105`
@@ -674,7 +674,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                         {isActive && (
                                             <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${currentTheme.from} ${currentTheme.to} opacity-100`} />
                                         )}
-                                        <tab.icon size={26} className="relative z-10" strokeWidth={isActive ? 2.5 : 2} />
+                                        <tab.icon size={20} className="relative z-10" strokeWidth={isActive ? 2.5 : 2} />
                                         
                                     </div>
                                     <span className={`text-xs font-bold tracking-wide transition-all duration-300 ${isActive ? `${textColor} scale-105` : `${textSecondary} group-hover:${textColor}`}`}>

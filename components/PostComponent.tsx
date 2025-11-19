@@ -1,7 +1,8 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket, Repeat, PenSquare } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 import { GoogleGenAI } from "@google/genai";
@@ -31,6 +32,8 @@ interface PostComponentProps {
     onMute: (username: string) => void;
     onReport: (postId: number) => void;
     onShare: (post: Post) => void;
+    onRepost: (postId: number) => void;
+    onQuote: (post: Post) => void;
     onCopyLink: (postId: number) => void;
     onFollowToggle: (userId: number, username: string) => void;
     onBlockToggle: (userId: number, username: string) => void;
@@ -75,9 +78,10 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 
 
 const PostComponent: React.FC<PostComponentProps> = (props) => {
-    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost } = props;
+    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onRepost, onQuote, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
+    const [showRepostMenu, setShowRepostMenu] = useState(false);
     const [inlineComment, setInlineComment] = useState('');
     const [inlineCommentMentionQuery, setInlineCommentMentionQuery] = useState<string | null>(null);
     const [activeButton, setActiveButton] = useState<string | null>(null);
@@ -103,6 +107,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     // Refs for click outside logic
     const optionsRef = useRef<HTMLDivElement>(null);
     const reactionRef = useRef<HTMLDivElement>(null);
+    const repostRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -121,11 +126,14 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
             if (showAiMenu && aiRef.current && !aiRef.current.contains(event.target as Node)) {
                 setShowAiMenu(false);
             }
+            if (showRepostMenu && repostRef.current && !repostRef.current.contains(event.target as Node)) {
+                setShowRepostMenu(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showPostOptions, showReactionPicker, showEmojiPicker, showGifPicker, showAiMenu]);
+    }, [showPostOptions, showReactionPicker, showEmojiPicker, showGifPicker, showAiMenu, showRepostMenu]);
 
     useEffect(() => {
         if (showGifPicker) {
@@ -328,6 +336,27 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     <div onClick={() => onViewPost(post)} className="cursor-pointer">
                         {post.media && post.media.length > 0 && <PostMedia media={post.media} postFormat={post.postFormat} currentTheme={currentTheme} />}
                         <ParsedContent content={post.content} textColor={textColor} currentTheme={currentTheme} onViewHashtag={onViewHashtag} onViewProfile={onViewProfile} />
+                        
+                        {/* Quoted Post */}
+                        {post.quotedPost && (
+                            <div className={`mt-3 mb-3 p-3 rounded-xl border ${borderColor} hover:bg-white/5 transition-colors`}>
+                                 <div className="flex items-center gap-2 mb-2">
+                                     <AvatarDisplay avatar={post.quotedPost.avatar} size="w-6 h-6" />
+                                     <span className={`font-bold text-sm ${textColor}`}>{post.quotedPost.user}</span>
+                                     <span className={`text-xs ${textSecondary}`}>@{post.quotedPost.username}</span>
+                                     <span className={`text-xs ${textSecondary}`}>• {post.quotedPost.time}</span>
+                                </div>
+                                <p className={`text-sm ${textColor}`}>{post.quotedPost.content}</p>
+                                 {post.quotedPost.media && post.quotedPost.media.length > 0 && (
+                                    <div className="mt-2 h-48 w-full rounded-lg overflow-hidden bg-black">
+                                         {post.quotedPost.media[0].type === 'image' ?
+                                            <img src={post.quotedPost.media[0].url} className="w-full h-full object-cover" /> :
+                                            <video src={post.quotedPost.media[0].url} className="w-full h-full object-cover" />
+                                         }
+                                    </div>
+                                 )}
+                            </div>
+                        )}
                     </div>
                     
                     {/* Poll */}
@@ -353,6 +382,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     {/* Post Actions */}
                     <div className="flex items-center justify-between">
                     <div className="flex gap-6">
+                        {/* Like Button */}
                         <div className="relative" ref={reactionRef}>
                         <button 
                             onClick={() => handleButtonClick('like', () => setShowReactionPicker(prev => !prev))} 
@@ -366,6 +396,27 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             {reactions.map(reaction => (<button key={reaction.name} onClick={() => { onReaction(post.id, reaction.name); setShowReactionPicker(false); }} className="text-2xl hover:scale-125 transition-all hover:animate-bounce">{reaction.emoji}</button>))}
                             </div>
                         )}
+                        </div>
+
+                        {/* Repost Button (New) */}
+                        <div className="relative" ref={repostRef}>
+                            <button 
+                                onClick={() => setShowRepostMenu(!showRepostMenu)} 
+                                className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-all duration-200 hover:scale-110 ${activeButton === 'repost' ? 'scale-90 text-green-500' : ''}`}
+                            >
+                                <Repeat size={20} className={activeButton === 'repost' ? 'text-green-500' : ''} />
+                                <span>{post.shares}</span>
+                            </button>
+                             {showRepostMenu && (
+                                <div className={`absolute bottom-full mb-2 left-0 bg-white dark:bg-gray-800 rounded-xl border ${borderColor} shadow-xl py-1 z-10 w-36 overflow-hidden animate-in zoom-in duration-200 origin-bottom-left`}>
+                                    <button onClick={() => { onRepost(post.id); setShowRepostMenu(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10 ${textColor} text-sm transition-colors`}>
+                                        <Repeat size={16} /> Repost
+                                    </button>
+                                    <button onClick={() => { onQuote(post); setShowRepostMenu(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/10 ${textColor} text-sm transition-colors`}>
+                                        <PenSquare size={16} /> Quote Post
+                                    </button>
+                                </div>
+                            )}
                         </div>
                         
                         <button 
@@ -381,7 +432,6 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             className={`flex items-center gap-2 ${textSecondary} ${currentTheme.hoverText} transition-all duration-200 hover:scale-110 ${activeButton === 'share' ? 'scale-90 text-green-500' : ''}`}
                         >
                             <Share2 size={20} className={activeButton === 'share' ? 'fill-current' : ''} />
-                            <span>{post.shares}</span>
                         </button>
                     </div>
                     
