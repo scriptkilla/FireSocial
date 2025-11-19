@@ -129,16 +129,34 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
 
     // --- Camera Functions ---
     const startCamera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Camera API not supported in this browser.");
+            return;
+        }
         try {
+            // Check for devices
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const hasVideo = devices.some(d => d.kind === 'videoinput');
+                if (!hasVideo) {
+                    alert("No camera device found.");
+                    return;
+                }
+            } catch (e) { console.warn("Enumeration failed", e); }
+
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
             setIsCameraOpen(true);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Camera error", err);
-            alert("Could not access camera. Please ensure you have granted permissions.");
+            let msg = "Could not access camera. Please ensure you have granted permissions.";
+            if (err.name === 'NotAllowedError') msg = "Permission denied. Please allow camera access.";
+            else if (err.name === 'NotFoundError') msg = "No camera device found.";
+            else if (err.name === 'NotReadableError') msg = "Camera is currently in use.";
+            alert(msg);
         }
     };
 

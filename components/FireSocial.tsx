@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
@@ -124,7 +125,8 @@ export const FireSocial: React.FC = () => {
 
     // --- DERIVED STATE & MEMOS ---
     const currentTheme = useMemo(() => THEMES[themeColor], [themeColor]);
-    const cardBg = useMemo(() => darkMode ? 'bg-gray-800/50' : 'bg-white/50', [darkMode]);
+    // Increased opacity for light mode to bg-white/80 for better readability against gradients
+    const cardBg = useMemo(() => darkMode ? 'bg-gray-800/50' : 'bg-white/80', [darkMode]);
     const textColor = useMemo(() => darkMode ? 'text-white' : 'text-gray-900', [darkMode]);
     const textSecondary = useMemo(() => darkMode ? 'text-gray-400' : 'text-gray-600', [darkMode]);
     const borderColor = useMemo(() => darkMode ? 'border-white/10' : 'border-black/10', [darkMode]);

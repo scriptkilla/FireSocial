@@ -1,7 +1,8 @@
 
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Profile } from '../types';
-import { ALL_USERS_DATA_BASE } from '../data';
+import { ALL_USERS_DATA_BASE, INITIAL_CREATOR_MONETIZATION } from '../data';
 
 // --- CONFIGURATION ---
 // To enable REAL Google Login:
@@ -111,7 +112,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           restrictedAccounts: [],
           blockedAccounts: [],
           unlockedAchievements: ['first_post'],
-          isCreator: false
+          isCreator: true,
+          creatorMonetization: { 
+              ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
+              balance: 0, 
+              analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
+          }
         };
 
         // Save to local "database"
@@ -169,7 +175,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                       restrictedAccounts: [],
                                       blockedAccounts: [],
                                       unlockedAchievements: [],
-                                      isCreator: false
+                                      isCreator: true,
+                                      creatorMonetization: { 
+                                          ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
+                                          balance: 0, 
+                                          analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
+                                      }
                                   };
 
                                   setUser(googleUser);
@@ -226,7 +237,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       restrictedAccounts: [],
                       blockedAccounts: [],
                       unlockedAchievements: [],
-                      isCreator: false
+                      isCreator: true,
+                      creatorMonetization: { 
+                          ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
+                          balance: 0, 
+                          analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
+                      }
                   };
                   setUser(googleUser);
                   localStorage.setItem('firesocial_active_session', JSON.stringify(googleUser));

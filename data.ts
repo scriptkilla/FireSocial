@@ -1,4 +1,5 @@
 
+
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
@@ -104,7 +105,7 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
   payoutMethod: 'stripe', payoutEmail: 'payout@example.com', minimumPayout: 50, nextPayoutDate: '2024-02-01', balance: 342.75
 };
 
-export const ALL_USERS_DATA_BASE: Profile[] = [
+const BASE_USERS: Profile[] = [
     {
         id: LOGGED_IN_USER_ID,
         name: 'THOMAS DARROW',
@@ -150,9 +151,8 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         ],
         unlockedAchievements: ['first_post', '10_day_streak'],
         searchHistory: ['#design', 'ReactJS', '@alexrivera'],
-        isCreator: true,
-        creatorMonetization: INITIAL_CREATOR_MONETIZATION,
         purchasedPostIds: [],
+        creatorMonetization: INITIAL_CREATOR_MONETIZATION
     },
     {
         id: 1002,
@@ -290,6 +290,12 @@ export const ALL_USERS_DATA_BASE: Profile[] = [
         purchasedPostIds: [],
     }
 ];
+
+export const ALL_USERS_DATA_BASE: Profile[] = BASE_USERS.map(user => ({
+  ...user,
+  isCreator: true,
+  creatorMonetization: user.creatorMonetization || JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION))
+}));
 
 export const INITIAL_CHAT_HISTORY: Record<number, ChatMessage[]> = {
     1002: [

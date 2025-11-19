@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Bot, Wand2, Users, FileText, Palette, Cpu, Music, ShieldCheck, Play, UploadCloud, Code, Copy, Check } from 'lucide-react';
 import { Theme } from '../types';
@@ -98,7 +100,7 @@ const GameIdeaInput: React.FC<GameIdeaInputProps> = ({ gameIdea, setGameIdea, st
 const ActivityItem: React.FC<{ activity: Activity, textColor: string, textSecondary: string, isActive: boolean }> = ({ activity, textColor, textSecondary, isActive }) => {
     const Icon = AGENT_ICONS[activity.agent] || Bot;
     return (
-        <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-black/10">
+        <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10">
             <div className={`p-2 rounded-lg bg-black/20 ${textSecondary}`}><Icon size={20} /></div>
             <div className="flex-1">
                 <p className={`font-semibold ${textColor} flex items-center gap-2`}>
@@ -113,7 +115,7 @@ const ActivityItem: React.FC<{ activity: Activity, textColor: string, textSecond
 };
 
 const ConversationThread: React.FC<{ conversation: Conversation, borderColor: string, textColor: string, textSecondary: string, currentTheme: Theme }> = ({ conversation, borderColor, textColor, textSecondary, currentTheme }) => (
-    <div className={`p-2 rounded-lg border ${borderColor} bg-black/5 mb-3`}>
+    <div className={`p-2 rounded-lg border ${borderColor} bg-black/5 dark:bg-white/5 mb-3`}>
         <h4 className="font-bold text-sm px-2 mb-2">{conversation.topic}</h4>
         <div className="space-y-2">
             {conversation.messages.map(msg => (

@@ -40,12 +40,13 @@ interface ChatMessageBubbleProps {
     currentTheme: Theme;
     textColor: string;
     textSecondary: string;
+    borderColor: string;
 }
 
 const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
     message, isOwn, profile, chatWith, getRepliedMessage,
     onReply, onEdit, onDelete, onReact,
-    currentTheme, textColor, textSecondary
+    currentTheme, textColor, textSecondary, borderColor
 }) => {
     const [showActions, setShowActions] = useState(false);
     const repliedMessage = message.replyTo ? getRepliedMessage(message.replyTo) : null;
@@ -79,16 +80,16 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
                 <button onClick={() => onReply(message)} title="Reply" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><Reply size={16}/></button>
                 <button onClick={() => setShowActions(s => !s)} title="More" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><MoreHorizontal size={16}/></button>
                 {showActions && (
-                    <div onMouseLeave={() => setShowActions(false)} className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 w-48 bg-gray-900 rounded-lg shadow-lg z-10 text-white overflow-hidden`}>
-                       <div className="p-1 flex justify-around bg-gray-800">
+                    <div onMouseLeave={() => setShowActions(false)} className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg z-10 text-gray-900 dark:text-white border ${borderColor} overflow-hidden`}>
+                       <div className="p-1 flex justify-around bg-gray-100 dark:bg-gray-800">
                             {EMOJI_REACTIONS.map(emoji => (
                                 <button key={emoji} onClick={() => { onReact(emoji); setShowActions(false); }} className="p-1 text-2xl hover:scale-125 transition-transform">{emoji}</button>
                             ))}
                        </div>
-                       <button onClick={() => { onReply(message); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-700"><Reply size={16} /> Reply</button>
-                       {isOwn && <button onClick={() => { onEdit(message); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-700"><Edit size={16} /> Edit</button>}
-                       <button onClick={() => { navigator.clipboard.writeText(message.text); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-700"><Copy size={16} /> Copy Text</button>
-                       {isOwn && <button onClick={() => { onDelete(); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-700 text-red-400"><Trash2 size={16} /> Delete</button>}
+                       <button onClick={() => { onReply(message); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-100 dark:hover:bg-gray-700"><Reply size={16} /> Reply</button>
+                       {isOwn && <button onClick={() => { onEdit(message); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-100 dark:hover:bg-gray-700"><Edit size={16} /> Edit</button>}
+                       <button onClick={() => { navigator.clipboard.writeText(message.text); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-100 dark:hover:bg-gray-700"><Copy size={16} /> Copy Text</button>
+                       {isOwn && <button onClick={() => { onDelete(); setShowActions(false); }} className="px-3 py-2 flex items-center gap-2 text-sm w-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-400"><Trash2 size={16} /> Delete</button>}
                     </div>
                 )}
             </div>
@@ -238,16 +239,33 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
     
     // --- Camera Functions ---
     const startCamera = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+             alert("Camera API not supported.");
+             return;
+        }
         try {
+             // Check for devices
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const hasVideo = devices.some(d => d.kind === 'videoinput');
+                if (!hasVideo) {
+                    alert("No camera device found.");
+                    return;
+                }
+            } catch (e) { console.warn("Enumeration failed", e); }
+
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             cameraStreamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
             }
             setIsCameraOpen(true);
-        } catch (err) {
+        } catch (err: any) {
             console.error("Camera error", err);
-            alert("Could not access camera. Please grant permissions.");
+            let msg = "Could not access camera.";
+            if (err.name === 'NotAllowedError') msg = "Permission denied. Please allow camera access.";
+            else if (err.name === 'NotFoundError') msg = "No camera device found.";
+            alert(msg);
         }
     };
 
@@ -391,6 +409,7 @@ const MessageModal: React.FC<MessageModalProps> = (props) => {
                             currentTheme={currentTheme}
                             textColor={textColor}
                             textSecondary={textSecondary}
+                            borderColor={borderColor}
                         />
                     ))}
                     {isRecipientTyping && (
