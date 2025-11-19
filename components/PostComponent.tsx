@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket, Repeat, PenSquare } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket, Repeat, PenSquare, DollarSign } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 import { GoogleGenAI } from "@google/genai";
@@ -42,6 +42,7 @@ interface PostComponentProps {
     onViewHashtag: (tag: string) => void;
     onPurchasePost: (postId: number) => void;
     onBoost?: (postId: number) => void;
+    onTip?: (userId: number) => void;
     isFollowing: boolean;
     isBlocked: boolean;
 }
@@ -78,7 +79,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 
 
 const PostComponent: React.FC<PostComponentProps> = (props) => {
-    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onRepost, onQuote, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost } = props;
+    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onRepost, onQuote, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost, onTip } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [showRepostMenu, setShowRepostMenu] = useState(false);
@@ -435,12 +436,23 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                         </button>
                     </div>
                     
-                    <button 
-                        onClick={() => handleButtonClick('bookmark', () => onBookmark(post.id))} 
-                        className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all duration-200 ${activeButton === 'bookmark' ? 'scale-90' : ''}`}
-                    >
-                        <Bookmark size={20} fill={post.bookmarked || activeButton === 'bookmark' ? 'currentColor' : 'none'} />
-                    </button>
+                    <div className="flex gap-4">
+                         {!isOwnPost && onTip && (
+                            <button 
+                                onClick={() => handleButtonClick('tip', () => onTip(post.userId))} 
+                                className={`${textSecondary} hover:text-green-500 hover:scale-110 transition-all duration-200 ${activeButton === 'tip' ? 'scale-90' : ''}`}
+                                title="Tip Creator"
+                            >
+                                <DollarSign size={20} />
+                            </button>
+                        )}
+                        <button 
+                            onClick={() => handleButtonClick('bookmark', () => onBookmark(post.id))} 
+                            className={`${post.bookmarked ? currentTheme.text : textSecondary} hover:scale-110 transition-all duration-200 ${activeButton === 'bookmark' ? 'scale-90' : ''}`}
+                        >
+                            <Bookmark size={20} fill={post.bookmarked || activeButton === 'bookmark' ? 'currentColor' : 'none'} />
+                        </button>
+                    </div>
                     </div>
                     
                     {/* Comment Section */}

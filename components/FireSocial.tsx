@@ -1,10 +1,9 @@
 
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -60,6 +59,7 @@ import CommunitiesModal from './CommunitiesModal';
 import CommunityPage from './CommunityPage';
 import CartModal from './CartModal';
 import ShareModal from './ShareModal';
+import TipModal from './TipModal';
 
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
@@ -82,6 +82,7 @@ export const FireSocial: React.FC = () => {
     }); 
     const [allUsers, setAllUsers] = useState<Profile[]>(ALL_USERS_DATA);
     const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
+    const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
     const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
     const [following, setFollowing] = useState<UserListItem[]>(INITIAL_FOLLOWING);
     const [followers, setFollowers] = useState<UserListItem[]>(INITIAL_FOLLOWERS);
@@ -132,6 +133,7 @@ export const FireSocial: React.FC = () => {
     const [showCartModal, setShowCartModal] = useState(false);
     const [sharePost, setSharePost] = useState<Post | null>(null);
     const [quotingPost, setQuotingPost] = useState<Post | null>(null);
+    const [tipModalRecipient, setTipModalRecipient] = useState<Profile | null>(null);
 
     // Widget Layout State
     const [widgetOrder, setWidgetOrder] = useState<string[]>(['trending', 'suggestions', 'communities']);
@@ -187,7 +189,7 @@ export const FireSocial: React.FC = () => {
     const viewingProfile = useMemo(() => allUsers.find(u => u.username === viewingProfileUsername) || profile, [viewingProfileUsername, allUsers, profile]);
     const isFireFollowed = useMemo(() => following.some(u => u.id === viewingProfile.id && u.isFireFollowed), [following, viewingProfile]);
     
-    const unreadNotificationsCount = INITIAL_NOTIFICATIONS.filter(n => !n.read).length;
+    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -594,10 +596,163 @@ export const FireSocial: React.FC = () => {
 
     const handleTipCreator = (amount: number) => {
         if (profile.emberBalance >= amount) {
-            setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - amount }));
+            const newBalance = profile.emberBalance - amount;
+            
+            // Create sender transaction
+            const sentTx: WalletTransaction = {
+                id: `tx_${Date.now()}_sent`,
+                type: 'tip_sent',
+                amount: amount,
+                date: new Date().toLocaleDateString(),
+                status: 'completed',
+                description: `Tip sent to ${viewingProfile.name}`
+            };
+            
+            const updatedSenderMonetization = profile.creatorMonetization ? {
+                ...profile.creatorMonetization,
+                wallet: {
+                    ...profile.creatorMonetization.wallet!,
+                    transactions: [sentTx, ...(profile.creatorMonetization.wallet?.transactions || [])]
+                }
+            } : profile.creatorMonetization;
+
+            setProfile(prev => ({ 
+                ...prev, 
+                emberBalance: newBalance,
+                creatorMonetization: updatedSenderMonetization
+            }));
+
+            // Update Recipient (in global state)
+            setAllUsers(prevUsers => prevUsers.map(u => {
+                if (u.id === viewingProfile.id) {
+                    const receivedTx: WalletTransaction = {
+                        id: `tx_${Date.now()}_recv`,
+                        type: 'tip_received',
+                        amount: amount / 10, // Convert Ember to USD equivalent for creator earnings
+                        date: new Date().toLocaleDateString(),
+                        status: 'completed',
+                        description: `Tip from ${profile.username}`
+                    };
+                    return {
+                        ...u,
+                        creatorMonetization: {
+                            ...u.creatorMonetization!,
+                            balance: (u.creatorMonetization?.balance || 0) + (amount / 10),
+                            wallet: {
+                                ...u.creatorMonetization?.wallet!,
+                                transactions: [receivedTx, ...(u.creatorMonetization?.wallet?.transactions || [])]
+                            }
+                        }
+                    };
+                }
+                return u;
+            }));
+            
+            // Add notification for the user if self-tipping (testing) or simulate push
+            const newNotification: Notification = {
+                id: Date.now(),
+                type: 'tip',
+                user: profile.name,
+                username: profile.username,
+                content: `tipped you ${amount} Embers! 🔥`,
+                time: 'Just now',
+                read: false
+            };
+
+            if(viewingProfile.id === profile.id) {
+                setNotifications(prev => [newNotification, ...prev]);
+            }
+
              showToast(`Tipped ${amount} Embers!`);
         } else {
             alert("Not enough Embers!");
+        }
+    };
+
+    const handlePostTip = (authorId: number) => {
+        if (authorId === profile.id) {
+            showToast("You can't tip yourself!");
+            return;
+        }
+        
+        const author = allUsers.find(u => u.id === authorId);
+        if (author) {
+            setTipModalRecipient(author);
+        }
+    };
+
+    const handleConfirmTip = (amount: number) => {
+        if (!tipModalRecipient) return;
+
+        if (profile.emberBalance >= amount) {
+            // Deduct from sender
+            const sentTx: WalletTransaction = {
+                id: `tx_${Date.now()}_sent`,
+                type: 'tip_sent',
+                amount: amount,
+                date: new Date().toLocaleDateString(),
+                status: 'completed',
+                description: `Tip sent to ${tipModalRecipient.name}`
+            };
+
+            setProfile(prev => {
+                const updatedMonetization = prev.creatorMonetization ? {
+                    ...prev.creatorMonetization,
+                    wallet: {
+                        paymentMethods: prev.creatorMonetization.wallet?.paymentMethods || [],
+                        transactions: [sentTx, ...(prev.creatorMonetization.wallet?.transactions || [])]
+                    }
+                } : prev.creatorMonetization;
+                
+                return { 
+                    ...prev, 
+                    emberBalance: prev.emberBalance - amount,
+                    creatorMonetization: updatedMonetization
+                };
+            });
+            
+            // Add to recipient logic (simplified - updates local view of 'allUsers')
+             setAllUsers(prevUsers => prevUsers.map(u => {
+                if (u.id === tipModalRecipient.id) {
+                    const receivedTx: WalletTransaction = {
+                        id: `tx_${Date.now()}_recv`,
+                        type: 'tip_received',
+                        amount: amount / 10, 
+                        date: new Date().toLocaleDateString(),
+                        status: 'completed',
+                        description: `Tip from ${profile.username}`
+                    };
+                    return {
+                        ...u,
+                        creatorMonetization: {
+                            ...u.creatorMonetization!,
+                            balance: (u.creatorMonetization?.balance || 0) + (amount / 10),
+                             wallet: {
+                                paymentMethods: u.creatorMonetization?.wallet?.paymentMethods || [],
+                                transactions: [receivedTx, ...(u.creatorMonetization?.wallet?.transactions || [])]
+                            }
+                        }
+                    };
+                }
+                return u;
+            }));
+            
+            // Create notification for the sender (receipt)
+            const newNotification: Notification = {
+                id: Date.now(),
+                type: 'tip',
+                user: tipModalRecipient.name,
+                username: tipModalRecipient.username,
+                content: `received a tip of ${amount} Embers from you.`, // Clearer message
+                time: 'Just now',
+                read: false
+            };
+            setNotifications(prev => [newNotification, ...prev]);
+            
+            showToast(`Tipped ${amount} Embers to ${tipModalRecipient.name}! 💸`);
+            setTipModalRecipient(null);
+        } else {
+            alert(`Not enough Embers. Balance: ${profile.emberBalance}`);
         }
     };
 
@@ -977,6 +1132,7 @@ export const FireSocial: React.FC = () => {
             setProfile(p => ({...p, purchasedPostIds: [...(p.purchasedPostIds || []), id]}));
         },
         onBoost: handleBoostPost,
+        onTip: handlePostTip,
         // These need to be calculated per-post
         isFollowing: false, 
         isBlocked: false,
@@ -1146,7 +1302,7 @@ export const FireSocial: React.FC = () => {
             {showCreateStory && <CreateStoryModal show={showCreateStory} onClose={() => setShowCreateStory(false)} onCreate={()=>{}} {...uiProps} />}
             {showCreatePost && <CreatePostModal show={showCreatePost} onClose={() => {setShowCreatePost(false); setQuotingPost(null);}} onCreatePost={handleCreatePost} profile={profile} quotingPost={quotingPost} {...uiProps} />}
             {showSuggestions && <SuggestionsModal show={showSuggestions} onClose={() => setShowSuggestions(false)} suggestions={INITIAL_FRIEND_SUGGESTIONS} following={following} onFollowToggle={handleFollowToggle} onDismiss={()=>{}} onViewProfile={handleViewProfile} {...uiProps} />}
-            {showNotifications && <NotificationsModal show={showNotifications} onClose={() => setShowNotifications(false)} notifications={INITIAL_NOTIFICATIONS} unreadCount={INITIAL_NOTIFICATIONS.filter(n=>!n.read).length} onMarkAllRead={()=>{}} onMarkOneRead={()=>{}} onViewNotification={(n) => {setShowNotifications(false); setViewingNotification(n);}} {...uiProps} />}
+            {showNotifications && <NotificationsModal show={showNotifications} onClose={() => setShowNotifications(false)} notifications={notifications} unreadCount={notifications.filter(n=>!n.read).length} onMarkAllRead={()=>{}} onMarkOneRead={()=>{}} onViewNotification={(n) => {setShowNotifications(false); setViewingNotification(n);}} {...uiProps} />}
             {viewingNotification && <NotificationDetailModal show={!!viewingNotification} notification={viewingNotification} onClose={() => setViewingNotification(null)} allUsers={allUserListItems} posts={posts} onViewPost={(p)=>{setViewingNotification(null); setViewingPost(p);}} onViewProfile={(u)=>{setViewingNotification(null); handleViewProfile(u);}} {...uiProps} />}
             {viewingProduct && <ProductDetailModal product={viewingProduct} onClose={() => setViewingProduct(null)} profile={profile} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} {...uiProps} />}
             {showAddProductModal && <AddProductModal show={showAddProductModal} onClose={() => setShowAddProductModal(false)} onAddProduct={handleAddNewProduct} {...uiProps} />}
@@ -1156,6 +1312,7 @@ export const FireSocial: React.FC = () => {
             {showCommunitiesModal && <CommunitiesModal show={showCommunitiesModal} onClose={() => setShowCommunitiesModal(false)} communities={communities} onJoinToggle={toggleJoinCommunity} onViewCommunity={handleViewCommunity} {...uiProps} />}
             {showCartModal && <CartModal show={showCartModal} onClose={() => setShowCartModal(false)} cartItems={cart} onRemoveItem={handleRemoveFromCart} onCheckout={handleCheckout} {...uiProps} />}
             {sharePost && <ShareModal show={!!sharePost} onClose={() => setSharePost(null)} post={sharePost} onReshare={handleReshare} {...uiProps} />}
+            <TipModal show={!!tipModalRecipient} onClose={() => setTipModalRecipient(null)} recipient={tipModalRecipient} onConfirm={handleConfirmTip} balance={profile.emberBalance} {...uiProps} />
         </div>
     );
 };

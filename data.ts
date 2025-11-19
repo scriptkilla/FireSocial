@@ -165,7 +165,7 @@ const BASE_USERS: Profile[] = [
         searchHistory: ['#design', 'ReactJS', '@alexrivera'],
         purchasedPostIds: [],
         creatorMonetization: INITIAL_CREATOR_MONETIZATION,
-        emberBalance: 1250
+        emberBalance: 1000
     },
     {
         id: 1002,
@@ -196,7 +196,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [10],
-        emberBalance: 500
+        emberBalance: 1000
     },
     {
         id: 1003,
@@ -227,7 +227,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 2500
+        emberBalance: 1000
     },
     {
         id: 1004,
@@ -257,7 +257,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 800
+        emberBalance: 1000
     },
     {
         id: 1005,
@@ -288,25 +288,25 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 50000
+        emberBalance: 1000
     },
     {
         id: 2001, name: 'Chris Brown', username: '@chrisbrown', avatar: '🎭', email: 'chris@example.com', bio: 'Actor and director.', followers: 1500, following: 200, posts: 45, badges: ['🎬'], streak: 22, online: true, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 100
+        emberBalance: 1000
     },
     {
         id: 2002, name: 'Sam Wilson', username: '@samwilson', avatar: '🎪', email: 'sam@example.com', bio: 'Photographer.', followers: 900, following: 150, posts: 120, badges: ['📸'], streak: 12, online: false, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 300
+        emberBalance: 1000
     },
     {
         id: 2003, name: 'Maya Patel', username: '@mayapatel', avatar: '🎯', email: 'maya@example.com', bio: 'AI researcher.', followers: 3200, following: 80, posts: 25, badges: ['🧠'], streak: 8, online: true, verified: true, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1500
+        emberBalance: 1000
     },
     {
         id: 201, name: 'Blocked User 1', username: '@blocked1', avatar: '🚫', email: 'blocked@example.com', bio: 'This user is blocked.', followers: 0, following: 0, posts: 0, badges: [], streak: 0, online: false, verified: false, privacySettings: { profilePublic: false, showOnlineStatus: false, allowTagging: false, showActivity: false, privateAccount: true, suggestAccount: false, activityStatus: false }, notificationSettings: { push: false, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'hide' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: [],
@@ -499,3 +499,4 @@ export const INITIAL_FOLLOWING: UserListItem[] = ALL_USERS_DATA
 export const INITIAL_FOLLOWERS: UserListItem[] = ALL_USERS_DATA
     .filter(u => loggedInUserFollowersIds.has(u.id))
     .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: loggedInUserFollowingIds.has(u.id), isFireFollowed: false }));
+

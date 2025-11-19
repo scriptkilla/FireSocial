@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Notification, Theme } from '../types';
-import { X, CheckCheck, Bell, AtSign, Heart, MessageSquare, UserPlus } from 'lucide-react';
+import { X, CheckCheck, Bell, AtSign, Heart, MessageSquare, UserPlus, Flame } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 interface NotificationsModalProps {
@@ -70,6 +70,7 @@ const NotificationsModal: React.FC<NotificationsModalProps> = ({
             case 'comment': return <MessageSquare className="text-blue-500" size={18} />;
             case 'follow': return <UserPlus className="text-green-500" size={18} />;
             case 'tag': return <AtSign className={`text-purple-500`} size={18} />;
+            case 'tip': return <Flame className={`text-orange-500`} size={18} fill="currentColor" />;
             default: return <Bell className={textSecondary} size={18} />;
         }
     };

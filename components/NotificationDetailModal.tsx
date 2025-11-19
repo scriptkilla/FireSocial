@@ -1,6 +1,6 @@
 import React from 'react';
 import { Notification, Theme, UserListItem, Post } from '../types';
-import { X, Bell, AtSign, Heart, MessageSquare, UserPlus, ArrowRight } from 'lucide-react';
+import { X, Bell, AtSign, Heart, MessageSquare, UserPlus, ArrowRight, Flame } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 interface NotificationDetailModalProps {
@@ -45,6 +45,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
             case 'comment': return <div className="p-3 bg-blue-500 rounded-full"><MessageSquare {...iconProps} /></div>;
             case 'follow': return <div className="p-3 bg-green-500 rounded-full"><UserPlus {...iconProps} /></div>;
             case 'tag': return <div className={`p-3 bg-purple-500 rounded-full`}><AtSign {...iconProps} /></div>;
+            case 'tip': return <div className={`p-3 bg-orange-500 rounded-full`}><Flame {...iconProps} fill="currentColor" /></div>;
             default: return <div className={`p-3 bg-gray-500 rounded-full`}><Bell {...iconProps} /></div>;
         }
     };
@@ -57,6 +58,8 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
                 return 'View Post';
             case 'follow':
                 return 'View Profile';
+            case 'tip':
+                return 'View Wallet';
             default:
                 return null;
         }
@@ -67,6 +70,10 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
 
         if (notification.type === 'follow') {
             onViewProfile(notification.username);
+        } else if (notification.type === 'tip') {
+             // Navigate to wallet (via profile for now since we don't have direct nav access here)
+             onViewProfile(notification.username); // Or current user's profile ideally
+             onClose();
         } else if (notification.postId) {
             const postToView = posts.find(p => p.id === notification.postId);
             if (postToView) {

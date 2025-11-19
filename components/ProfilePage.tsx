@@ -130,7 +130,8 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
             
             {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard label="Total Balance" value={`${emberBalance.toLocaleString()} 🔥`} icon={<Flame size={18} className="text-orange-500"/>} trend="75%"/>
+                    {/* Updated to show Withdrawable Balance (Earnings) instead of Spending Balance (Ember) */}
+                    <StatCard label="Total Earnings" value={`$${monetization.balance.toFixed(2)}`} icon={<DollarSign size={18} className="text-green-500"/>} trend="75%"/>
                     <StatCard label="Monthly Revenue" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={18} className="text-green-500"/>} trend="45%"/>
                     <StatCard label="Active Subs" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={18} className="text-blue-500"/>} trend="20%"/>
                     <StatCard label="Tips Received" value={monetization.tipJar.tipCount} icon={<Heart size={18} className="text-red-500"/>} trend="60%"/>
@@ -153,44 +154,62 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
             
             {activeTab === 'wallet' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* FireSocial Card */}
-                    <div className={`relative aspect-[1.586/1] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} p-8 text-white flex flex-col justify-between transform hover:scale-[1.02] transition-transform`}>
-                        <div className="absolute top-0 right-0 p-12 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                        <div className="flex justify-between items-start z-10">
-                            <Flame size={40} fill="currentColor" />
-                            <span className="font-mono text-lg opacity-80">FIRESOCIAL CARD</span>
-                        </div>
-                        <div className="z-10">
-                            <p className="text-sm opacity-80 mb-1">Current Balance</p>
-                            <h2 className="text-5xl font-bold flex items-center gap-3 tracking-tight">
-                                {emberBalance.toLocaleString()} <span className="text-2xl opacity-80">🔥</span>
-                            </h2>
-                        </div>
-                        <div className="flex justify-between items-end z-10">
-                             <div>
-                                <p className="text-xs opacity-60 uppercase tracking-wider mb-1">Card Holder</p>
-                                <p className="font-medium text-lg tracking-wide">THOMAS DARROW</p>
-                             </div>
-                             <div className="opacity-80">
-                                 <div className="flex gap-1">
-                                     <div className="w-8 h-8 rounded-full bg-white/20"></div>
-                                     <div className="w-8 h-8 rounded-full bg-white/40 -ml-4"></div>
+                    <div className="space-y-6">
+                        {/* Creator Earnings Card */}
+                        <div className={`relative aspect-[1.586/1] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} p-8 text-white flex flex-col justify-between transform hover:scale-[1.02] transition-transform`}>
+                            <div className="absolute top-0 right-0 p-12 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                            <div className="flex justify-between items-start z-10">
+                                <DollarSign size={40} fill="currentColor" />
+                                <span className="font-mono text-lg opacity-80">EARNINGS WALLET</span>
+                            </div>
+                            <div className="z-10">
+                                <p className="text-sm opacity-80 mb-1">Withdrawable Balance</p>
+                                <h2 className="text-5xl font-bold flex items-center gap-3 tracking-tight">
+                                    ${monetization.balance.toLocaleString()}
+                                </h2>
+                            </div>
+                            <div className="flex justify-between items-end z-10">
+                                 <div>
+                                    <p className="text-xs opacity-60 uppercase tracking-wider mb-1">Card Holder</p>
+                                    <p className="font-medium text-lg tracking-wide">THOMAS DARROW</p>
                                  </div>
-                             </div>
+                                 <div className="opacity-80">
+                                     <div className="flex gap-1">
+                                         <div className="w-8 h-8 rounded-full bg-white/20"></div>
+                                         <div className="w-8 h-8 rounded-full bg-white/40 -ml-4"></div>
+                                     </div>
+                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Spending Balance (Ember) - Visual separation */}
+                        <div className={`flex items-center justify-between p-6 rounded-3xl border ${borderColor} bg-gradient-to-r from-orange-500/10 to-red-500/10`}>
+                            <div>
+                                <p className={`${textSecondary} text-sm font-medium uppercase tracking-wide`}>Spending Balance</p>
+                                <div className="flex items-center gap-2">
+                                    <Flame className="text-orange-500" size={24} fill="currentColor" />
+                                    <span className={`text-2xl font-bold ${textColor}`}>{emberBalance.toLocaleString()}</span>
+                                </div>
+                                <p className="text-xs text-orange-500 mt-1">Non-withdrawable. Use for tips & boosts.</p>
+                            </div>
+                            <button onClick={() => setShowDepositModal(true)} className={`px-5 py-2.5 rounded-xl bg-orange-500 text-white font-bold shadow-lg shadow-orange-500/30 hover:scale-105 transition-transform`}>
+                                Buy Embers
+                            </button>
                         </div>
                     </div>
 
                     <div className="space-y-4">
                         <div className={`${cardBg} p-6 rounded-3xl border ${borderColor}`}>
-                             <h3 className="font-bold text-lg mb-4">Actions</h3>
-                             <div className="grid grid-cols-2 gap-4">
-                                <button onClick={() => setShowDepositModal(true)} className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center gap-2 transition-colors`}>
-                                    <div className="p-3 rounded-full bg-green-500/20 text-green-500"><ArrowDownLeft size={24}/></div>
-                                    <span className="font-semibold">Deposit</span>
-                                </button>
-                                <button className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center gap-2 transition-colors`}>
-                                    <div className="p-3 rounded-full bg-orange-500/20 text-orange-500"><ArrowUpRight size={24}/></div>
-                                    <span className="font-semibold">Withdraw</span>
+                             <h3 className="font-bold text-lg mb-4">Payout Actions</h3>
+                             <div className="grid grid-cols-1 gap-4">
+                                <button 
+                                    onClick={() => alert(`Withdrawing $${monetization.balance} to your bank account.`)}
+                                    disabled={monetization.balance < 50}
+                                    className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                    <div className="p-3 rounded-full bg-green-500/20 text-green-500"><ArrowUpRight size={24}/></div>
+                                    <span className="font-semibold">Withdraw Earnings</span>
+                                    {monetization.balance < 50 && <span className="text-xs text-red-500">Min. $50 required</span>}
                                 </button>
                              </div>
                         </div>
@@ -293,7 +312,7 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
             {showDepositModal && (
                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
                     <div className={`${cardBg} p-6 rounded-3xl border ${borderColor} w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200`}>
-                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><ArrowDownLeft className="text-green-500"/> Deposit Funds</h3>
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><ArrowDownLeft className="text-orange-500"/> Buy Embers</h3>
                         <div className="mb-6">
                             <label className="block text-sm font-medium opacity-70 mb-2">Amount (USD)</label>
                             <div className="relative">
@@ -304,7 +323,7 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                         </div>
                          <div className="flex gap-3">
                             <button onClick={() => setShowDepositModal(false)} className={`flex-1 py-3 rounded-xl border ${borderColor} hover:bg-white/10 font-bold`}>Cancel</button>
-                            <button onClick={() => {onUpdate({...monetization}); setShowDepositModal(false); alert(`Deposited $${depositAmount}`)}} className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600">Confirm</button>
+                            <button onClick={() => {onUpdate({...monetization}); setShowDepositModal(false); alert(`Purchased ${Number(depositAmount) * 10} Embers for $${depositAmount}!`)}} className="flex-1 py-3 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600">Confirm Purchase</button>
                         </div>
                     </div>
                 </div>

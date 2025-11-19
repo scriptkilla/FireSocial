@@ -262,7 +262,7 @@ export interface ScheduledPost {
 
 export interface Notification {
   id: number;
-  type: 'like' | 'comment' | 'follow' | 'tag' | 'schedule';
+  type: 'like' | 'comment' | 'follow' | 'tag' | 'schedule' | 'tip';
   user: string;
   username: string;
   content: string;
