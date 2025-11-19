@@ -1,10 +1,12 @@
 
 
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
 // Fix: Imported the 'Users' icon from lucide-react.
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- SUB-COMPONENTS for Monetization ---
@@ -350,6 +352,8 @@ interface ProfilePageProps {
     onTabChange: (tab: string) => void;
     onEditProfile: () => void;
     onFollow: (userId: number, username: string) => void;
+    onFireFollowToggle: (userId: number) => void;
+    isFireFollowed: boolean;
     onBlockToggle: (userId: number, username: string) => void;
     isFollowing: boolean;
     isBlocked: boolean;
@@ -375,7 +379,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -521,9 +525,24 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                             <button onClick={onEditProfile} className={`px-6 py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg flex items-center gap-2`}><Edit3 size={18} />Edit Profile</button>
                         ) : (
                            <>
-                            <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg ${isFollowing ? `${cardBg} ${textColor} border ${borderColor}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}>
-                                {isFollowing ? 'Following' : 'Follow'}
-                            </button>
+                            {isFollowing ? (
+                                <div className="flex gap-2">
+                                    <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg ${cardBg} ${textColor} border ${borderColor} hover:bg-white/10`}>
+                                        Following
+                                    </button>
+                                    <button 
+                                        onClick={() => onFireFollowToggle(profileToDisplay.id)}
+                                        title={isFireFollowed ? "FireFollow Active: Seeing all posts!" : "FireFollow: See all posts"}
+                                        className={`p-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg border ${isFireFollowed ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-transparent' : `${borderColor} ${textSecondary} hover:bg-white/10`}`}
+                                    >
+                                        <Flame size={20} fill={isFireFollowed ? "currentColor" : "none"} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}>
+                                    Follow
+                                </button>
+                            )}
                             <div className="relative" ref={optionsRef}>
                                 <button onClick={() => setShowProfileOptions(s => !s)} className={`p-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg ${cardBg} ${textColor} border ${borderColor}`}>
                                     <MoreHorizontal size={20} />

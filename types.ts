@@ -55,6 +55,7 @@ export interface UserListItem {
   username: string;
   avatar: string;
   followedByYou: boolean;
+  isFireFollowed?: boolean;
 }
 
 export interface CommentAttachment {

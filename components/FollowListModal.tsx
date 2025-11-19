@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Flame } from 'lucide-react';
 import { UserListItem, Theme } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -9,6 +10,7 @@ interface FollowListModalProps {
     followers: UserListItem[];
     following: UserListItem[];
     onFollowToggle: (userId: number, username: string) => void;
+    onFireFollowToggle: (userId: number) => void;
     onViewProfile: (username: string) => void;
     currentTheme: Theme;
     cardBg: string;
@@ -17,7 +19,7 @@ interface FollowListModalProps {
     borderColor: string;
 }
 
-const FollowListModal: React.FC<FollowListModalProps> = ({ listType, onClose, followers, following, onFollowToggle, onViewProfile, currentTheme, cardBg, textColor, textSecondary, borderColor }) => {
+const FollowListModal: React.FC<FollowListModalProps> = ({ listType, onClose, followers, following, onFollowToggle, onFireFollowToggle, onViewProfile, currentTheme, cardBg, textColor, textSecondary, borderColor }) => {
     const list = listType === 'followers' ? followers : following;
     
     const handleViewProfileClick = (username: string) => {
@@ -34,19 +36,33 @@ const FollowListModal: React.FC<FollowListModalProps> = ({ listType, onClose, fo
                 </div>
                 <div className="space-y-4 overflow-y-auto pr-2 -mr-2">
                     {list.map(user => {
-                        const isFollowingThisUser = following.some(followedUser => followedUser.id === user.id);
+                        const followedUser = following.find(f => f.id === user.id);
+                        const isFollowingThisUser = !!followedUser;
+                        const isFireFollowed = followedUser?.isFireFollowed;
+
                         return (
                             <div key={user.id} className="flex items-center justify-between">
-                                <button onClick={() => handleViewProfileClick(user.username)} className="flex items-center gap-3 text-left">
+                                <button onClick={() => handleViewProfileClick(user.username)} className="flex items-center gap-3 text-left flex-1 min-w-0">
                                     <AvatarDisplay avatar={user.avatar} size="w-12 h-12" fontSize="text-2xl" />
-                                    <div>
-                                        <p className={`${textColor} font-semibold`}>{user.name}</p>
-                                        <p className={`${textSecondary} text-sm`}>{user.username}</p>
+                                    <div className="truncate">
+                                        <p className={`${textColor} font-semibold truncate`}>{user.name}</p>
+                                        <p className={`${textSecondary} text-sm truncate`}>{user.username}</p>
                                     </div>
                                 </button>
-                                <button onClick={() => onFollowToggle(user.id, user.username)} className={`px-4 py-2 ${isFollowingThisUser ? `${cardBg} ${textColor}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`} rounded-2xl text-sm font-semibold hover:scale-105 transition-all w-28 text-center`}>
-                                    {isFollowingThisUser ? 'Following' : 'Follow'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => onFollowToggle(user.id, user.username)} className={`px-3 py-2 ${isFollowingThisUser ? `${cardBg} ${textColor}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`} rounded-2xl text-sm font-semibold hover:scale-105 transition-all min-w-[80px] text-center`}>
+                                        {isFollowingThisUser ? 'Following' : 'Follow'}
+                                    </button>
+                                    {isFollowingThisUser && (
+                                         <button 
+                                            onClick={() => onFireFollowToggle(user.id)}
+                                            className={`p-2 rounded-xl border ${isFireFollowed ? 'bg-orange-500 text-white border-orange-500' : `${borderColor} ${textSecondary}`} hover:scale-105 transition-all`}
+                                            title={isFireFollowed ? "FireFollow Active" : "Enable FireFollow"}
+                                        >
+                                            <Flame size={16} fill={isFireFollowed ? "currentColor" : "none"} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         )
                     })}

@@ -1,12 +1,15 @@
 
 
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 import { GoogleGenAI } from "@google/genai";
+import { GIPHY_API_KEY } from '../constants';
 
 interface PostComponentProps {
     post: Post;
@@ -44,14 +47,6 @@ interface PostComponentProps {
 }
 
 const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '🙌', '😭', '🤔'];
-
-const MOCK_GIFS = [
-    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbW5lenZyZHI5OXM2eW95b3h6b3dibW5wZ3AyZ3A0Z3A0Z3A0Z3A0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif',
-    'https://media.giphy.com/media/l0amJbWGDek2eZwVq/giphy.gif',
-    'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
-    'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif',
-];
-
 
 const MenuItem: React.FC<{icon: React.ElementType, label: string, onClick: (e: React.MouseEvent) => void, className?: string}> = ({ icon: Icon, label, onClick, className = '' }) => (
     <button onClick={onClick} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 ${className}`}>
@@ -97,6 +92,11 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const [showAiMenu, setShowAiMenu] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
 
+    // GIF Fetching
+    const [gifs, setGifs] = useState<string[]>([]);
+    const [gifSearch, setGifSearch] = useState('');
+    const [isLoadingGifs, setIsLoadingGifs] = useState(false);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const emojiRef = useRef<HTMLDivElement>(null);
     const gifRef = useRef<HTMLDivElement>(null);
@@ -128,6 +128,27 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showPostOptions, showReactionPicker, showEmojiPicker, showGifPicker, showAiMenu]);
+
+    useEffect(() => {
+        if (showGifPicker) {
+            const fetchGifs = async () => {
+                setIsLoadingGifs(true);
+                try {
+                    const endpoint = gifSearch ? 'search' : 'trending';
+                    const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?api_key=${GIPHY_API_KEY}&limit=20&rating=g&q=${gifSearch}`);
+                    const data = await res.json();
+                    setGifs(data.data.map((g: any) => g.images.fixed_height_small.url));
+                } catch (e) {
+                    console.error("Failed to fetch gifs", e);
+                } finally {
+                    setIsLoadingGifs(false);
+                }
+            };
+
+            const timeoutId = setTimeout(fetchGifs, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [showGifPicker, gifSearch]);
 
     const handleMenuClick = (e: React.MouseEvent, action: () => void) => {
         e.stopPropagation();
@@ -463,10 +484,30 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                                         <div className="relative" ref={gifRef}>
                                             <button type="button" onClick={() => setShowGifPicker(!showGifPicker)} className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-gray-400 hover:text-pink-400" title="GIF"><Sticker size={16}/></button>
                                             {showGifPicker && (
-                                                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-xl border border-gray-700 z-50 grid grid-cols-2 gap-1 max-h-32 overflow-y-auto">
-                                                    {MOCK_GIFS.map((gif, i) => (
-                                                        <img key={i} src={gif} alt="gif" className="w-full h-auto rounded cursor-pointer hover:opacity-80" onClick={() => handleAddGif(gif)} />
-                                                    ))}
+                                                <div className={`absolute bottom-full right-0 mb-2 w-64 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-3 z-50 animate-in slide-in-from-bottom-2`}>
+                                                    <div className="relative mb-2">
+                                                        <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} />
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="Search GIFs..." 
+                                                            value={gifSearch}
+                                                            onChange={(e) => setGifSearch(e.target.value)}
+                                                            className={`w-full pl-9 pr-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 rounded-lg border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} 
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
+                                                        {isLoadingGifs ? (
+                                                            <div className="col-span-3 flex justify-center py-4"><Loader2 size={20} className="animate-spin" /></div>
+                                                        ) : gifs.length > 0 ? (
+                                                            gifs.map((gif, i) => (
+                                                                <button key={i} onClick={() => handleAddGif(gif)} className="hover:opacity-80 transition-opacity rounded-md overflow-hidden aspect-square">
+                                                                    <img src={gif} alt="gif" className="w-full h-full object-cover" />
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <div className="col-span-3 text-center py-4 text-xs text-gray-500">No GIFs found</div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

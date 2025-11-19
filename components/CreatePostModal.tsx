@@ -1,9 +1,12 @@
 
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search, Lightbulb } from 'lucide-react';
 import { Profile, Theme, MediaItem } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 import { GoogleGenAI } from "@google/genai";
+import { GIPHY_API_KEY } from '../constants';
 
 interface CreatePostModalProps {
     show: boolean;
@@ -18,17 +21,6 @@ interface CreatePostModalProps {
 }
 
 const EMOJIS = ['😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '🤪', '😎', '🥳', '🤔', '🤫', '🙄', '😴', '😭', '😤', '😡', '🤯', '😱', '👍', '👎', '👏', '🙏', '💪', '🔥', '✨', '❤️', '💔', '💯', '🚀'];
-
-const MOCK_GIFS = [
-    'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbW5lenZyZHI5OXM2eW95b3h6b3dibW5wZ3AyZ3A0Z3A0Z3A0Z3A0dyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif',
-    'https://media.giphy.com/media/l0amJbWGDek2eZwVq/giphy.gif',
-    'https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif',
-    'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif',
-    'https://media.giphy.com/media/xT0GqgeTVaAdWZM7F6/giphy.gif',
-    'https://media.giphy.com/media/l41lFw057lAJcYt0Y/giphy.gif',
-    'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
-    'https://media.giphy.com/media/d31w24pskwn843Qs/giphy.gif'
-];
 
 const CHARACTER_LIMIT = 300;
 
@@ -45,6 +37,11 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
+
+    // GIF Fetching
+    const [gifs, setGifs] = useState<string[]>([]);
+    const [gifSearch, setGifSearch] = useState('');
+    const [isLoadingGifs, setIsLoadingGifs] = useState(false);
 
     // Camera State
     const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -77,6 +74,27 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showEmojiPicker, showGifPicker, showAiMenu]);
+
+    useEffect(() => {
+        if (showGifPicker) {
+            const fetchGifs = async () => {
+                setIsLoadingGifs(true);
+                try {
+                    const endpoint = gifSearch ? 'search' : 'trending';
+                    const res = await fetch(`https://api.giphy.com/v1/gifs/${endpoint}?api_key=${GIPHY_API_KEY}&limit=20&rating=g&q=${gifSearch}`);
+                    const data = await res.json();
+                    setGifs(data.data.map((g: any) => g.images.fixed_height_small.url));
+                } catch (e) {
+                    console.error("Failed to fetch gifs", e);
+                } finally {
+                    setIsLoadingGifs(false);
+                }
+            };
+
+            const timeoutId = setTimeout(fetchGifs, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [showGifPicker, gifSearch]);
 
     useEffect(() => {
         return () => {
@@ -399,14 +417,26 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     <div className={`absolute bottom-full mb-2 left-0 w-72 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-3 z-20 animate-in slide-in-from-bottom-2`}>
                                         <div className="relative mb-2">
                                             <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} />
-                                            <input type="text" placeholder="Search GIFs..." className={`w-full pl-9 pr-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 rounded-lg border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search GIFs..." 
+                                                value={gifSearch}
+                                                onChange={(e) => setGifSearch(e.target.value)}
+                                                className={`w-full pl-9 pr-3 py-1.5 text-sm bg-black/10 dark:bg-white/10 rounded-lg border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} 
+                                            />
                                         </div>
                                         <div className="grid grid-cols-3 gap-1 max-h-48 overflow-y-auto">
-                                            {MOCK_GIFS.map((gif, i) => (
-                                                <button key={i} onClick={() => handleAddGif(gif)} className="hover:opacity-80 transition-opacity rounded-md overflow-hidden aspect-square">
-                                                    <img src={gif} alt="gif" className="w-full h-full object-cover" />
-                                                </button>
-                                            ))}
+                                            {isLoadingGifs ? (
+                                                <div className="col-span-3 flex justify-center py-4"><Loader2 size={20} className="animate-spin" /></div>
+                                            ) : gifs.length > 0 ? (
+                                                gifs.map((gif, i) => (
+                                                    <button key={i} onClick={() => handleAddGif(gif)} className="hover:opacity-80 transition-opacity rounded-md overflow-hidden aspect-square">
+                                                        <img src={gif} alt="gif" className="w-full h-full object-cover" />
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="col-span-3 text-center py-4 text-xs text-gray-500">No GIFs found</div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

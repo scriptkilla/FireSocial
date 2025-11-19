@@ -5,6 +5,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
@@ -159,6 +161,7 @@ export const FireSocial: React.FC = () => {
     }, [posts, blockedUserIds, homeSearchQuery]);
 
     const viewingProfile = useMemo(() => allUsers.find(u => u.username === viewingProfileUsername) || profile, [viewingProfileUsername, allUsers, profile]);
+    const isFireFollowed = useMemo(() => following.some(u => u.id === viewingProfile.id && u.isFireFollowed), [following, viewingProfile]);
     
     const unreadNotificationsCount = INITIAL_NOTIFICATIONS.filter(n => !n.read).length;
 
@@ -372,9 +375,15 @@ export const FireSocial: React.FC = () => {
         } else {
             const userToFollow = allUsers.find(u => u.id === userId);
             if (userToFollow) {
-                setFollowing([...following, { id: userId, name: userToFollow.name, username: userToFollow.username, avatar: userToFollow.avatar, followedByYou: true }]);
+                setFollowing([...following, { id: userId, name: userToFollow.name, username: userToFollow.username, avatar: userToFollow.avatar, followedByYou: true, isFireFollowed: false }]);
             }
         }
+    };
+
+    const handleFireFollowToggle = (userId: number) => {
+        setFollowing(prev => prev.map(u => 
+            u.id === userId ? { ...u, isFireFollowed: !u.isFireFollowed } : u
+        ));
     };
     
     const handleBlockToggle = (userId: number, username: string) => {
@@ -686,8 +695,39 @@ export const FireSocial: React.FC = () => {
             case 'marketplace':
                 return <MarketplacePage products={marketplaceProducts} onViewProduct={setViewingProduct} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} onOpenCart={() => setShowCartModal(true)} cartItemCount={cart.length} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
             case 'profile':
-                return <ProfilePage profileToDisplay={viewingProfile} isOwnProfile={viewingProfile.id === profile.id} posts={posts} scheduledPosts={[]} onDeleteScheduledPost={() => {}} activeTab={profileTab} onTabChange={setProfileTab} onEditProfile={() => setShowEditProfile(true)} onFollow={handleFollowToggle} onBlockToggle={handleBlockToggle} isFollowing={following.some(u => u.id === viewingProfile.id)} isBlocked={blockedUserIds.has(viewingProfile.id)} onShowFollowers={() => setShowFollowList({type: 'followers', user: viewingProfile})} onShowFollowing={() => setShowFollowList({type: 'following', user: viewingProfile})} onViewPost={setViewingPost} onViewComments={setCommentModalPost} onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} onViewProfile={handleViewProfile} onViewAchievements={() => setActivePage('achievements')} onViewTrophies={() => setActivePage('trophies')} onViewStreaks={() => setActivePage('streaks')} allAchievements={ALL_ACHIEVEMENTS} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} currentTheme={currentTheme} onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} onShowAddProductModal={() => setShowAddProductModal(true)} 
-                onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
+                return <ProfilePage 
+                    profileToDisplay={viewingProfile} 
+                    isOwnProfile={viewingProfile.id === profile.id} 
+                    posts={posts} 
+                    scheduledPosts={[]} 
+                    onDeleteScheduledPost={() => {}} 
+                    activeTab={profileTab} 
+                    onTabChange={setProfileTab} 
+                    onEditProfile={() => setShowEditProfile(true)} 
+                    onFollow={handleFollowToggle}
+                    onFireFollowToggle={handleFireFollowToggle}
+                    isFireFollowed={isFireFollowed}
+                    onBlockToggle={handleBlockToggle} 
+                    isFollowing={following.some(u => u.id === viewingProfile.id)} 
+                    isBlocked={blockedUserIds.has(viewingProfile.id)} 
+                    onShowFollowers={() => setShowFollowList({type: 'followers', user: viewingProfile})} 
+                    onShowFollowing={() => setShowFollowList({type: 'following', user: viewingProfile})} 
+                    onViewPost={setViewingPost} 
+                    onViewComments={setCommentModalPost} 
+                    onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} 
+                    onViewProfile={handleViewProfile} 
+                    onViewAchievements={() => setActivePage('achievements')} 
+                    onViewTrophies={() => setActivePage('trophies')} 
+                    onViewStreaks={() => setActivePage('streaks')} 
+                    allAchievements={ALL_ACHIEVEMENTS} 
+                    cardBg={cardBg} 
+                    textColor={textColor} 
+                    textSecondary={textSecondary} 
+                    borderColor={borderColor} 
+                    currentTheme={currentTheme} 
+                    onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} 
+                    onShowAddProductModal={() => setShowAddProductModal(true)} 
+                    onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
@@ -874,7 +914,7 @@ export const FireSocial: React.FC = () => {
             {/* Modals */}
             {showSettings && <SettingsModal show={showSettings} onClose={() => setShowSettings(false)} profile={profile} setProfile={setProfile} onEditProfile={() => {setShowSettings(false); setShowEditProfile(true);}} setThemeColor={setThemeColor} allUsers={allUserListItems} onBlockToggle={handleBlockToggle} themeColor={themeColor} darkMode={darkMode} {...uiProps} />}
             {showEditProfile && <EditProfileModal profile={profile} onClose={() => setShowEditProfile(false)} onSave={handleSaveProfile} {...uiProps} />}
-            {showFollowList && <FollowListModal listType={showFollowList.type} onClose={() => setShowFollowList(null)} followers={followers} following={following} onFollowToggle={handleFollowToggle} onViewProfile={handleViewProfile} {...uiProps} />}
+            {showFollowList && <FollowListModal listType={showFollowList.type} onClose={() => setShowFollowList(null)} followers={followers} following={following} onFollowToggle={handleFollowToggle} onFireFollowToggle={handleFireFollowToggle} onViewProfile={handleViewProfile} {...uiProps} />}
             
             {/* Viewing Post Modal */}
             {viewingPost && (

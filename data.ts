@@ -1,6 +1,8 @@
 
 
 
+
+
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
@@ -481,8 +483,8 @@ const loggedInUserFollowersIds = new Set([1002, 1003]);
 
 export const INITIAL_FOLLOWING: UserListItem[] = ALL_USERS_DATA
     .filter(u => loggedInUserFollowingIds.has(u.id))
-    .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: true }));
+    .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: true, isFireFollowed: false }));
 
 export const INITIAL_FOLLOWERS: UserListItem[] = ALL_USERS_DATA
     .filter(u => loggedInUserFollowersIds.has(u.id))
-    .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: loggedInUserFollowingIds.has(u.id) }));
+    .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: loggedInUserFollowingIds.has(u.id), isFireFollowed: false }));

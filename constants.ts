@@ -1,4 +1,7 @@
+
 import { Themes, Reaction, Achievement } from './types';
+
+export const GIPHY_API_KEY = 'gLCzOuI9WiPhZI4vjYEzR57DLi9NL8Ev';
 
 export const THEMES: Themes = {
   orange: {
