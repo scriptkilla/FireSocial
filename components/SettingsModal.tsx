@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
@@ -75,7 +76,7 @@ const FormInput: React.FC<{label: string, type: string, value: string, onChange:
 
 
 // --- PROPS FOR VIEW COMPONENTS ---
-type SettingsView = 'main' | 'account' | 'privacy' | 'notifications' | 'content' | 'support' | 'appearance' | 'blocked' | 'language' | 'changePassword' | 'twoFactor' | 'mutedAccounts' | 'restrictedAccounts' | 'favoriteTopics' | 'hiddenWords' | 'sensitiveContent' | 'reportProblem' | 'helpCenter' | 'apiConfig';
+type SettingsView = 'main' | 'account' | 'privacy' | 'notifications' | 'messaging' | 'content' | 'support' | 'appearance' | 'blocked' | 'language' | 'changePassword' | 'twoFactor' | 'mutedAccounts' | 'restrictedAccounts' | 'favoriteTopics' | 'hiddenWords' | 'sensitiveContent' | 'reportProblem' | 'helpCenter' | 'apiConfig';
 
 interface ViewProps {
     profile: Profile;
@@ -105,6 +106,7 @@ const MainView: React.FC<{ setView: (view: SettingsView) => void } & Pick<ViewPr
         <SettingsItem icon={User} label="Account Settings" onClick={() => setView('account')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Shield} label="Privacy and Security" onClick={() => setView('privacy')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Bell} label="Notifications" onClick={() => setView('notifications')} hoverBg={hoverBg} textSecondary={textSecondary} />
+        <SettingsItem icon={MessageSquare} label="Messaging" onClick={() => setView('messaging')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={Palette} label="Appearance" onClick={() => setView('appearance')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={KeyRound} label="API Configuration" onClick={() => setView('apiConfig')} hoverBg={hoverBg} textSecondary={textSecondary} />
         <SettingsItem icon={List} label="Content Preferences" onClick={() => setView('content')} hoverBg={hoverBg} textSecondary={textSecondary} />
@@ -209,6 +211,44 @@ const NotificationSettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile
         <SettingsSection title="Notifications">
             <SettingsToggleItem icon={Bell} label="Push Notifications" isEnabled={profile.notificationSettings.push} onToggle={() => handleNotificationChange('push', !profile.notificationSettings.push)} {...toggleProps} />
             <SettingsToggleItem icon={Bell} label="Email Notifications" isEnabled={profile.notificationSettings.email} onToggle={() => handleNotificationChange('email', !profile.notificationSettings.email)} {...toggleProps} />
+        </SettingsSection>
+    );
+};
+
+const MessagingSettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' | 'currentTheme' | 'darkMode' | 'textSecondary' | 'hoverBg' | 'cardBg' | 'borderColor' | 'textColor'>> = ({ profile, setProfile, currentTheme, darkMode, textSecondary, hoverBg, cardBg, borderColor, textColor }) => {
+    const handleMessagingChange = (setting: keyof NonNullable<Profile['messagingSettings']>, value: any) => {
+        setProfile(p => ({
+            ...p,
+            messagingSettings: { ...p.messagingSettings, [setting]: value } as any
+        }));
+    };
+
+    const toggleProps = { currentTheme, darkMode, textSecondary, hoverBg };
+    const messagingSettings = profile.messagingSettings || { allowDirectMessages: 'everyone', readReceipts: true };
+
+    return (
+        <SettingsSection title="Messaging">
+            <div className={`p-3 rounded-lg ${hoverBg}`}>
+                 <label className={`block mb-2 text-sm font-medium ${textColor}`}>Allow Message Requests From</label>
+                 <select 
+                    value={messagingSettings.allowDirectMessages}
+                    onChange={(e) => handleMessagingChange('allowDirectMessages', e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                 >
+                     <option value="everyone">Everyone</option>
+                     <option value="followers">Followers Only</option>
+                 </select>
+                 <p className={`text-xs ${textSecondary} mt-1`}>People not in this list must send a request first.</p>
+            </div>
+
+            <SettingsToggleItem 
+                icon={Eye} 
+                label="Read Receipts" 
+                description="Let others know when you've seen their messages."
+                isEnabled={messagingSettings.readReceipts} 
+                onToggle={() => handleMessagingChange('readReceipts', !messagingSettings.readReceipts)} 
+                {...toggleProps} 
+            />
         </SettingsSection>
     );
 };
@@ -449,6 +489,7 @@ export const SettingsModal: React.FC<ViewProps & { show: boolean }> = (props) =>
             case 'account': return 'Account Settings';
             case 'privacy': return 'Privacy and Security';
             case 'notifications': return 'Notifications';
+            case 'messaging': return 'Messaging';
             case 'content': return 'Content Preferences';
             case 'support': return 'Support and About';
             case 'appearance': return 'Appearance';
@@ -476,6 +517,7 @@ export const SettingsModal: React.FC<ViewProps & { show: boolean }> = (props) =>
             case 'blocked': return <BlockedAccountsView {...props} />;
             case 'appearance': return <AppearanceSettingsView {...props} />;
             case 'notifications': return <NotificationSettingsView {...props} />;
+            case 'messaging': return <MessagingSettingsView {...props} />;
             case 'apiConfig': return <ApiConfigView {...props} />;
             case 'content': return <ContentPreferencesView {...props} setView={setView} />;
             case 'support': return <SupportAndAboutView {...props} setView={setView} />;

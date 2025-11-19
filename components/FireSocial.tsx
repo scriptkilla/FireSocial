@@ -72,7 +72,14 @@ export const FireSocial: React.FC = () => {
     // --- STATE MANAGEMENT ---
     // Data states
     // Initialize profile with the authenticated user
-    const [profile, setProfile] = useState<Profile>(authUser!); 
+    const [profile, setProfile] = useState<Profile>(() => {
+        const p = authUser!;
+        // Ensure messagingSettings exists even for older data
+        if (!p.messagingSettings) {
+            p.messagingSettings = { allowDirectMessages: 'everyone', readReceipts: true };
+        }
+        return p;
+    }); 
     const [allUsers, setAllUsers] = useState<Profile[]>(ALL_USERS_DATA);
     const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
     const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([]);
@@ -89,6 +96,9 @@ export const FireSocial: React.FC = () => {
     const [darkMode, setDarkMode] = useState(true);
     const [profileTab, setProfileTab] = useState('posts');
     const [homeSearchQuery, setHomeSearchQuery] = useState('');
+    const [toast, setToast] = useState<{ message: string } | null>(null);
+    const [activeFeedTab, setActiveFeedTab] = useState('Discover');
+    const [feedTabs, setFeedTabs] = useState(['Discover', 'Following']);
     
     // Pull to Refresh State
     const [pullStartY, setPullStartY] = useState(0);
@@ -145,17 +155,34 @@ export const FireSocial: React.FC = () => {
     
     const filteredPosts = useMemo(() => {
         return posts.filter(p => {
+            // 1. Blocked Check
             if (blockedUserIds.has(p.userId)) return false;
-            if (!homeSearchQuery) return true;
-            const query = homeSearchQuery.toLowerCase();
+
+            // 2. Search Query Check
+            if (homeSearchQuery) {
+                const query = homeSearchQuery.toLowerCase();
+                const matchesSearch = (
+                    p.content.toLowerCase().includes(query) ||
+                    p.user.toLowerCase().includes(query) ||
+                    p.username.toLowerCase().includes(query) ||
+                    (p.category && p.category.toLowerCase().includes(query))
+                );
+                if (!matchesSearch) return false;
+            }
+
+            // 3. Tab Filter Check
+            if (activeFeedTab === 'Discover') return true;
+            if (activeFeedTab === 'Following') {
+                return following.some(f => f.id === p.userId) || p.userId === profile.id;
+            }
+            // Custom tabs act as topic filters
+            const tabLower = activeFeedTab.toLowerCase();
             return (
-                p.content.toLowerCase().includes(query) ||
-                p.user.toLowerCase().includes(query) ||
-                p.username.toLowerCase().includes(query) ||
-                (p.category && p.category.toLowerCase().includes(query))
+                p.content.toLowerCase().includes(tabLower) ||
+                (p.category && p.category.toLowerCase() === tabLower)
             );
         });
-    }, [posts, blockedUserIds, homeSearchQuery]);
+    }, [posts, blockedUserIds, homeSearchQuery, activeFeedTab, following, profile.id]);
 
     const viewingProfile = useMemo(() => allUsers.find(u => u.username === viewingProfileUsername) || profile, [viewingProfileUsername, allUsers, profile]);
     const isFireFollowed = useMemo(() => following.some(u => u.id === viewingProfile.id && u.isFireFollowed), [following, viewingProfile]);
@@ -179,6 +206,19 @@ export const FireSocial: React.FC = () => {
 
     // --- HANDLERS ---
     
+    const showToast = (message: string) => {
+        setToast({ message });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    const handleAddTab = () => {
+        const newTab = window.prompt("Enter a topic or hashtag for the new tab:");
+        if (newTab && !feedTabs.includes(newTab)) {
+            setFeedTabs([...feedTabs, newTab]);
+            setActiveFeedTab(newTab);
+        }
+    };
+
     // Pull to Refresh Handlers
     const handleTouchStart = (e: React.TouchEvent) => {
         if (window.scrollY === 0) {
@@ -319,6 +359,7 @@ export const FireSocial: React.FC = () => {
             setViewingProfileUsername(profile.username);
             setActivePage('profile');
             setProfileTab('scheduled');
+            showToast("Post scheduled!");
         } else {
             const newPost: Post = {
                 id: Date.now(),
@@ -345,6 +386,7 @@ export const FireSocial: React.FC = () => {
             };
             setPosts([newPost, ...posts]);
             setProfile(p => ({ ...p, posts: p.posts + 1 }));
+            showToast("Post published!");
         }
         setQuotingPost(null);
     };
@@ -381,6 +423,7 @@ export const FireSocial: React.FC = () => {
     const handleReshare = () => {
         if (sharePost) {
             setPosts(prev => prev.map(p => p.id === sharePost.id ? { ...p, shares: p.shares + 1 } : p));
+            showToast("Shared successfully!");
             // In a real app, we might create a new post that references this one.
         }
     };
@@ -388,7 +431,7 @@ export const FireSocial: React.FC = () => {
     // New handler for instant repost from the dropdown
     const handleInstantRepost = (postId: number) => {
          setPosts(prev => prev.map(p => p.id === postId ? { ...p, shares: p.shares + 1 } : p));
-         // Optional: show a brief toast notification here
+         showToast("Reposted to your feed!");
     };
     
     // New handler for quote post from the dropdown
@@ -478,6 +521,23 @@ export const FireSocial: React.FC = () => {
         }));
     };
     
+    const handleMessageFromProfile = (user: Profile) => {
+        const msgUser: Message = {
+            id: Date.now(),
+            userId: user.id,
+            user: user.name,
+            username: user.username,
+            avatar: user.avatar,
+            lastMessage: '',
+            time: 'Now',
+            unread: false,
+            online: user.online,
+            lastMessageType: 'text',
+            lastMessageSentByYou: false
+        };
+        setMessageUser(msgUser);
+    };
+    
     const handleAddNewProduct = (productData: Omit<Product, 'id' | 'creatorId' | 'creatorUsername' | 'creatorAvatar' | 'sales' | 'rating'>) => {
         const newProduct: Product = {
             ...productData,
@@ -506,6 +566,7 @@ export const FireSocial: React.FC = () => {
 
     const handleAddToCart = (product: Product) => {
         setCart(prev => [...prev, product]);
+        showToast("Added to cart!");
     };
 
     const handleRemoveFromCart = (productId: string) => {
@@ -525,7 +586,7 @@ export const FireSocial: React.FC = () => {
         if (profile.emberBalance >= cost) {
              setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - cost }));
              setPosts(posts.map(p => p.id === postId ? { ...p, isBoosted: true } : p));
-             alert(`Post boosted! Deducted ${cost} Embers.`);
+             showToast(`Post boosted! Deducted ${cost} Embers.`);
         } else {
             alert("Not enough Embers to boost post!");
         }
@@ -534,7 +595,7 @@ export const FireSocial: React.FC = () => {
     const handleTipCreator = (amount: number) => {
         if (profile.emberBalance >= amount) {
             setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - amount }));
-             alert(`Tipped ${amount} Embers!`);
+             showToast(`Tipped ${amount} Embers!`);
         } else {
             alert("Not enough Embers!");
         }
@@ -766,11 +827,36 @@ export const FireSocial: React.FC = () => {
                             )}
                         </div>
                         {renderStoriesBar()}
+                        
+                        {/* Feed Tabs */}
+                        <div className="flex items-center gap-3 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                            {feedTabs.map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveFeedTab(tab)}
+                                    className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                                        activeFeedTab === tab
+                                            ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-md transform scale-105`
+                                            : `${cardBg} border ${borderColor} ${textColor} hover:bg-white/10`
+                                    }`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                            <button 
+                                onClick={handleAddTab}
+                                className={`p-2 rounded-full ${cardBg} border ${borderColor} ${textSecondary} hover:${textColor} hover:bg-white/10 transition-colors flex-shrink-0`}
+                                title="Add Custom Feed"
+                            >
+                                <Plus size={18} />
+                            </button>
+                        </div>
+
                         {filteredPosts.length > 0 ? (
                             filteredPosts.map(post => <PostComponent key={post.id} {...postComponentProps} post={post} />)
                         ) : (
                             <div className={`text-center py-10 ${textSecondary}`}>
-                                <p>No posts found matching "{homeSearchQuery}"</p>
+                                <p>No posts found for "{activeFeedTab}"</p>
                             </div>
                         )}
                     </div>
@@ -816,6 +902,7 @@ export const FireSocial: React.FC = () => {
                     onShowAddProductModal={() => setShowAddProductModal(true)} 
                     onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
                     onTip={handleTipCreator}
+                    onMessage={handleMessageFromProfile}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
@@ -872,7 +959,7 @@ export const FireSocial: React.FC = () => {
         onShare: (post: Post) => setSharePost(post),
         onRepost: handleInstantRepost,
         onQuote: handleQuotePost,
-        onCopyLink: (id: number) => { navigator.clipboard.writeText(`https://firesocial.app/post/${id}`); alert("Link copied!"); },
+        onCopyLink: (id: number) => { navigator.clipboard.writeText(`https://firesocial.app/post/${id}`); showToast("Link copied!"); },
         onFollowToggle: handleFollowToggle,
         onBlockToggle: handleBlockToggle,
         onVotePoll: (postId: number, optionId: number) => {
@@ -886,7 +973,7 @@ export const FireSocial: React.FC = () => {
         onViewProfile: handleViewProfile,
         onViewHashtag: (tag: string) => alert(`Viewing ${tag}`),
         onPurchasePost: (id: number) => {
-            alert(`Purchased Post ${id}!`);
+            showToast(`Purchased Post ${id}!`);
             setProfile(p => ({...p, purchasedPostIds: [...(p.purchasedPostIds || []), id]}));
         },
         onBoost: handleBoostPost,
@@ -917,6 +1004,19 @@ export const FireSocial: React.FC = () => {
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
+            
+            {/* Toast Notification */}
+            {toast && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] pointer-events-none">
+                    <div className={`animate-in slide-in-from-top-2 fade-in duration-300 ${cardBg} backdrop-blur-xl border ${borderColor} px-6 py-3 rounded-full shadow-2xl flex items-center gap-3`}>
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-1 rounded-full shadow-sm">
+                            <Check size={16} strokeWidth={3} />
+                        </div>
+                        <span className={`font-bold text-sm ${textColor}`}>{toast.message}</span>
+                    </div>
+                </div>
+            )}
+
             <div className="container mx-auto grid grid-cols-12 gap-8 items-start p-2 sm:p-4">
                 <aside className="col-span-3 sticky top-4 hidden lg:flex flex-col gap-4">
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor}`}>

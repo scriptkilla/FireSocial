@@ -1,7 +1,8 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELPER COMPONENTS ---
@@ -476,6 +477,7 @@ interface ProfilePageProps {
     onShowAddProductModal: () => void;
     onUpdateProfileMonetization?: (updatedMonetization: CreatorMonetization) => void;
     onTip: (amount: number) => void;
+    onMessage: (user: Profile) => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -486,7 +488,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -570,6 +572,15 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                     ) : (
                                         <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-2.5 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all`}>Follow</button>
                                     )}
+                                    
+                                    <button 
+                                        onClick={() => onMessage(profileToDisplay)} 
+                                        className={`px-4 py-2.5 rounded-xl font-semibold border ${borderColor} ${cardBg} hover:bg-white/10 transition-all shadow-sm flex items-center gap-2`}
+                                    >
+                                        <Mail size={18} />
+                                        <span className="hidden sm:inline">Message</span>
+                                    </button>
+
                                     <div className="relative" ref={optionsRef}>
                                         <button onClick={() => setShowProfileOptions(s => !s)} className={`p-2.5 rounded-xl border ${borderColor} ${cardBg} hover:bg-white/10 transition-all`}><MoreHorizontal size={20} /></button>
                                         {showProfileOptions && (

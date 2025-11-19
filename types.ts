@@ -230,6 +230,10 @@ export interface Profile {
     push: boolean;
     email: boolean;
   };
+  messagingSettings: {
+    allowDirectMessages: 'everyone' | 'followers';
+    readReceipts: boolean;
+  };
   contentPreferences: {
     favoriteTopics: string[];
     hiddenWords: string[];
