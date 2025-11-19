@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product, Theme, Profile } from '../types';
 import { X, ChevronLeft, ChevronRight, Star, ShoppingCart } from 'lucide-react';
@@ -8,6 +9,7 @@ interface ProductDetailModalProps {
     onClose: () => void;
     profile: Profile;
     onViewProfile: (username: string) => void;
+    onAddToCart: (product: Product) => void;
     currentTheme: Theme;
     cardBg: string;
     textColor: string;
@@ -16,7 +18,7 @@ interface ProductDetailModalProps {
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = (props) => {
-    const { product, onClose, profile, onViewProfile, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
+    const { product, onClose, profile, onViewProfile, onAddToCart, currentTheme, cardBg, textColor, textSecondary, borderColor } = props;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const handleViewProfileClick = () => {
@@ -80,7 +82,10 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = (props) => {
                          <span className={`text-4xl font-bold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent`}>
                             ${product.price}
                         </span>
-                        <button className={`px-6 py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all flex items-center gap-2`}>
+                        <button 
+                            onClick={() => onAddToCart(product)}
+                            className={`px-6 py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all flex items-center gap-2`}
+                        >
                             <ShoppingCart size={20} /> Add to Cart
                         </button>
                     </div>

@@ -1,12 +1,18 @@
+
+
+
 import React, { useState, useMemo } from 'react';
 import { Product, Theme } from '../types';
-import { Search } from 'lucide-react';
+import { Search, ShoppingBag, Plus } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 interface MarketplacePageProps {
     products: Product[];
     onViewProduct: (product: Product) => void;
     onViewProfile: (username: string) => void;
+    onAddToCart: (product: Product) => void;
+    onOpenCart: () => void;
+    cartItemCount: number;
     textColor: string;
     textSecondary: string;
     cardBg: string;
@@ -18,7 +24,7 @@ const CATEGORIES: (Product['category'] | 'All')[] = ['All', 'Digital', 'Art', 'T
 const SORT_OPTIONS = ['Newest', 'Popular', 'Price: High to Low', 'Price: Low to High'];
 
 const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
-    const { products, onViewProduct, onViewProfile, textColor, textSecondary, cardBg, borderColor, currentTheme } = props;
+    const { products, onViewProduct, onViewProfile, onAddToCart, onOpenCart, cartItemCount, textColor, textSecondary, cardBg, borderColor, currentTheme } = props;
     
     const [searchQuery, setSearchQuery] = useState('');
     const [category, setCategory] = useState<(Product['category'] | 'All')>('All');
@@ -66,7 +72,20 @@ const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
     return (
         <div className="space-y-6">
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
-                <h2 className={`text-3xl font-bold ${textColor} mb-4`}>Marketplace</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className={`text-3xl font-bold ${textColor}`}>FireShop</h2>
+                    <button 
+                        onClick={onOpenCart}
+                        className={`relative p-3 rounded-xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-lg hover:scale-105 transition-transform`}
+                    >
+                        <ShoppingBag size={20} />
+                        {cartItemCount > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs font-bold flex items-center justify-center border-2 border-white dark:border-gray-900">
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search size={20} className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`} />
@@ -88,7 +107,16 @@ const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
                     <div key={product.id} className={`group ${cardBg} backdrop-blur-xl rounded-3xl border ${borderColor} shadow-lg overflow-hidden flex flex-col transition-transform duration-300 hover:-translate-y-2`}>
                         <div className="relative aspect-square cursor-pointer" onClick={() => onViewProduct(product)}>
                             <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+                                    className="p-2 bg-white/90 backdrop-blur-sm text-black rounded-full shadow-lg hover:scale-110 transition-transform"
+                                    title="Add to Cart"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                                 <span className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold">View Details</span>
                             </div>
                         </div>

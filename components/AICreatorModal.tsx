@@ -343,6 +343,21 @@ const SettingsPanel: React.FC<{
 }> = (props) => {
     const { models, selectedModel, onModelChange, tones, selectedTone, onToneChange, creativity, onCreativityChange, aspectRatios, selectedAspectRatio, onAspectRatioChange, isImagenSelected, useSearch, onUseSearchChange, useMaps, onUseMapsChange, useThinking, onUseThinkingChange, isProModel, cardBg, textColor, textSecondary, borderColor, currentTheme } = props;
     const [dropdown, setDropdown] = useState<'model' | 'tone' | null>(null);
+    const modelDropdownRef = useRef<HTMLDivElement>(null);
+    const toneDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdown === 'model' && modelDropdownRef.current && !modelDropdownRef.current.contains(event.target as Node)) {
+                setDropdown(null);
+            }
+            if (dropdown === 'tone' && toneDropdownRef.current && !toneDropdownRef.current.contains(event.target as Node)) {
+                setDropdown(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [dropdown]);
 
     const SettingItem: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
         <div><label className="block text-sm font-medium text-gray-400 mb-2">{label}</label>{children}</div>
@@ -360,7 +375,7 @@ const SettingsPanel: React.FC<{
     return (
         <aside className={`w-full lg:w-72 flex-shrink-0 p-4 space-y-4 overflow-y-auto rounded-lg bg-black/5 dark:bg-white/5`}>
             <SettingItem label="AI Model">
-                 <div className="relative">
+                 <div className="relative" ref={modelDropdownRef}>
                     <button onClick={() => setDropdown(d => d === 'model' ? null : 'model')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
                         <span>{selectedModel.name}</span> <ChevronDown size={16} />
                     </button>
@@ -393,7 +408,7 @@ const SettingsPanel: React.FC<{
                  <ToggleItem icon={Map} label="Use Google Maps" checked={useMaps} onChange={onUseMapsChange} />
                  <ToggleItem icon={BrainCircuit} label="Thinking Mode" checked={useThinking} onChange={onUseThinkingChange} disabled={!isProModel} />
             </div>
-            <SettingItem label="Tone"><div className="relative">
+            <SettingItem label="Tone"><div className="relative" ref={toneDropdownRef}>
                 <button onClick={() => setDropdown(d => d === 'tone' ? null : 'tone')} className={`w-full flex justify-between items-center p-2 rounded-lg text-left text-sm ${cardBg} border ${borderColor}`}>
                     <span>{selectedTone}</span> <ChevronDown size={16} />
                 </button>

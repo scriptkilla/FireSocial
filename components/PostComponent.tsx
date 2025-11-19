@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem } from '../types';
 import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
@@ -76,6 +76,24 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const [inlineCommentMentionQuery, setInlineCommentMentionQuery] = useState<string | null>(null);
     const [activeButton, setActiveButton] = useState<string | null>(null);
     const inlineCommentInputRef = useRef<HTMLInputElement>(null);
+
+    // Refs for click outside logic
+    const optionsRef = useRef<HTMLDivElement>(null);
+    const reactionRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showPostOptions && optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+                setShowPostOptions(false);
+            }
+            if (showReactionPicker && reactionRef.current && !reactionRef.current.contains(event.target as Node)) {
+                setShowReactionPicker(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showPostOptions, showReactionPicker]);
 
     const handleMenuClick = (e: React.MouseEvent, action: () => void) => {
         e.stopPropagation();
@@ -160,7 +178,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                         </div>
                     </div>
                 </div>
-                <div className="relative">
+                <div className="relative" ref={optionsRef}>
                     <button onClick={(e) => { e.stopPropagation(); setShowPostOptions(prev => !prev); }} className={`p-2 ${textSecondary} hover:bg-white/10 rounded-full`}>
                         <MoreHorizontal size={20} />
                     </button>
@@ -237,7 +255,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                     {/* Post Actions */}
                     <div className="flex items-center justify-between">
                     <div className="flex gap-6">
-                        <div className="relative">
+                        <div className="relative" ref={reactionRef}>
                         <button 
                             onClick={() => handleButtonClick('like', () => setShowReactionPicker(prev => !prev))} 
                             className={`flex items-center gap-2 ${post.userReaction ? reactions.find(r => r.name === post.userReaction)?.color : textSecondary} hover:scale-110 transition-all duration-200 ${activeButton === 'like' ? 'scale-90' : ''}`}

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
 
@@ -58,6 +59,7 @@ import AIChatbotModal from './AIChatbotModal';
 import AvatarDisplay from './AvatarDisplay';
 import CommunitiesModal from './CommunitiesModal';
 import CommunityPage from './CommunityPage';
+import CartModal from './CartModal';
 
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
@@ -78,6 +80,7 @@ export const FireSocial: React.FC = () => {
     const [chatHistories, setChatHistories] = useState<Record<number, ChatMessage[]>>(INITIAL_CHAT_HISTORY);
     const [marketplaceProducts, setMarketplaceProducts] = useState<Product[]>(INITIAL_MARKETPLACE_PRODUCTS);
     const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
+    const [cart, setCart] = useState<Product[]>([]);
 
     // UI states
     const [activePage, setActivePage] = useState<Page>('home');
@@ -115,6 +118,7 @@ export const FireSocial: React.FC = () => {
     const [showGameCreator, setShowGameCreator] = useState(false);
     const [showAIChatbot, setShowAIChatbot] = useState(false);
     const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
+    const [showCartModal, setShowCartModal] = useState(false);
 
     // Widget Layout State
     const [widgetOrder, setWidgetOrder] = useState<string[]>(['trending', 'suggestions', 'communities']);
@@ -425,6 +429,32 @@ export const FireSocial: React.FC = () => {
 
         setShowAddProductModal(false);
     };
+
+    const handleAddToCart = (product: Product) => {
+        setCart(prev => [...prev, product]);
+    };
+
+    const handleRemoveFromCart = (productId: string) => {
+        setCart(prev => {
+            const index = prev.findIndex(item => item.id === productId);
+            if (index !== -1) {
+                const newCart = [...prev];
+                newCart.splice(index, 1);
+                return newCart;
+            }
+            return prev;
+        });
+    };
+
+    const handleCheckout = () => {
+        if (cart.length === 0) return;
+        // In a real app, this would integrate with a payment gateway.
+        // For this demo, we'll simulate a successful purchase.
+        const total = cart.reduce((sum, item) => sum + item.price, 0);
+        alert(`Payment of $${total.toFixed(2)} successful! Thank you for your purchase.`);
+        setCart([]);
+        setShowCartModal(false);
+    };
     
     const toggleJoinCommunity = (communityId: number) => {
         setCommunities(prev => prev.map(c => c.id === communityId ? { ...c, joined: !c.joined } : c));
@@ -649,7 +679,7 @@ export const FireSocial: React.FC = () => {
             case 'messages':
                 return <MessagesPage messages={INITIAL_MESSAGES} groupChats={INITIAL_GROUP_CHATS} onViewMessage={setMessageUser} currentTheme={currentTheme} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} />;
             case 'marketplace':
-                return <MarketplacePage products={marketplaceProducts} onViewProduct={setViewingProduct} onViewProfile={handleViewProfile} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
+                return <MarketplacePage products={marketplaceProducts} onViewProduct={setViewingProduct} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} onOpenCart={() => setShowCartModal(true)} cartItemCount={cart.length} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
             case 'profile':
                 return <ProfilePage profileToDisplay={viewingProfile} isOwnProfile={viewingProfile.id === profile.id} posts={posts} scheduledPosts={[]} onDeleteScheduledPost={() => {}} activeTab={profileTab} onTabChange={setProfileTab} onEditProfile={() => setShowEditProfile(true)} onFollow={handleFollowToggle} onBlockToggle={handleBlockToggle} isFollowing={following.some(u => u.id === viewingProfile.id)} isBlocked={blockedUserIds.has(viewingProfile.id)} onShowFollowers={() => setShowFollowList({type: 'followers', user: viewingProfile})} onShowFollowing={() => setShowFollowList({type: 'following', user: viewingProfile})} onViewPost={setViewingPost} onViewComments={setCommentModalPost} onViewHashtag={(tag) => alert(`Viewing hashtag: ${tag}`)} onViewProfile={handleViewProfile} onViewAchievements={() => setActivePage('achievements')} onViewTrophies={() => setActivePage('trophies')} onViewStreaks={() => setActivePage('streaks')} allAchievements={ALL_ACHIEVEMENTS} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} currentTheme={currentTheme} onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} onShowAddProductModal={() => setShowAddProductModal(true)} />;
             case 'achievements':
@@ -765,7 +795,7 @@ export const FireSocial: React.FC = () => {
                             <NavItem page="explore" label="Explore" icon={Compass} current={activePage} onClick={() => setActivePage('explore')} />
                             <NavItem page="notifications" label="Notifications" icon={Bell} current={activePage} onClick={() => setShowNotifications(true)} />
                             <NavItem page="messages" label="Messages" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
-                            <NavItem page="marketplace" label="Marketplace" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
+                            <NavItem page="marketplace" label="FireShop" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
                             <NavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                         </nav>
                     </div>
@@ -827,7 +857,7 @@ export const FireSocial: React.FC = () => {
                     <MobileNavItem page="explore" label="Explore" icon={Compass} current={activePage} onClick={() => setActivePage('explore')} />
                     <MobileNavItem page="notifications" label="Alerts" icon={Bell} current={activePage} onClick={() => setShowNotifications(true)} />
                     <MobileNavItem page="messages" label="DMs" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
-                    <MobileNavItem page="marketplace" label="Market" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
+                    <MobileNavItem page="marketplace" label="FireShop" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
                     <MobileNavItem page="ai-creator" label="AI Create" icon={Bot} current={activePage} onClick={() => setShowAICreator(true)} />
                     <MobileNavItem page="game-studio" label="Games" icon={Gamepad2} current={activePage} onClick={() => setShowGameCreator(true)} />
                     <MobileNavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
@@ -869,12 +899,13 @@ export const FireSocial: React.FC = () => {
             {showSuggestions && <SuggestionsModal show={showSuggestions} onClose={() => setShowSuggestions(false)} suggestions={INITIAL_FRIEND_SUGGESTIONS} following={following} onFollowToggle={handleFollowToggle} onDismiss={()=>{}} onViewProfile={handleViewProfile} {...uiProps} />}
             {showNotifications && <NotificationsModal show={showNotifications} onClose={() => setShowNotifications(false)} notifications={INITIAL_NOTIFICATIONS} unreadCount={INITIAL_NOTIFICATIONS.filter(n=>!n.read).length} onMarkAllRead={()=>{}} onMarkOneRead={()=>{}} onViewNotification={(n) => {setShowNotifications(false); setViewingNotification(n);}} {...uiProps} />}
             {viewingNotification && <NotificationDetailModal show={!!viewingNotification} notification={viewingNotification} onClose={() => setViewingNotification(null)} allUsers={allUserListItems} posts={posts} onViewPost={(p)=>{setViewingNotification(null); setViewingPost(p);}} onViewProfile={(u)=>{setViewingNotification(null); handleViewProfile(u);}} {...uiProps} />}
-            {viewingProduct && <ProductDetailModal product={viewingProduct} onClose={() => setViewingProduct(null)} profile={profile} onViewProfile={handleViewProfile} {...uiProps} />}
+            {viewingProduct && <ProductDetailModal product={viewingProduct} onClose={() => setViewingProduct(null)} profile={profile} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} {...uiProps} />}
             {showAddProductModal && <AddProductModal show={showAddProductModal} onClose={() => setShowAddProductModal(false)} onAddProduct={handleAddNewProduct} {...uiProps} />}
             {showAICreator && <AICreatorModal show={showAICreator} onClose={() => setShowAICreator(false)} {...uiProps} />}
             {showGameCreator && <GameCreatorModal show={showGameCreator} onClose={() => setShowGameCreator(false)} onDeployGame={() => {}} {...uiProps} />}
             {showAIChatbot && <AIChatbotModal show={showAIChatbot} onClose={() => setShowAIChatbot(false)} {...uiProps} />}
             {showCommunitiesModal && <CommunitiesModal show={showCommunitiesModal} onClose={() => setShowCommunitiesModal(false)} communities={communities} onJoinToggle={toggleJoinCommunity} onViewCommunity={handleViewCommunity} {...uiProps} />}
+            {showCartModal && <CartModal show={showCartModal} onClose={() => setShowCartModal(false)} cartItems={cart} onRemoveItem={handleRemoveFromCart} onCheckout={handleCheckout} {...uiProps} />}
         </div>
     );
 };

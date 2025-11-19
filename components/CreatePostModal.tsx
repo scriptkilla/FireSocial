@@ -54,8 +54,29 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Dropdown Refs
+    const emojiRef = useRef<HTMLDivElement>(null);
+    const gifRef = useRef<HTMLDivElement>(null);
+    const aiRef = useRef<HTMLDivElement>(null);
+
     const remainingChars = CHARACTER_LIMIT - content.length;
     const isOverLimit = remainingChars < 0;
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showEmojiPicker && emojiRef.current && !emojiRef.current.contains(event.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+            if (showGifPicker && gifRef.current && !gifRef.current.contains(event.target as Node)) {
+                setShowGifPicker(false);
+            }
+            if (showAiMenu && aiRef.current && !aiRef.current.contains(event.target as Node)) {
+                setShowAiMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showEmojiPicker, showGifPicker, showAiMenu]);
 
     useEffect(() => {
         return () => {
@@ -366,7 +387,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                             <button onClick={startCamera} className="p-2 hover:bg-white/10 rounded-full transition-colors text-blue-400" title="Use Camera"><Camera size={20} /></button>
                             
                             {/* GIF Button */}
-                            <div className="relative">
+                            <div className="relative" ref={gifRef}>
                                 <button 
                                     onClick={() => { setShowGifPicker(!showGifPicker); setShowEmojiPicker(false); setShowAiMenu(false); }}
                                     className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showGifPicker ? currentTheme.text : 'text-pink-400'}`}
@@ -394,7 +415,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                             <button onClick={() => setShowPoll(!showPoll)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-orange-400" title="Create Poll"><BarChart2 size={20} /></button>
                             
                             {/* AI Button */}
-                            <div className="relative">
+                            <div className="relative" ref={aiRef}>
                                 <button 
                                     onClick={() => { setShowAiMenu(!showAiMenu); setShowEmojiPicker(false); setShowGifPicker(false); }} 
                                     className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showAiMenu ? currentTheme.text : 'text-purple-400'}`}
@@ -434,7 +455,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                             </div>
 
                             {/* Emoji Button */}
-                            <div className="relative">
+                            <div className="relative" ref={emojiRef}>
                                 <button 
                                     onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowGifPicker(false); setShowAiMenu(false); }}
                                     className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showEmojiPicker ? currentTheme.text : 'text-yellow-400'}`}

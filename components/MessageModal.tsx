@@ -50,6 +50,17 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
 }) => {
     const [showActions, setShowActions] = useState(false);
     const repliedMessage = message.replyTo ? getRepliedMessage(message.replyTo) : null;
+    const actionsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showActions && actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+                setShowActions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showActions]);
     
     const StatusIcon = () => {
         switch (message.status) {
@@ -76,11 +87,11 @@ const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({
     
     const MessageCore = () => (
          <div className={`flex items-center gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-            <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex ${isOwn ? 'flex-row-reverse' : ''} gap-1 relative`}>
+            <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex ${isOwn ? 'flex-row-reverse' : ''} gap-1 relative`} ref={actionsRef}>
                 <button onClick={() => onReply(message)} title="Reply" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><Reply size={16}/></button>
                 <button onClick={() => setShowActions(s => !s)} title="More" className={`p-1.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 ${textSecondary}`}><MoreHorizontal size={16}/></button>
                 {showActions && (
-                    <div onMouseLeave={() => setShowActions(false)} className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg z-10 text-gray-900 dark:text-white border ${borderColor} overflow-hidden`}>
+                    <div className={`absolute ${isOwn ? 'right-0' : 'left-0'} bottom-full mb-1 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg z-10 text-gray-900 dark:text-white border ${borderColor} overflow-hidden`}>
                        <div className="p-1 flex justify-around bg-gray-100 dark:bg-gray-800">
                             {EMOJI_REACTIONS.map(emoji => (
                                 <button key={emoji} onClick={() => { onReact(emoji); setShowActions(false); }} className="p-1 text-2xl hover:scale-125 transition-transform">{emoji}</button>

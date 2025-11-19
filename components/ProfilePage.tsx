@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product } from '../types';
 // Fix: Imported the 'Users' icon from lucide-react.
 import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell } from 'lucide-react';
@@ -186,6 +187,17 @@ interface ProfilePageProps {
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
     const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
+    const optionsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showProfileOptions && optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+                setShowProfileOptions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showProfileOptions]);
 
     const getLinkIcon = (url: string, size: number = 20) => {
         try {
@@ -322,7 +334,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                             <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg ${isFollowing ? `${cardBg} ${textColor} border ${borderColor}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}>
                                 {isFollowing ? 'Following' : 'Follow'}
                             </button>
-                            <div className="relative">
+                            <div className="relative" ref={optionsRef}>
                                 <button onClick={() => setShowProfileOptions(s => !s)} className={`p-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg ${cardBg} ${textColor} border ${borderColor}`}>
                                     <MoreHorizontal size={20} />
                                 </button>
