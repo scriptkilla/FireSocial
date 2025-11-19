@@ -102,6 +102,7 @@ export interface Post {
   userVoted?: number | null;
   commentsData?: Comment[];
   isSponsored?: boolean;
+  isBoosted?: boolean;
   postFormat?: 'standard' | 'reel';
   category?: string;
   location?: string;
@@ -244,6 +245,7 @@ export interface Profile {
   creatorMonetization?: CreatorMonetization;
   isCreator?: boolean;
   purchasedPostIds?: number[];
+  emberBalance: number;
 }
 
 export interface ScheduledPost {

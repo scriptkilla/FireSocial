@@ -1,11 +1,7 @@
 
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 import { GoogleGenAI } from "@google/genai";
@@ -42,6 +38,7 @@ interface PostComponentProps {
     onViewProfile: (username: string) => void;
     onViewHashtag: (tag: string) => void;
     onPurchasePost: (postId: number) => void;
+    onBoost?: (postId: number) => void;
     isFollowing: boolean;
     isBlocked: boolean;
 }
@@ -77,7 +74,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 
 
 const PostComponent: React.FC<PostComponentProps> = (props) => {
-    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost } = props;
+    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [inlineComment, setInlineComment] = useState('');
@@ -267,6 +264,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                         <button onClick={() => onViewProfile(post.username)} className={`font-semibold ${textColor} flex items-center gap-1 hover:underline`}>
                             {post.user}
                             {post.username === profile.username && profile.verified && <span className="text-blue-500 text-lg">✓</span>}
+                            {post.isBoosted && <span className="text-xs font-bold px-2 py-0.5 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full ml-2 flex items-center gap-1"><Rocket size={10} /> Boosted</span>}
                         </button>
                         <div className={`text-sm ${textSecondary} flex items-center gap-2`}>
                             <span>{post.time}</span>
@@ -283,6 +281,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             {isOwnPost ? (
                                 <>
                                     <MenuItem icon={Edit} label="Edit Post" onClick={(e) => handleMenuClick(e, () => alert('Edit functionality not implemented yet.'))} className="rounded-t-2xl" />
+                                    {!post.isBoosted && onBoost && <MenuItem icon={Rocket} label="Boost Post (50 🔥)" onClick={(e) => handleMenuClick(e, () => onBoost(post.id))} className="text-orange-500" />}
                                     <MenuItem icon={Trash2} label="Delete Post" onClick={(e) => handleMenuClick(e, () => onDelete(post.id))} className="text-red-500" />
                                 </>
                             ) : (

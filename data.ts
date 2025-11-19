@@ -1,8 +1,4 @@
 
-
-
-
-
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
@@ -85,7 +81,7 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
       color: 'bg-gradient-to-r from-purple-400 to-pink-500', subscriberCount: 8
     }
   ],
-  tipJar: { enabled: true, suggestedAmounts: [3, 5, 10, 25], customAmount: true, totalTips: 245.50, tipCount: 42 },
+  tipJar: { enabled: true, suggestedAmounts: [10, 50, 100, 500], customAmount: true, totalTips: 245.50, tipCount: 42 },
   paidPosts: [
     { id: 10, price: 3, currency: 'USD', purchaseCount: 28, revenue: 84 }
   ],
@@ -166,7 +162,8 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_day_streak'],
         searchHistory: ['#design', 'ReactJS', '@alexrivera'],
         purchasedPostIds: [],
-        creatorMonetization: INITIAL_CREATOR_MONETIZATION
+        creatorMonetization: INITIAL_CREATOR_MONETIZATION,
+        emberBalance: 1250
     },
     {
         id: 1002,
@@ -196,6 +193,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [10],
+        emberBalance: 500
     },
     {
         id: 1003,
@@ -225,6 +223,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 2500
     },
     {
         id: 1004,
@@ -253,6 +252,7 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 800
     },
     {
         id: 1005,
@@ -282,26 +282,31 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 50000
     },
     {
         id: 2001, name: 'Chris Brown', username: '@chrisbrown', avatar: '🎭', email: 'chris@example.com', bio: 'Actor and director.', followers: 1500, following: 200, posts: 45, badges: ['🎬'], streak: 22, online: true, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 100
     },
     {
         id: 2002, name: 'Sam Wilson', username: '@samwilson', avatar: '🎪', email: 'sam@example.com', bio: 'Photographer.', followers: 900, following: 150, posts: 120, badges: ['📸'], streak: 12, online: false, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 300
     },
     {
         id: 2003, name: 'Maya Patel', username: '@mayapatel', avatar: '🎯', email: 'maya@example.com', bio: 'AI researcher.', followers: 3200, following: 80, posts: 25, badges: ['🧠'], streak: 8, online: true, verified: true, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 1500
     },
     {
         id: 201, name: 'Blocked User 1', username: '@blocked1', avatar: '🚫', email: 'blocked@example.com', bio: 'This user is blocked.', followers: 0, following: 0, posts: 0, badges: [], streak: 0, online: false, verified: false, privacySettings: { profilePublic: false, showOnlineStatus: false, allowTagging: false, showActivity: false, privateAccount: true, suggestAccount: false, activityStatus: false }, notificationSettings: { push: false, email: false }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'hide' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: [],
         searchHistory: [],
         purchasedPostIds: [],
+        emberBalance: 0
     }
 ];
 

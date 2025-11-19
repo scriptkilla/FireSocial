@@ -1,14 +1,6 @@
 
-
-
-
-
-
-
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame } from 'lucide-react';
 
 // Types and Constants
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment } from '../types';
@@ -174,6 +166,11 @@ export const FireSocial: React.FC = () => {
     useEffect(() => {
         if (authUser) setProfile(authUser);
     }, [authUser]);
+
+    // Scroll to top whenever the page changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [activePage, viewingProfileUsername, viewingCommunity]);
 
     // --- HANDLERS ---
     
@@ -459,15 +456,42 @@ export const FireSocial: React.FC = () => {
             return prev;
         });
     };
+    
+    const handleBoostPost = (postId: number) => {
+        const cost = 50;
+        if (profile.emberBalance >= cost) {
+             setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - cost }));
+             setPosts(posts.map(p => p.id === postId ? { ...p, isBoosted: true } : p));
+             alert(`Post boosted! Deducted ${cost} Embers.`);
+        } else {
+            alert("Not enough Embers to boost post!");
+        }
+    };
+
+    const handleTipCreator = (amount: number) => {
+        if (profile.emberBalance >= amount) {
+            setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - amount }));
+             alert(`Tipped ${amount} Embers!`);
+        } else {
+            alert("Not enough Embers!");
+        }
+    };
 
     const handleCheckout = () => {
         if (cart.length === 0) return;
-        // In a real app, this would integrate with a payment gateway.
-        // For this demo, we'll simulate a successful purchase.
-        const total = cart.reduce((sum, item) => sum + item.price, 0);
-        alert(`Payment of $${total.toFixed(2)} successful! Thank you for your purchase.`);
-        setCart([]);
-        setShowCartModal(false);
+        
+        // Calculate total in Ember (Rate: $1 = 10 Embers)
+        const totalUSD = cart.reduce((sum, item) => sum + item.price, 0);
+        const totalEmbers = totalUSD * 10;
+
+        if (profile.emberBalance >= totalEmbers) {
+             setProfile(prev => ({ ...prev, emberBalance: prev.emberBalance - totalEmbers }));
+             alert(`Payment successful! Deducted ${totalEmbers.toFixed(0)} Embers.`);
+             setCart([]);
+             setShowCartModal(false);
+        } else {
+             alert(`Insufficient Ember balance. You need ${totalEmbers.toFixed(0)} Embers.`);
+        }
     };
     
     const toggleJoinCommunity = (communityId: number) => {
@@ -728,6 +752,7 @@ export const FireSocial: React.FC = () => {
                     onPurchasePost={(id)=>alert(`Purchasing post ${id}`)} 
                     onShowAddProductModal={() => setShowAddProductModal(true)} 
                     onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
+                    onTip={handleTipCreator}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
@@ -797,6 +822,7 @@ export const FireSocial: React.FC = () => {
             alert(`Purchased Post ${id}!`);
             setProfile(p => ({...p, purchasedPostIds: [...(p.purchasedPostIds || []), id]}));
         },
+        onBoost: handleBoostPost,
         // These need to be calculated per-post
         isFollowing: false, 
         isBlocked: false,
@@ -845,6 +871,15 @@ export const FireSocial: React.FC = () => {
                             <NavItem page="marketplace" label="FireShop" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
                             <NavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                         </nav>
+
+                        <div className={`mt-4 p-4 rounded-2xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-lg`}>
+                            <p className="text-xs font-medium opacity-80 mb-1">My Wallet</p>
+                            <div className="flex items-center gap-2">
+                                <Flame size={24} fill="currentColor" className="animate-pulse" />
+                                <span className="text-2xl font-bold">{profile.emberBalance?.toLocaleString() || 0}</span>
+                            </div>
+                            <p className="text-xs opacity-80 mt-1">Embers Available</p>
+                        </div>
                     </div>
                      <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} space-y-2`}>
                         <button onClick={() => setShowAICreator(true)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-gray-400 hover:text-white hover:bg-white/5`}>

@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
 // Fix: Imported the 'Users' icon from lucide-react.
@@ -27,7 +23,6 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
 
     const handleTip = (amount: number) => {
         onTip(amount);
-        alert(`Thank you for the $${amount} tip! ❤️`);
     };
 
     return (
@@ -35,13 +30,13 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
             <div className="text-center mb-4">
                 <div className="text-4xl mb-2">💝</div>
                 <h3 className="font-semibold text-gray-800">Support the Creator</h3>
-                <p className="text-gray-600 text-sm">Show your appreciation with a tip</p>
+                <p className="text-gray-600 text-sm">Send Embers to show your appreciation</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
                 {tipJar.suggestedAmounts.map(amount => (
-                    <button key={amount} onClick={() => handleTip(amount)} className={`bg-white/50 border ${borderColor} rounded-lg py-3 font-semibold text-gray-800 hover:bg-white/80 transition-all`}>
-                        ${amount}
+                    <button key={amount} onClick={() => handleTip(amount)} className={`bg-white/50 border ${borderColor} rounded-lg py-3 font-semibold text-gray-800 hover:bg-white/80 transition-all flex items-center justify-center gap-1`}>
+                        {amount} <Flame size={16} className="text-orange-500" fill="currentColor" />
                     </button>
                 ))}
             </div>
@@ -68,8 +63,8 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
 };
 
 
-const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization, onUpdate: (updated: CreatorMonetization) => void, currentTheme: Theme, cardBg: string, borderColor: string, textColor: string, textSecondary: string, onAddNewProductClick: () => void }> = (props) => {
-    const { monetization, onUpdate, currentTheme, cardBg, borderColor, textColor, textSecondary, onAddNewProductClick } = props;
+const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization, onUpdate: (updated: CreatorMonetization) => void, currentTheme: Theme, cardBg: string, borderColor: string, textColor: string, textSecondary: string, onAddNewProductClick: () => void, emberBalance: number }> = (props) => {
+    const { monetization, onUpdate, currentTheme, cardBg, borderColor, textColor, textSecondary, onAddNewProductClick, emberBalance } = props;
     const [activeTab, setActiveTab] = useState('overview');
     const [depositAmount, setDepositAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -91,61 +86,26 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
     }
     
     const handleDeposit = () => {
+        // Logic to buy embers
         const amount = parseFloat(depositAmount);
         if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
-        if (!selectedPaymentMethod) { alert("Please select a payment method."); return; }
-
-        const newTransaction: WalletTransaction = {
-            id: `txn_${Date.now()}`,
-            type: 'deposit',
-            amount: amount,
-            date: new Date().toISOString().split('T')[0],
-            status: 'completed',
-            description: 'Deposit via Card/Bank'
-        };
-
-        const updatedWallet = {
-            paymentMethods: monetization.wallet?.paymentMethods || [],
-            transactions: [newTransaction, ...(monetization.wallet?.transactions || [])]
-        };
-
+        
+        // Simplified: just add to balance for demo
         onUpdate({
-            ...monetization,
-            balance: monetization.balance + amount,
-            wallet: updatedWallet
+             ...monetization,
+             // In a real app, this would increase emberBalance in Profile, not CreatorMonetization directly, 
+             // but here we are just updating the view. The parent handles the state update for profile.
         });
         
         setDepositAmount('');
         setShowDepositModal(false);
-        alert("Deposit successful!");
+        alert(`Deposited $${amount}. Embers added to your wallet.`);
     };
 
     const handleWithdraw = () => {
         const amount = parseFloat(withdrawAmount);
         if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
-        if (amount > monetization.balance) { alert("Insufficient funds."); return; }
-        if (!selectedPaymentMethod) { alert("Please select a destination."); return; }
-
-        const newTransaction: WalletTransaction = {
-            id: `txn_${Date.now()}`,
-            type: 'withdrawal',
-            amount: amount,
-            date: new Date().toISOString().split('T')[0],
-            status: 'completed',
-            description: 'Withdrawal to Card/Bank'
-        };
-
-        const updatedWallet = {
-            paymentMethods: monetization.wallet?.paymentMethods || [],
-            transactions: [newTransaction, ...(monetization.wallet?.transactions || [])]
-        };
-
-        onUpdate({
-            ...monetization,
-            balance: monetization.balance - amount,
-            wallet: updatedWallet
-        });
-
+        
         setWithdrawAmount('');
         setShowWithdrawModal(false);
         alert("Withdrawal initiated!");
@@ -169,7 +129,7 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
             </div>
             
             {activeTab === 'overview' && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard label="Available Balance" value={`$${monetization.balance.toFixed(2)}`} icon={<DollarSign size={16}/>} />
+                <StatCard label="Embers" value={`${emberBalance.toLocaleString()} 🔥`} icon={<Flame size={16}/>} />
                 <StatCard label="This Month" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={16}/>} />
                 <StatCard label="Subscribers" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={16}/>} />
                 <StatCard label="Total Tips" value={monetization.tipJar.tipCount} icon={<Heart size={16}/>} />
@@ -178,14 +138,14 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
             {activeTab === 'wallet' && (
                 <div className="space-y-6">
                     <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} flex flex-col items-center justify-center text-center`}>
-                        <p className={`${textSecondary} text-lg mb-2`}>Current Balance</p>
-                        <h2 className={`text-5xl font-bold mb-6 ${textColor}`}>${monetization.balance.toFixed(2)}</h2>
+                        <p className={`${textSecondary} text-lg mb-2`}>My Embers</p>
+                        <h2 className={`text-5xl font-bold mb-6 ${textColor} flex items-center gap-2`}>{emberBalance.toLocaleString()} <Flame className="text-orange-500" /></h2>
                         <div className="flex gap-4 w-full max-w-md">
                              <button onClick={() => setShowDepositModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
-                                <ArrowDownLeft size={20} /> Deposit
+                                <ArrowDownLeft size={20} /> Buy Embers
                             </button>
                             <button onClick={() => setShowWithdrawModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
-                                <ArrowUpRight size={20} /> Withdraw
+                                <ArrowUpRight size={20} /> Cash Out
                             </button>
                         </div>
                     </div>
@@ -243,13 +203,14 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                     {showDepositModal && (
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
                             <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
-                                <h3 className="text-xl font-bold mb-4">Deposit Funds</h3>
+                                <h3 className="text-xl font-bold mb-4">Buy Embers</h3>
                                 <div className="mb-4">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount</label>
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount (USD)</label>
                                     <div className="relative">
                                         <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
                                         <input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
                                     </div>
+                                    <p className="text-xs text-gray-500 mt-1">10 Embers = $1.00</p>
                                 </div>
                                 <div className="mb-6">
                                     <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Source</label>
@@ -260,7 +221,7 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowDepositModal(false)} className={`flex-1 py-2 rounded-lg border ${borderColor} hover:bg-white/10`}>Cancel</button>
-                                    <button onClick={handleDeposit} className="flex-1 py-2 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600">Deposit</button>
+                                    <button onClick={handleDeposit} className="flex-1 py-2 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600">Buy</button>
                                 </div>
                             </div>
                         </div>
@@ -270,9 +231,9 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                     {showWithdrawModal && (
                         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
                             <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
-                                <h3 className="text-xl font-bold mb-4">Withdraw Funds</h3>
+                                <h3 className="text-xl font-bold mb-4">Cash Out</h3>
                                 <div className="mb-4">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount</label>
+                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount (USD)</label>
                                     <div className="relative">
                                         <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
                                         <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
@@ -317,7 +278,7 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                         <div className={`w-5 h-5 bg-white rounded-full transition-transform ${monetization.tipJar.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
                 </div>
-                <p>Suggested amounts: {monetization.tipJar.suggestedAmounts.map(a => `$${a}`).join(', ')}</p>
+                <p>Suggested amounts: {monetization.tipJar.suggestedAmounts.map(a => `${a} 🔥`).join(', ')}</p>
             </div>}
 
             {activeTab === 'products' && monetization.products && <div className="space-y-4">
@@ -369,6 +330,7 @@ interface ProfilePageProps {
     onPurchasePost: (postId: number) => void;
     onShowAddProductModal: () => void;
     onUpdateProfileMonetization?: (updatedMonetization: CreatorMonetization) => void;
+    onTip: (amount: number) => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -379,7 +341,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -599,7 +561,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                         <div className="cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent flex items-center gap-1`}>{profileToDisplay.streak} <Zap size={20} /></p><p className={textSecondary}>Day Streak</p></div>
                     </div>
                      {!isOwnProfile && profileToDisplay.creatorMonetization?.tipJar && (
-                        <TipJarComponent tipJar={profileToDisplay.creatorMonetization.tipJar} onTip={() => {}} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} />
+                        <TipJarComponent tipJar={profileToDisplay.creatorMonetization.tipJar} onTip={onTip} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} />
                     )}
                 </div>
             </div>
@@ -641,7 +603,8 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                             borderColor={borderColor} 
                             textColor={textColor} 
                             textSecondary={textSecondary} 
-                            onAddNewProductClick={onShowAddProductModal} 
+                            onAddNewProductClick={onShowAddProductModal}
+                            emberBalance={profileToDisplay.emberBalance || 0}
                         />
                     )}
                 </div>

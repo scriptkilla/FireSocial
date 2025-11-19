@@ -117,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
               balance: 0, 
               analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
-          }
+          },
+          emberBalance: 0
         };
 
         // Save to local "database"
@@ -180,7 +181,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                           ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
                                           balance: 0, 
                                           analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
-                                      }
+                                      },
+                                      emberBalance: 0
                                   };
 
                                   setUser(googleUser);
@@ -242,7 +244,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                           ...JSON.parse(JSON.stringify(INITIAL_CREATOR_MONETIZATION)), 
                           balance: 0, 
                           analytics: { ...INITIAL_CREATOR_MONETIZATION.analytics, totalEarnings: 0, monthlyEarnings: [] } 
-                      }
+                      },
+                      emberBalance: 0
                   };
                   setUser(googleUser);
                   localStorage.setItem('firesocial_active_session', JSON.stringify(googleUser));
