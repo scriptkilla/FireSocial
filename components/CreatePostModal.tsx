@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search } from 'lucide-react';
+import { X, Image as ImageIcon, Video, Smile, BarChart2, MapPin, Globe, Lock, Users, Wand2, Loader2, Sparkles, Camera, Check as CheckIcon, Sticker, Search, Lightbulb } from 'lucide-react';
 import { Profile, Theme, MediaItem } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 import { GoogleGenAI } from "@google/genai";
@@ -189,15 +189,29 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
 
 
     // --- AI Integration ---
-    const handleAiAction = async (action: 'fix' | 'witty' | 'hashtags') => {
-        if (!content.trim()) return;
+    const handleAiAction = async (action: 'fix' | 'witty' | 'hashtags' | 'idea') => {
+        if (action !== 'idea' && !content.trim()) return;
         
         setIsAiLoading(true);
         setShowAiMenu(false);
 
         try {
             // Robust API Key Retrieval
-            const apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai');
+            // 1. Try to get from global window object (for AI Studio wrapper)
+            // 2. Try process.env
+            // 3. Try localStorage
+            let apiKey = '';
+            
+            // Check AI Studio Environment
+            if ((window as any).aistudio?.hasSelectedApiKey) {
+                const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+                if (!hasKey) {
+                    await (window as any).aistudio.openSelectKey();
+                }
+                // The key is automatically injected into process.env by the wrapper if selected
+            }
+
+            apiKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined) || localStorage.getItem('apiKey_google_ai') || '';
             
             if (!apiKey) {
                 alert("API Key missing. Please add your Google AI API Key in Settings > API Configuration.");
@@ -214,6 +228,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                 prompt = `Rewrite the following text to be witty, engaging, and fun for a social media post: "${content}"`;
             } else if (action === 'hashtags') {
                 prompt = `Read the following text and append 3-5 relevant, trending hashtags to the end of it. Return the full text with hashtags: "${content}"`;
+            } else if (action === 'idea') {
+                prompt = `Generate a short, engaging social media post idea for a user who likes ${profile.contentPreferences.favoriteTopics.join(', ') || 'technology and lifestyle'}. Keep it under 200 characters.`;
             }
 
             const response = await ai.models.generateContent({
@@ -287,7 +303,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                 </div>
 
                                 {isAiLoading && (
-                                    <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-lg">
+                                    <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-lg z-10">
                                         <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${cardBg} border ${borderColor} shadow-lg`}>
                                             <Loader2 className={`animate-spin ${currentTheme.text}`} size={16} />
                                             <span className="text-sm font-semibold">AI is writing...</span>
@@ -383,19 +399,34 @@ const CreatePostModal: React.FC<CreatePostModalProps> = (props) => {
                                     onClick={() => { setShowAiMenu(!showAiMenu); setShowEmojiPicker(false); setShowGifPicker(false); }} 
                                     className={`p-2 hover:bg-white/10 rounded-full transition-colors ${showAiMenu ? currentTheme.text : 'text-purple-400'}`}
                                     title="AI Assist"
-                                    disabled={!content.trim()}
                                 >
                                     <Wand2 size={20} />
                                 </button>
                                 {showAiMenu && (
                                     <div className={`absolute bottom-full mb-2 left-0 w-48 bg-white dark:bg-gray-800 border ${borderColor} rounded-xl shadow-xl p-1 z-20 flex flex-col animate-in slide-in-from-bottom-2`}>
-                                        <button onClick={() => handleAiAction('fix')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
+                                        <button onClick={() => handleAiAction('idea')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left text-yellow-500 font-medium">
+                                            <Lightbulb size={14} /> Generate Idea
+                                        </button>
+                                        <div className="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
+                                        <button 
+                                            onClick={() => handleAiAction('fix')} 
+                                            disabled={!content.trim()}
+                                            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-left ${!content.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                                        >
                                             <CheckIcon size={14} /> Fix Grammar
                                         </button>
-                                        <button onClick={() => handleAiAction('witty')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
+                                        <button 
+                                            onClick={() => handleAiAction('witty')} 
+                                            disabled={!content.trim()}
+                                            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-left ${!content.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                                        >
                                             <Sparkles size={14} /> Make it Witty
                                         </button>
-                                        <button onClick={() => handleAiAction('hashtags')} className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-black/5 dark:hover:bg-white/10 text-left">
+                                        <button 
+                                            onClick={() => handleAiAction('hashtags')} 
+                                            disabled={!content.trim()}
+                                            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-left ${!content.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                                        >
                                             <Users size={14} /> Add Hashtags
                                         </button>
                                     </div>
