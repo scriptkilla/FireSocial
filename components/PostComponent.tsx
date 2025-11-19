@@ -44,6 +44,7 @@ interface PostComponentProps {
 }
 
 const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '🙌', '😭', '🤔'];
+const MAX_COMMENT_LENGTH = 300;
 
 const MenuItem: React.FC<{icon: React.ElementType, label: string, onClick: (e: React.MouseEvent) => void, className?: string}> = ({ icon: Icon, label, onClick, className = '' }) => (
     <button onClick={onClick} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 ${className}`}>
@@ -58,7 +59,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
     const mentionRegex = /^@[\w_]+$/;
 
     return (
-        <p className={`${textColor} mb-4 whitespace-pre-wrap`}>
+        <p className={`${textColor} mb-4 whitespace-pre-wrap break-words`}>
             {parts.map((part, index) => {
                 if (hashtagRegex.test(part)) {
                     return <button key={index} onClick={() => onViewHashtag(part)} className={`font-semibold ${currentTheme.text} ${currentTheme.hoverText}`}>{part}</button>;
@@ -80,7 +81,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const [inlineComment, setInlineComment] = useState('');
     const [inlineCommentMentionQuery, setInlineCommentMentionQuery] = useState<string | null>(null);
     const [activeButton, setActiveButton] = useState<string | null>(null);
-    const inlineCommentInputRef = useRef<HTMLInputElement>(null);
+    const inlineCommentInputRef = useRef<HTMLTextAreaElement>(null);
 
     // Comment Attachments & Tools
     const [commentAttachment, setCommentAttachment] = useState<CommentAttachment | null>(null);
@@ -167,8 +168,10 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
         }
     };
     
-    const handleInlineCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInlineCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const text = e.target.value;
+        if (text.length > MAX_COMMENT_LENGTH) return;
+
         setInlineComment(text);
 
         const cursorPosition = e.target.selectionStart ?? 0;
@@ -237,7 +240,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
              
              const ai = new GoogleGenAI({ apiKey });
              const result = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-             setInlineComment(prev => prev + (prev ? ' ' : '') + result.text);
+             setInlineComment(prev => (prev + (prev ? ' ' : '') + result.text).substring(0, MAX_COMMENT_LENGTH));
         } catch (e) {
             console.error(e);
             alert("AI generation failed");
@@ -460,17 +463,21 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                                         </ul>
                                     </div>
                                 )}
-                                <div className={`flex items-center bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} pr-2`}>
-                                    <input 
-                                        ref={inlineCommentInputRef}
-                                        type="text" 
-                                        placeholder="Add a comment..." 
-                                        value={inlineComment}
-                                        onChange={handleInlineCommentChange}
-                                        className={`flex-1 px-4 py-2 text-sm bg-transparent rounded-l-2xl ${textColor} placeholder-gray-400 focus:outline-none focus:ring-0`}
-                                    />
+                                <div className={`flex items-end bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} pr-2 py-2`}>
+                                    <div className="flex-1 relative">
+                                        <textarea 
+                                            ref={inlineCommentInputRef}
+                                            placeholder="Add a comment..." 
+                                            value={inlineComment}
+                                            onChange={handleInlineCommentChange}
+                                            rows={1}
+                                            className={`w-full px-4 py-1 text-sm bg-transparent rounded-l-2xl ${textColor} placeholder-gray-400 focus:outline-none focus:ring-0 resize-none scrollbar-hide`}
+                                        />
+                                         <span className="text-[10px] text-gray-500 absolute -bottom-0.5 right-2 pointer-events-none">{inlineComment.length}/{MAX_COMMENT_LENGTH}</span>
+                                    </div>
+
                                     {/* Compact Toolbar */}
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1 mb-0.5">
                                          {/* Hidden File Inputs */}
                                          <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, 'image')} accept="image/*" />
                                          <input type="file" className="hidden" id={`video-upload-${post.id}`} onChange={(e) => handleFileSelect(e, 'video')} accept="video/*" />

@@ -1,14 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
-// Fix: Imported the 'Users' icon from lucide-react.
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
-// --- SUB-COMPONENTS for Monetization ---
+// --- HELPER COMPONENTS ---
 
 const SubscriptionBadge: React.FC<{ tier: SubscriptionTier, onClick?: () => void }> = ({ tier, onClick }) => (
-    <button onClick={onClick} className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-white font-semibold cursor-pointer hover:shadow-lg transition-all ${tier.color}`}>
+    <button onClick={onClick} className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-white font-semibold cursor-pointer hover:shadow-lg transition-all transform hover:scale-105 ${tier.color}`}>
         <span>⭐</span>
         <span>{tier.name}</span>
         <span>${tier.price}/mo</span>
@@ -21,39 +20,53 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
 
     if (!tipJar.enabled) return null;
 
-    const handleTip = (amount: number) => {
-        onTip(amount);
-    };
-
     return (
-        <div className={`bg-gradient-to-br ${currentTheme.light} border ${borderColor} rounded-2xl p-6`}>
-            <div className="text-center mb-4">
-                <div className="text-4xl mb-2">💝</div>
-                <h3 className="font-semibold text-gray-800">Support the Creator</h3>
-                <p className="text-gray-600 text-sm">Send Embers to show your appreciation</p>
+        <div className={`relative overflow-hidden ${cardBg} border ${borderColor} rounded-2xl p-6 shadow-lg group`}>
+            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}`}></div>
+            <div className="text-center mb-6 relative z-10">
+                <div className="inline-flex p-3 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 mb-3 shadow-inner">
+                    <div className="text-3xl">💝</div>
+                </div>
+                <h3 className="font-bold text-lg dark:text-white text-gray-900">Support the Creator</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Fuel their creativity with Embers</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
                 {tipJar.suggestedAmounts.map(amount => (
-                    <button key={amount} onClick={() => handleTip(amount)} className={`bg-white/50 border ${borderColor} rounded-lg py-3 font-semibold text-gray-800 hover:bg-white/80 transition-all flex items-center justify-center gap-1`}>
-                        {amount} <Flame size={16} className="text-orange-500" fill="currentColor" />
+                    <button 
+                        key={amount} 
+                        onClick={() => onTip(amount)} 
+                        className={`py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 border ${borderColor} hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 group-hover:shadow-md`}
+                    >
+                        <span className="text-lg">{amount}</span> <Flame size={18} className="text-orange-500" fill="currentColor" />
                     </button>
                 ))}
             </div>
 
             {tipJar.customAmount && (
                 showCustom ? (
-                    <div className="space-y-3">
-                        <input type="number" value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} placeholder="Enter custom amount" className={`w-full ${cardBg} border ${borderColor} rounded-lg px-3 py-2 focus:outline-none focus:ring-2 ${currentTheme.ring}`} min="1" />
+                    <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="relative">
+                            <Flame className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-500" size={18} fill="currentColor"/>
+                            <input 
+                                type="number" 
+                                value={customAmount} 
+                                onChange={(e) => setCustomAmount(e.target.value)} 
+                                placeholder="Custom amount" 
+                                className={`w-full pl-10 pr-4 py-3 ${cardBg} border ${borderColor} rounded-xl focus:outline-none focus:ring-2 ${currentTheme.ring}`} 
+                                min="1" 
+                                autoFocus
+                            />
+                        </div>
                         <div className="flex space-x-2">
-                            <button onClick={() => { if (customAmount && Number(customAmount) > 0) { handleTip(Number(customAmount)); setCustomAmount(''); setShowCustom(false); } }} className={`flex-1 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white py-2 rounded-lg font-semibold transition-all`}>
-                                Send Tip
+                            <button onClick={() => { if (customAmount && Number(customAmount) > 0) { onTip(Number(customAmount)); setCustomAmount(''); setShowCustom(false); } }} className={`flex-1 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white py-2 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all`}>
+                                Send
                             </button>
-                            <button onClick={() => setShowCustom(false)} className={`px-4 py-2 border ${borderColor} text-gray-700 rounded-lg hover:bg-white/20 transition-all`}>Cancel</button>
+                            <button onClick={() => setShowCustom(false)} className={`px-4 py-2 border ${borderColor} rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all`}>Cancel</button>
                         </div>
                     </div>
                 ) : (
-                    <button onClick={() => setShowCustom(true)} className={`w-full border-2 border-dashed ${borderColor} text-gray-600 py-3 rounded-lg font-semibold hover:bg-white/20 transition-all`}>
+                    <button onClick={() => setShowCustom(true)} className={`w-full py-3 border-2 border-dashed ${borderColor} text-gray-500 dark:text-gray-400 rounded-xl font-semibold hover:border-orange-500 hover:text-orange-500 transition-all`}>
                         Custom Amount
                     </button>
                 )
@@ -66,242 +79,374 @@ const TipJarComponent: React.FC<{ tipJar: TipJar, onTip: (amount: number) => voi
 const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization, onUpdate: (updated: CreatorMonetization) => void, currentTheme: Theme, cardBg: string, borderColor: string, textColor: string, textSecondary: string, onAddNewProductClick: () => void, emberBalance: number }> = (props) => {
     const { monetization, onUpdate, currentTheme, cardBg, borderColor, textColor, textSecondary, onAddNewProductClick, emberBalance } = props;
     const [activeTab, setActiveTab] = useState('overview');
-    const [depositAmount, setDepositAmount] = useState('');
-    const [withdrawAmount, setWithdrawAmount] = useState('');
     const [showDepositModal, setShowDepositModal] = useState(false);
-    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+    const [depositAmount, setDepositAmount] = useState('');
 
     if (!monetization.enabled) {
         return (
-            <div className="p-12 text-center">
-                <div className="text-6xl mb-4">💰</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Start Earning on FireSocial</h3>
-                <p className="text-gray-500 mb-6">Unlock subscription tiers, tips, paid posts, and digital products to monetize your content.</p>
-                <button onClick={() => onUpdate({ ...monetization, enabled: true })} className={`bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white px-8 py-3 rounded-lg font-semibold transition-all`}>
-                    Get Started
+            <div className={`p-12 text-center border-2 border-dashed ${borderColor} rounded-3xl bg-black/5 dark:bg-white/5`}>
+                <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30">
+                    <DollarSign size={40} className="text-white" />
+                </div>
+                <h3 className={`text-2xl font-bold mb-2 ${textColor}`}>Monetize Your Passion</h3>
+                <p className={`${textSecondary} mb-8 max-w-md mx-auto`}>Unlock subscription tiers, tips, paid posts, and sell digital products directly to your audience.</p>
+                <button onClick={() => onUpdate({ ...monetization, enabled: true })} className={`bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-xl hover:scale-105 transition-transform`}>
+                    Activate Creator Studio
                 </button>
             </div>
         );
     }
-    
-    const handleDeposit = () => {
-        // Logic to buy embers
-        const amount = parseFloat(depositAmount);
-        if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
-        
-        // Simplified: just add to balance for demo
-        onUpdate({
-             ...monetization,
-             // In a real app, this would increase emberBalance in Profile, not CreatorMonetization directly, 
-             // but here we are just updating the view. The parent handles the state update for profile.
-        });
-        
-        setDepositAmount('');
-        setShowDepositModal(false);
-        alert(`Deposited $${amount}. Embers added to your wallet.`);
-    };
 
-    const handleWithdraw = () => {
-        const amount = parseFloat(withdrawAmount);
-        if (isNaN(amount) || amount <= 0) { alert("Please enter a valid amount."); return; }
-        
-        setWithdrawAmount('');
-        setShowWithdrawModal(false);
-        alert("Withdrawal initiated!");
-    };
-
-    const StatCard: React.FC<{label: string, value: string | number, icon: React.ReactNode}> = ({label, value, icon}) => (
-        <div className={`${cardBg} p-4 rounded-xl border ${borderColor}`}>
-            <div className="flex items-center gap-3 text-sm text-gray-400 mb-2">{icon} {label}</div>
-            <div className="text-2xl font-bold">{value}</div>
+    const StatCard: React.FC<{label: string, value: string | number, icon: React.ReactNode, trend?: string}> = ({label, value, icon, trend}) => (
+        <div className={`${cardBg} p-5 rounded-2xl border ${borderColor} relative overflow-hidden group`}>
+             <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity scale-150`}>{icon}</div>
+             <div className="flex items-center gap-2 mb-2 text-sm font-medium opacity-70">
+                {icon} <span>{label}</span>
+             </div>
+            <div className="text-3xl font-bold">{value}</div>
+             {trend && (
+                <div className="mt-2 h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className={`h-full bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}`} style={{width: trend}}></div>
+                </div>
+             )}
         </div>
     );
     
     return (
-        <div className="space-y-6">
-            <div className="flex gap-4 border-b border-gray-500/20 overflow-x-auto">
-                <button onClick={() => setActiveTab('overview')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'overview' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Overview</button>
-                <button onClick={() => setActiveTab('wallet')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'wallet' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Wallet</button>
-                <button onClick={() => setActiveTab('subscriptions')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'subscriptions' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Subscriptions</button>
-                <button onClick={() => setActiveTab('tips')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'tips' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Tip Jar</button>
-                <button onClick={() => setActiveTab('products')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'products' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary}`}`}>Products</button>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Dashboard Tabs */}
+            <div className="flex gap-2 p-1 bg-black/5 dark:bg-white/5 rounded-2xl overflow-x-auto no-scrollbar">
+                {['overview', 'wallet', 'subscriptions', 'products', 'tips'].map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-6 py-3 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${activeTab === tab ? `bg-white dark:bg-gray-800 shadow-md ${textColor}` : `${textSecondary} hover:bg-white/10`}`}
+                    >
+                        {tab}
+                    </button>
+                ))}
             </div>
             
-            {activeTab === 'overview' && <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard label="Embers" value={`${emberBalance.toLocaleString()} 🔥`} icon={<Flame size={16}/>} />
-                <StatCard label="This Month" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={16}/>} />
-                <StatCard label="Subscribers" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={16}/>} />
-                <StatCard label="Total Tips" value={monetization.tipJar.tipCount} icon={<Heart size={16}/>} />
-            </div>}
+            {activeTab === 'overview' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <StatCard label="Total Balance" value={`${emberBalance.toLocaleString()} 🔥`} icon={<Flame size={18} className="text-orange-500"/>} trend="75%"/>
+                    <StatCard label="Monthly Revenue" value={`$${monetization.analytics.monthlyEarnings.slice(-1)[0] || 0}`} icon={<DollarSign size={18} className="text-green-500"/>} trend="45%"/>
+                    <StatCard label="Active Subs" value={monetization.subscriptionTiers.reduce((s, t) => s + t.subscriberCount, 0)} icon={<Users size={18} className="text-blue-500"/>} trend="20%"/>
+                    <StatCard label="Tips Received" value={monetization.tipJar.tipCount} icon={<Heart size={18} className="text-red-500"/>} trend="60%"/>
+                    
+                    <div className={`col-span-1 sm:col-span-2 lg:col-span-4 ${cardBg} p-6 rounded-3xl border ${borderColor} mt-4`}>
+                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><BarChart3 size={20}/> Revenue Analytics</h3>
+                        <div className="h-40 flex items-end justify-between gap-2 px-2">
+                            {[45, 67, 32, 89, 54, 76, 92, 43, 65, 88, 120, 98].map((h, i) => (
+                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-t-lg relative h-full overflow-hidden">
+                                         <div className={`absolute bottom-0 left-0 w-full bg-gradient-to-t ${currentTheme.from} ${currentTheme.to} transition-all duration-1000 ease-out group-hover:opacity-80`} style={{height: `${h}%`}}></div>
+                                    </div>
+                                    <span className="text-xs opacity-50">{['J','F','M','A','M','J','J','A','S','O','N','D'][i]}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
             
             {activeTab === 'wallet' && (
-                <div className="space-y-6">
-                    <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} flex flex-col items-center justify-center text-center`}>
-                        <p className={`${textSecondary} text-lg mb-2`}>My Embers</p>
-                        <h2 className={`text-5xl font-bold mb-6 ${textColor} flex items-center gap-2`}>{emberBalance.toLocaleString()} <Flame className="text-orange-500" /></h2>
-                        <div className="flex gap-4 w-full max-w-md">
-                             <button onClick={() => setShowDepositModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
-                                <ArrowDownLeft size={20} /> Buy Embers
-                            </button>
-                            <button onClick={() => setShowWithdrawModal(true)} className={`flex-1 py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 shadow-lg`}>
-                                <ArrowUpRight size={20} /> Cash Out
-                            </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* FireSocial Card */}
+                    <div className={`relative aspect-[1.586/1] rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} p-8 text-white flex flex-col justify-between transform hover:scale-[1.02] transition-transform`}>
+                        <div className="absolute top-0 right-0 p-12 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                        <div className="flex justify-between items-start z-10">
+                            <Flame size={40} fill="currentColor" />
+                            <span className="font-mono text-lg opacity-80">FIRESOCIAL CARD</span>
+                        </div>
+                        <div className="z-10">
+                            <p className="text-sm opacity-80 mb-1">Current Balance</p>
+                            <h2 className="text-5xl font-bold flex items-center gap-3 tracking-tight">
+                                {emberBalance.toLocaleString()} <span className="text-2xl opacity-80">🔥</span>
+                            </h2>
+                        </div>
+                        <div className="flex justify-between items-end z-10">
+                             <div>
+                                <p className="text-xs opacity-60 uppercase tracking-wider mb-1">Card Holder</p>
+                                <p className="font-medium text-lg tracking-wide">THOMAS DARROW</p>
+                             </div>
+                             <div className="opacity-80">
+                                 <div className="flex gap-1">
+                                     <div className="w-8 h-8 rounded-full bg-white/20"></div>
+                                     <div className="w-8 h-8 rounded-full bg-white/40 -ml-4"></div>
+                                 </div>
+                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className={`${cardBg} p-5 rounded-2xl border ${borderColor}`}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-lg">Payment Methods</h3>
-                                <button className={`text-sm font-semibold ${currentTheme.text} hover:underline`}>+ Add New</button>
-                            </div>
-                            <div className="space-y-3">
-                                {monetization.wallet?.paymentMethods.map(pm => (
-                                    <div key={pm.id} className={`flex items-center justify-between p-3 rounded-xl border ${borderColor} bg-black/5 dark:bg-white/5`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300`}>
-                                                {pm.type === 'card' ? <CreditCard size={20} /> : <Building size={20} />}
-                                            </div>
-                                            <div>
-                                                <p className={`font-semibold ${textColor}`}>{pm.name}</p>
-                                                <p className={`text-xs ${textSecondary}`}>{pm.type === 'card' ? `Expires ${pm.expiry}` : 'Bank Account'}</p>
-                                            </div>
-                                        </div>
-                                        <button className={`p-2 hover:bg-red-500/10 rounded-full text-gray-400 hover:text-red-500`}><Trash2 size={16} /></button>
-                                    </div>
-                                ))}
-                                {(!monetization.wallet?.paymentMethods || monetization.wallet.paymentMethods.length === 0) && <p className={textSecondary}>No payment methods added.</p>}
-                            </div>
+                    <div className="space-y-4">
+                        <div className={`${cardBg} p-6 rounded-3xl border ${borderColor}`}>
+                             <h3 className="font-bold text-lg mb-4">Actions</h3>
+                             <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setShowDepositModal(true)} className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center gap-2 transition-colors`}>
+                                    <div className="p-3 rounded-full bg-green-500/20 text-green-500"><ArrowDownLeft size={24}/></div>
+                                    <span className="font-semibold">Deposit</span>
+                                </button>
+                                <button className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 flex flex-col items-center gap-2 transition-colors`}>
+                                    <div className="p-3 rounded-full bg-orange-500/20 text-orange-500"><ArrowUpRight size={24}/></div>
+                                    <span className="font-semibold">Withdraw</span>
+                                </button>
+                             </div>
                         </div>
-
-                        <div className={`${cardBg} p-5 rounded-2xl border ${borderColor}`}>
-                            <h3 className="font-bold text-lg mb-4">Recent Transactions</h3>
-                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                {monetization.wallet?.transactions.map(txn => (
-                                    <div key={txn.id} className="flex items-center justify-between text-sm">
+                        
+                        <div className={`${cardBg} p-6 rounded-3xl border ${borderColor}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg">Recent Activity</h3>
+                                <button className={`text-xs font-bold ${currentTheme.text}`}>VIEW ALL</button>
+                            </div>
+                            <div className="space-y-4">
+                                {monetization.wallet?.transactions.slice(0, 3).map(txn => (
+                                    <div key={txn.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`p-2 rounded-full ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                                                {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
                                             </div>
                                             <div>
-                                                <p className={`${textColor} font-medium`}>{txn.description}</p>
-                                                <p className={textSecondary}>{txn.date}</p>
+                                                <p className="font-semibold text-sm">{txn.description}</p>
+                                                <p className="text-xs opacity-50">{txn.date}</p>
                                             </div>
                                         </div>
-                                        <span className={`font-bold ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'text-green-500' : 'text-red-500'}`}>
+                                        <span className={`font-bold text-sm ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'text-green-500' : 'text-red-500'}`}>
                                             {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? '+' : '-'}${txn.amount.toFixed(2)}
                                         </span>
                                     </div>
                                 ))}
-                                {(!monetization.wallet?.transactions || monetization.wallet.transactions.length === 0) && <p className={textSecondary}>No transactions yet.</p>}
                             </div>
                         </div>
                     </div>
-                    
-                    {/* Deposit Modal */}
-                    {showDepositModal && (
-                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-                            <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
-                                <h3 className="text-xl font-bold mb-4">Buy Embers</h3>
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount (USD)</label>
-                                    <div className="relative">
-                                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
-                                        <input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-1">10 Embers = $1.00</p>
-                                </div>
-                                <div className="mb-6">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Source</label>
-                                    <select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
-                                        <option value="">Select a card or bank</option>
-                                        {monetization.wallet?.paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowDepositModal(false)} className={`flex-1 py-2 rounded-lg border ${borderColor} hover:bg-white/10`}>Cancel</button>
-                                    <button onClick={handleDeposit} className="flex-1 py-2 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600">Buy</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Withdraw Modal */}
-                    {showWithdrawModal && (
-                        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-                            <div className={`${cardBg} p-6 rounded-2xl border ${borderColor} w-full max-w-md shadow-2xl`}>
-                                <h3 className="text-xl font-bold mb-4">Cash Out</h3>
-                                <div className="mb-4">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Amount (USD)</label>
-                                    <div className="relative">
-                                        <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${textSecondary}`} size={18} />
-                                        <input type="number" value={withdrawAmount} onChange={e => setWithdrawAmount(e.target.value)} className={`w-full pl-10 pr-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
-                                    </div>
-                                </div>
-                                <div className="mb-6">
-                                    <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Destination</label>
-                                    <select value={selectedPaymentMethod} onChange={e => setSelectedPaymentMethod(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
-                                        <option value="">Select a card or bank</option>
-                                        {monetization.wallet?.paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowWithdrawModal(false)} className={`flex-1 py-2 rounded-lg border ${borderColor} hover:bg-white/10`}>Cancel</button>
-                                    <button onClick={handleWithdraw} className="flex-1 py-2 rounded-lg bg-orange-500 text-white font-bold hover:bg-orange-600">Withdraw</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
             
-            {activeTab === 'subscriptions' && <div className="space-y-4">
-                <h3 className="font-bold text-lg">Your Subscription Tiers</h3>
-                {monetization.subscriptionTiers.map(tier => (
-                    <div key={tier.id} className={`p-4 rounded-xl border ${borderColor} flex justify-between items-center`}>
-                        <div>
-                            <p className="font-bold">{tier.name} - ${tier.price}/mo</p>
-                            <p className="text-sm text-gray-400">{tier.subscriberCount} subscribers</p>
+            {activeTab === 'subscriptions' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {monetization.subscriptionTiers.map(tier => (
+                        <div key={tier.id} className={`${cardBg} p-6 rounded-3xl border ${borderColor} relative overflow-hidden group hover:border-orange-500/50 transition-colors`}>
+                            <div className={`absolute top-0 left-0 w-full h-2 ${tier.color}`}></div>
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="text-xl font-bold">{tier.name}</h3>
+                                    <p className={`${textSecondary} text-sm`}>{tier.subscriberCount} active subscribers</p>
+                                </div>
+                                <div className={`px-3 py-1 rounded-full text-sm font-bold ${tier.color} bg-opacity-20 text-white`}>
+                                    ${tier.price}/mo
+                                </div>
+                            </div>
+                            <ul className="space-y-2 mb-6">
+                                {tier.benefits.map((b, i) => (
+                                    <li key={i} className="flex items-center gap-2 text-sm">
+                                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center flex-shrink-0"><Plus size={12} /></div>
+                                        {b}
+                                    </li>
+                                ))}
+                            </ul>
+                            <button className={`w-full py-3 rounded-xl border ${borderColor} hover:bg-white/10 font-semibold transition-colors`}>Edit Tier</button>
                         </div>
-                        <button className="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-500/50 hover:bg-white/10">Edit</button>
-                    </div>
-                ))}
-                <button className={`w-full p-4 border-2 border-dashed ${borderColor} rounded-xl text-gray-400 hover:border-gray-400`}>+ Add New Tier</button>
-            </div>}
-
-            {activeTab === 'tips' && <div className="space-y-4">
-                <h3 className="font-bold text-lg">Tip Jar Settings</h3>
-                 <div className="flex justify-between items-center p-4 rounded-xl border border-gray-700">
-                    <label htmlFor="tip-jar-enabled">Enable Tip Jar</label>
-                    <button onClick={() => onUpdate({...monetization, tipJar: {...monetization.tipJar, enabled: !monetization.tipJar.enabled}})} className={`w-12 h-6 rounded-full transition-all ${monetization.tipJar.enabled ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full transition-transform ${monetization.tipJar.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    ))}
+                    <button className={`flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-dashed ${borderColor} hover:bg-white/5 transition-all gap-4 group text-gray-500 hover:text-orange-500 hover:border-orange-500`}>
+                         <div className="w-16 h-16 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus size={32} />
+                         </div>
+                         <span className="font-bold">Create New Tier</span>
                     </button>
                 </div>
-                <p>Suggested amounts: {monetization.tipJar.suggestedAmounts.map(a => `${a} 🔥`).join(', ')}</p>
-            </div>}
-
-            {activeTab === 'products' && monetization.products && <div className="space-y-4">
-                <h3 className="font-bold text-lg">Your Products for Sale</h3>
-                {monetization.products.map(product => (
-                    <div key={product.id} className={`p-4 rounded-xl border ${borderColor} flex justify-between items-center`}>
-                        <div className="flex items-center gap-4">
-                            <img src={product.images[0]} alt={product.name} className="w-16 h-16 object-cover rounded-lg" />
-                            <div>
-                                <p className="font-bold">{product.name}</p>
-                                <p className={`text-sm ${textSecondary}`}>${product.price} - {product.sales} sales</p>
+            )}
+            
+            {activeTab === 'products' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {monetization.products.map(product => (
+                         <div key={product.id} className={`${cardBg} rounded-3xl border ${borderColor} overflow-hidden hover:shadow-xl transition-all group`}>
+                            <div className="relative aspect-[4/3]">
+                                <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-bold">
+                                    {product.category}
+                                </div>
+                            </div>
+                            <div className="p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h3 className="font-bold text-lg line-clamp-1">{product.name}</h3>
+                                    <span className="font-bold text-orange-500">${product.price}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm text-gray-500">
+                                    <span>{product.sales} sales</span>
+                                    <div className="flex items-center gap-1"><Star size={12} fill="currentColor" className="text-yellow-500"/> {product.rating}</div>
+                                </div>
+                                <button className={`w-full mt-4 py-2 rounded-xl border ${borderColor} hover:bg-white/5 font-medium text-sm`}>Manage Product</button>
                             </div>
                         </div>
-                        <button className={`px-4 py-2 text-sm font-semibold rounded-lg border ${borderColor} hover:bg-white/10`}>Manage</button>
+                    ))}
+                     <button onClick={onAddNewProductClick} className={`flex flex-col items-center justify-center p-8 rounded-3xl border-2 border-dashed ${borderColor} hover:bg-white/5 transition-all gap-4 group text-gray-500 hover:text-orange-500 hover:border-orange-500 min-h-[300px]`}>
+                         <div className="w-16 h-16 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus size={32} />
+                         </div>
+                         <span className="font-bold">Add New Product</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Deposit Modal within Dashboard */}
+            {showDepositModal && (
+                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                    <div className={`${cardBg} p-6 rounded-3xl border ${borderColor} w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200`}>
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><ArrowDownLeft className="text-green-500"/> Deposit Funds</h3>
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium opacity-70 mb-2">Amount (USD)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold opacity-50">$</span>
+                                <input type="number" value={depositAmount} onChange={e => setDepositAmount(e.target.value)} className={`w-full pl-10 pr-4 py-4 text-xl font-bold rounded-2xl border ${borderColor} bg-transparent focus:outline-none focus:ring-2 ${currentTheme.ring}`} placeholder="0.00" />
+                            </div>
+                            <p className="text-xs mt-2 text-center opacity-60">You will receive {Number(depositAmount) * 10} Embers 🔥</p>
+                        </div>
+                         <div className="flex gap-3">
+                            <button onClick={() => setShowDepositModal(false)} className={`flex-1 py-3 rounded-xl border ${borderColor} hover:bg-white/10 font-bold`}>Cancel</button>
+                            <button onClick={() => {onUpdate({...monetization}); setShowDepositModal(false); alert(`Deposited $${depositAmount}`)}} className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600">Confirm</button>
+                        </div>
                     </div>
-                ))}
-                <button onClick={onAddNewProductClick} className={`w-full p-4 border-2 border-dashed ${borderColor} rounded-xl ${textSecondary} hover:border-gray-400`}>+ Add New Product</button>
-            </div>}
+                </div>
+            )}
         </div>
     );
 };
 
-// --- MAIN PROFILE PAGE ---
+// --- POST GRID ITEM ---
+const PostGridItem: React.FC<{ post: Post, onViewPost: (p:Post) => void, currentTheme: Theme, textColor: string }> = ({ post, onViewPost, currentTheme, textColor }) => {
+    const isMedia = post.media && post.media.length > 0;
+    const isVideo = isMedia && post.media![0].type === 'video';
+    const isMulti = isMedia && post.media!.length > 1;
+    
+    return (
+        <div 
+            onClick={() => onViewPost(post)}
+            className={`group relative aspect-square rounded-3xl overflow-hidden cursor-pointer border border-white/5 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:z-10`}
+        >
+            {isMedia ? (
+                <>
+                    {post.media![0].type === 'image' ? (
+                        <img src={post.media![0].url} alt="Post" className="w-full h-full object-cover" />
+                    ) : (
+                        <video src={post.media![0].url} className="w-full h-full object-cover" />
+                    )}
+                    <div className="absolute top-3 right-3 flex gap-1">
+                        {isVideo && <div className="p-1.5 bg-black/50 backdrop-blur-md rounded-full text-white"><Play size={12} fill="currentColor"/></div>}
+                        {isMulti && <div className="p-1.5 bg-black/50 backdrop-blur-md rounded-full text-white"><Layers size={12} /></div>}
+                    </div>
+                </>
+            ) : (
+                <div className={`w-full h-full p-6 flex items-center justify-center bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-black/10 mix-blend-overlay"></div>
+                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
+                    <p className="text-white font-semibold text-center line-clamp-5 relative z-10 text-sm sm:text-base shadow-sm">
+                        "{post.content}"
+                    </p>
+                </div>
+            )}
+            
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-3 text-white">
+                <div className="flex gap-6 font-bold text-lg">
+                    <span className="flex items-center gap-2"><Heart size={20} fill="white" /> {post.likes}</span>
+                    <span className="flex items-center gap-2"><MessageSquare size={20} fill="white" /> {post.comments}</span>
+                </div>
+            </div>
+            {post.isPaid && (
+                <div className="absolute top-3 left-3 px-2 py-1 bg-yellow-500/90 backdrop-blur-md text-white text-xs font-bold rounded-lg flex items-center gap-1">
+                    <Lock size={10} /> VIP
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- COMMENT TIMELINE ITEM ---
+const CommentTimelineItem: React.FC<{ comment: Comment, post: Post, onViewPost: (p:Post) => void, textColor: string, textSecondary: string, currentTheme: Theme, borderColor: string }> = ({ comment, post, onViewPost, textColor, textSecondary, currentTheme, borderColor }) => (
+    <div className="flex gap-4 relative group">
+        {/* Timeline Line */}
+        <div className="absolute left-[1.25rem] top-10 bottom-0 w-0.5 bg-gradient-to-b from-gray-700 to-transparent group-last:hidden opacity-30"></div>
+        
+        <div className="flex-shrink-0 z-10">
+            <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" className="border-2 border-white dark:border-gray-900 shadow-sm" />
+        </div>
+        
+        <div className="flex-1 pb-6">
+            <div className="flex items-baseline justify-between mb-1">
+                <p className={`font-bold text-sm ${textColor}`}>{comment.username}</p>
+                <span className={`text-xs ${textSecondary}`}>{comment.time}</span>
+            </div>
+            
+            <div className={`p-4 rounded-r-2xl rounded-bl-2xl bg-black/5 dark:bg-white/5 border ${borderColor} hover:border-gray-500 transition-colors`}>
+                <p className={`${textColor} mb-3`}>{comment.text}</p>
+                
+                {/* Context Card */}
+                <div 
+                    onClick={() => onViewPost(post)}
+                    className={`flex items-center gap-3 p-2 rounded-xl bg-black/5 dark:bg-black/20 cursor-pointer hover:bg-black/10 dark:hover:bg-black/40 transition-colors border border-transparent hover:border-gray-600`}
+                >
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-700">
+                         {post.media && post.media.length > 0 ? (
+                             post.media[0].type === 'image' ? <img src={post.media[0].url} className="w-full h-full object-cover"/> : <video src={post.media[0].url} className="w-full h-full object-cover"/>
+                         ) : (
+                             <div className={`w-full h-full bg-gradient-to-br ${currentTheme.from} ${currentTheme.to} flex items-center justify-center text-white text-[8px]`}>TXT</div>
+                         )}
+                    </div>
+                    <div className="overflow-hidden">
+                        <p className="text-xs opacity-70 mb-0.5">Replied to {post.user}</p>
+                        <p className={`text-xs font-medium ${textColor} truncate`}>{post.content}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// --- SCHEDULED POST ITEM ---
+const ScheduledPostItem: React.FC<{ scheduledPost: ScheduledPost, onDelete: (id:number)=>void, borderColor: string, textColor: string, textSecondary: string, cardBg: string, currentTheme: Theme }> = ({ scheduledPost, onDelete, borderColor, textColor, textSecondary, cardBg, currentTheme }) => {
+    const date = new Date(scheduledPost.scheduledTime);
+    const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+    const day = date.getDate();
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const isMedia = scheduledPost.postData.media && scheduledPost.postData.media.length > 0;
+
+    return (
+        <div className="flex gap-6 group">
+             <div className="flex-shrink-0 flex flex-col items-center">
+                 <div className={`w-14 h-14 rounded-2xl bg-black/5 dark:bg-white/10 border ${borderColor} flex flex-col items-center justify-center`}>
+                     <span className="text-xs font-bold text-red-500">{month}</span>
+                     <span className={`text-xl font-bold ${textColor}`}>{day}</span>
+                 </div>
+                 <div className="w-0.5 h-full bg-gray-700 my-2 opacity-20 group-last:hidden"></div>
+             </div>
+             
+             <div className={`flex-1 p-4 mb-6 rounded-2xl ${cardBg} border ${borderColor} relative overflow-hidden`}>
+                  <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-orange-500 bg-orange-500/10 px-2 py-1 rounded-lg">
+                          <Clock size={12} /> Scheduled for {time}
+                      </div>
+                      <button onClick={() => onDelete(scheduledPost.scheduledId)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors"><Trash2 size={16}/></button>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                      {isMedia && (
+                          <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-black">
+                              {scheduledPost.postData.media![0].type === 'image' ? 
+                                <img src={scheduledPost.postData.media![0].url} className="w-full h-full object-cover"/> : 
+                                <video src={scheduledPost.postData.media![0].url} className="w-full h-full object-cover"/>}
+                          </div>
+                      )}
+                      <div>
+                          <p className={`${textColor} line-clamp-2 font-medium`}>{scheduledPost.postData.content}</p>
+                          <p className={`text-xs ${textSecondary} mt-2`}>{scheduledPost.postData.type === 'poll' ? 'Poll' : 'Post'} • {isMedia ? 'Has Media' : 'Text Only'}</p>
+                      </div>
+                  </div>
+             </div>
+        </div>
+    );
+}
+
 
 interface ProfilePageProps {
     profileToDisplay: Profile;
@@ -355,279 +500,279 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showProfileOptions]);
 
-    const getLinkIcon = (url: string, size: number = 20) => {
-        try {
-            const domain = new URL(url).hostname.toLowerCase();
-            if (domain.includes('github.com')) return <Github size={size} />;
-            if (domain.includes('twitter.com') || domain.includes('x.com')) return <Twitter size={size} />;
-            if (domain.includes('linkedin.com')) return <Linkedin size={size} />;
-            if (domain.includes('instagram.com')) return <Instagram size={size} />;
-            if (domain.includes('facebook.com')) return <Facebook size={size} />;
-            if (domain.includes('tiktok.com')) return <Film size={size} />; // Using Film as a placeholder for TikTok
-            return <Globe size={size} />;
-        } catch (e) {
-            return <Link2 size={size} />;
+    const handleBadgeClick = (badge: string) => {
+        switch (badge) {
+            case '🏆': onViewTrophies(); break;
+            case '⭐': onViewAchievements(); break;
+            case '🔥': onViewStreaks(); break;
+            default: break;
         }
     };
 
-    const handleBadgeClick = (badge: string) => {
-        switch (badge) {
-            case '🏆':
-                onViewTrophies();
-                break;
-            case '⭐':
-                onViewAchievements();
-                break;
-            case '🔥':
-                onViewStreaks();
-                break;
-            default:
-                break;
-        }
-    };
+    const TABS = [
+        { id: 'posts', label: 'Posts', icon: Grid },
+        { id: 'comments', label: 'Comments', icon: MessageSquare },
+        { id: 'media', label: 'Media', icon: ImageIcon },
+    ];
     
+    if (isOwnProfile) {
+        TABS.push({ id: 'bookmarks', label: 'Saved', icon: Star }); // Changed Bookmarks to Saved (Star icon is cleaner)
+        TABS.push({ id: 'scheduled', label: 'Scheduled', icon: Calendar });
+        if(profileToDisplay.isCreator) TABS.push({ id: 'monetization', label: 'Studio', icon: BarChart3 });
+    }
+
     const userPosts = posts.filter(p => p.username === profileToDisplay.username);
     const mediaPosts = userPosts.filter(p => p.media && p.media.length > 0);
     const bookmarkedPosts = posts.filter(p => p.bookmarked);
     const userComments = posts
-        .flatMap(post => 
-            (post.commentsData || []).map(comment => ({ comment, post }))
-        )
+        .flatMap(post => (post.commentsData || []).map(comment => ({ comment, post })))
         .filter(({ comment }) => comment.username === profileToDisplay.username)
         .sort((a, b) => b.comment.id - a.comment.id);
 
-    const PostGridItem: React.FC<{post: Post}> = ({ post }) => (
-        <div 
-            className={`group aspect-square ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} hover:scale-105 transition-all cursor-pointer relative overflow-hidden`}
-        >
-            {post.media && post.media.length > 0 ? (
-                post.media[0].type === 'image' ? (
-                  <img src={post.media[0].url} alt="post media" className="w-full h-full object-cover" />
-                ) : (
-                  <video src={post.media[0].url} className="w-full h-full object-cover" />
-                )
-            ) : (
-                <p className={`${textColor} text-sm line-clamp-4 p-4`}>{post.content}</p>
-            )}
-
-            <div 
-                onClick={() => onViewPost(post)}
-                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center text-white p-4"
-            >
-                <div className="flex gap-4">
-                    <span className="flex items-center gap-1"><Heart size={16} /> {post.likes}</span>
-                    <span className="flex items-center gap-1"><MessageSquare size={16} /> {post.comments}</span>
-                </div>
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onViewComments(post);
-                    }}
-                    className="mt-4 bg-white/20 px-3 py-1 rounded-full text-xs"
-                >
-                    View Comments
-                </button>
-            </div>
-        </div>
-    );
-
-    const CommentActivityItem: React.FC<{ comment: Comment; post: Post }> = ({ comment, post }) => (
-        <div className={`p-4 rounded-2xl border ${borderColor} hover:bg-black/5 dark:hover:bg-white/5 transition-colors`}>
-            <p className={`${textSecondary} text-sm mb-2`}>
-                Commented on a post by <button onClick={() => onViewProfile(post.username)} className={`font-semibold ${textColor} hover:underline`}>{post.user}</button>
-            </p>
-            <div className={`p-3 rounded-xl border-l-4 ${borderColor} cursor-pointer bg-black/5 dark:bg-white/5`} onClick={() => onViewPost(post)}>
-                <p className={`${textSecondary} text-sm line-clamp-2`}>{post.content}</p>
-            </div>
-            <div className="mt-3 flex gap-3">
-                <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
-                <div className="flex-1 bg-black/5 dark:bg-white/10 p-3 rounded-xl">
-                     <div className="flex items-center justify-between text-xs mb-1">
-                        <p className={`font-semibold ${textColor}`}>{comment.username}</p>
-                        <p className={textSecondary}>{comment.time}</p>
-                     </div>
-                    <p className={`${textColor} text-sm whitespace-pre-wrap`}>
-                        {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
-                        {comment.text}
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-
     return (
         <div className="space-y-6">
+            {/* --- Profile Header Card --- */}
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl overflow-hidden border ${borderColor} shadow-lg`}>
-                <div className="h-48 relative bg-gray-500 dark:bg-gray-800">
+                {/* Cover Photo */}
+                <div className="h-56 relative bg-gray-800 group">
                     {profileToDisplay.coverPhoto ? (
                         <img src={profileToDisplay.coverPhoto} alt="Cover" className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full" style={{ background: profileToDisplay.wallpaper }}></div>
                     )}
-                    {isOwnProfile && <button onClick={onEditProfile} className="absolute top-4 right-4 p-3 bg-black/30 backdrop-blur-sm rounded-full hover:scale-110 transition-all"><Camera size={20} className="text-white" /></button>}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    {isOwnProfile && <button onClick={onEditProfile} className="absolute top-4 right-4 p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-white hover:text-black transition-all opacity-0 group-hover:opacity-100"><Camera size={20} /></button>}
                 </div>
-                <div className="p-6 -mt-16">
-                    <div className="flex flex-col md:flex-row items-end justify-between mb-4">
-                        <div className="flex items-end gap-4">
-                            <div className="relative">
-                                <AvatarDisplay avatar={profileToDisplay.avatar} size="w-32 h-32" fontSize="text-7xl" className="bg-white/20 backdrop-blur-xl !rounded-3xl p-1 border-4 border-white shadow-xl" />
-                                {profileToDisplay.online && <div className="absolute bottom-4 right-4 w-5 h-5 bg-green-500 rounded-full border-4 border-white"></div>}
-                            </div>
-                            <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-1"><h2 className={`text-3xl font-bold ${textColor}`}>{profileToDisplay.name}</h2>{profileToDisplay.verified && <span className="text-blue-500 text-2xl">✓</span>}</div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <p className={textSecondary}>{profileToDisplay.username}</p>
-                                    {profileToDisplay.showPronouns && profileToDisplay.pronouns && (<><span className={`${textSecondary} text-xs`}>•</span><p className={textSecondary}>{profileToDisplay.pronouns}</p></>)}
-                                    {profileToDisplay.category && (<><span className={`${textSecondary} text-xs`}>•</span><p className={`${currentTheme.text} font-semibold text-sm`}>{profileToDisplay.category}</p></>)}
-                                </div>
-                            </div>
+                
+                {/* Profile Info Area */}
+                <div className="px-8 pb-8 relative">
+                    {/* Avatar & Action Buttons Row */}
+                    <div className="flex justify-between items-end -mt-16 mb-4">
+                        <div className="relative">
+                            <AvatarDisplay avatar={profileToDisplay.avatar} size="w-32 h-32" fontSize="text-7xl" className="bg-white dark:bg-gray-900 p-1.5 rounded-3xl shadow-2xl" />
+                            {profileToDisplay.online && <div className="absolute bottom-2 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-white dark:border-gray-900"></div>}
                         </div>
-                        <div className="flex items-center gap-2">
-                        {isOwnProfile ? (
-                            <button onClick={onEditProfile} className={`px-6 py-3 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg flex items-center gap-2`}><Edit3 size={18} />Edit Profile</button>
-                        ) : (
-                           <>
-                            {isFollowing ? (
-                                <div className="flex gap-2">
-                                    <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg ${cardBg} ${textColor} border ${borderColor} hover:bg-white/10`}>
-                                        Following
-                                    </button>
-                                    <button 
-                                        onClick={() => onFireFollowToggle(profileToDisplay.id)}
-                                        title={isFireFollowed ? "FireFollow Active: Seeing all posts!" : "FireFollow: See all posts"}
-                                        className={`p-3 rounded-2xl font-semibold transition-all duration-300 shadow-lg border ${isFireFollowed ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-transparent' : `${borderColor} ${textSecondary} hover:bg-white/10`}`}
-                                    >
-                                        <Flame size={20} fill={isFireFollowed ? "currentColor" : "none"} />
-                                    </button>
-                                </div>
+                        
+                        <div className="flex items-center gap-3 pb-2">
+                            {isOwnProfile ? (
+                                <button onClick={onEditProfile} className={`px-6 py-2.5 bg-white dark:bg-white/10 border ${borderColor} hover:bg-gray-50 dark:hover:bg-white/20 rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2`}>
+                                    <Edit3 size={18} /> Edit Profile
+                                </button>
                             ) : (
-                                <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}>
-                                    Follow
-                                </button>
-                            )}
-                            <div className="relative" ref={optionsRef}>
-                                <button onClick={() => setShowProfileOptions(s => !s)} className={`p-3 rounded-2xl font-semibold hover:scale-105 transition-all duration-300 shadow-lg ${cardBg} ${textColor} border ${borderColor}`}>
-                                    <MoreHorizontal size={20} />
-                                </button>
-                                {showProfileOptions && (
-                                    <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-xl w-48 z-10 overflow-hidden`}>
-                                        <button onClick={() => { onBlockToggle(profileToDisplay.id, profileToDisplay.username); setShowProfileOptions(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10 text-red-500`}>
-                                            <UserMinus size={16} />
-                                            <span>{isBlocked ? 'Unblock' : 'Block'}</span>
-                                        </button>
-                                        <button onClick={() => { alert('Reported'); setShowProfileOptions(false); }} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/10`}>
-                                            <AlertTriangle size={16} />
-                                            <span>Report</span>
-                                        </button>
+                                <>
+                                    {isFollowing ? (
+                                        <div className="flex gap-2">
+                                            <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-6 py-2.5 rounded-xl font-semibold border ${borderColor} ${cardBg} hover:bg-white/10 transition-all shadow-sm`}>Following</button>
+                                            <button onClick={() => onFireFollowToggle(profileToDisplay.id)} className={`p-2.5 rounded-xl border ${isFireFollowed ? 'bg-orange-500 text-white border-orange-500' : `${borderColor} text-gray-400 hover:text-orange-500 hover:border-orange-500`} transition-all shadow-sm`} title="FireFollow">
+                                                <Flame size={20} fill={isFireFollowed ? "currentColor" : "none"} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-2.5 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all`}>Follow</button>
+                                    )}
+                                    <div className="relative" ref={optionsRef}>
+                                        <button onClick={() => setShowProfileOptions(s => !s)} className={`p-2.5 rounded-xl border ${borderColor} ${cardBg} hover:bg-white/10 transition-all`}><MoreHorizontal size={20} /></button>
+                                        {showProfileOptions && (
+                                            <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-900 rounded-xl border ${borderColor} shadow-xl w-48 z-20 overflow-hidden py-1`}>
+                                                <button onClick={() => { onBlockToggle(profileToDisplay.id, profileToDisplay.username); setShowProfileOptions(false); }} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500">
+                                                    <UserMinus size={16} /> <span>{isBlocked ? 'Unblock' : 'Block'}</span>
+                                                </button>
+                                                <button onClick={() => { alert('Reported'); setShowProfileOptions(false); }} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                                    <AlertTriangle size={16} /> <span>Report</span>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
-                           </>
-                        )}
+                                </>
+                            )}
                         </div>
                     </div>
-                    <p className={`${textColor} mb-4`}>{profileToDisplay.bio}</p>
 
-                    {profileToDisplay.isCreator && !isOwnProfile && profileToDisplay.creatorMonetization?.subscriptionTiers && (
-                        <div className="mb-4">
-                            <h3 className={`font-semibold ${textSecondary} mb-2 text-sm`}>Support {profileToDisplay.name}</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {profileToDisplay.creatorMonetization.subscriptionTiers.map(tier => <SubscriptionBadge key={tier.id} tier={tier} />)}
-                            </div>
+                    {/* Name & Bio */}
+                    <div className="mb-6">
+                        <h1 className={`text-3xl font-bold ${textColor} flex items-center gap-2`}>
+                            {profileToDisplay.name}
+                            {profileToDisplay.verified && <div className="bg-blue-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-[10px]">✓</div>}
+                        </h1>
+                        <p className={`${textSecondary} font-medium text-lg`}>{profileToDisplay.username}</p>
+                        {profileToDisplay.category && <span className={`inline-block px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-xs font-bold mt-2 ${currentTheme.text}`}>{profileToDisplay.category}</span>}
+                        
+                        <p className={`mt-4 ${textColor} max-w-2xl leading-relaxed whitespace-pre-wrap`}>{profileToDisplay.bio}</p>
+                        
+                        {/* Links & Location */}
+                        <div className={`flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm ${textSecondary}`}>
+                            {profileToDisplay.location && <div className="flex items-center gap-1.5"><MapPin size={16} /> {profileToDisplay.location}</div>}
+                            {profileToDisplay.website && <a href={profileToDisplay.website} target="_blank" rel="noreferrer" className={`flex items-center gap-1.5 hover:${currentTheme.text} transition-colors`}><Link2 size={16} /> {profileToDisplay.website.replace(/^https?:\/\//, '')}</a>}
+                            {profileToDisplay.work && <div className="flex items-center gap-1.5"><Briefcase size={16} /> {profileToDisplay.work}</div>}
                         </div>
-                    )}
+                    </div>
+
+                    {/* Stats Row */}
+                    <div className="flex gap-8 border-t border-b border-gray-200 dark:border-white/10 py-4 mb-6">
+                        <div className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className={`block font-bold text-xl ${textColor}`}>{profileToDisplay.posts}</span>
+                            <span className={`text-sm ${textSecondary}`}>Posts</span>
+                        </div>
+                        <button onClick={onShowFollowers} className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className={`block font-bold text-xl ${textColor}`}>{profileToDisplay.followers.toLocaleString()}</span>
+                            <span className={`text-sm ${textSecondary}`}>Followers</span>
+                        </button>
+                        <button onClick={onShowFollowing} className="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                            <span className={`block font-bold text-xl ${textColor}`}>{profileToDisplay.following.toLocaleString()}</span>
+                            <span className={`text-sm ${textSecondary}`}>Following</span>
+                        </button>
+                         <div className="text-center cursor-pointer hover:opacity-80 transition-opacity ml-auto" onClick={onViewStreaks}>
+                            <span className={`block font-bold text-xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent flex items-center gap-1`}>
+                                {profileToDisplay.streak} <Zap size={18} className="text-orange-500" fill="currentColor" />
+                            </span>
+                            <span className={`text-sm ${textSecondary}`}>Day Streak</span>
+                        </div>
+                    </div>
                     
-                    {profileToDisplay.featuredHashtags && profileToDisplay.featuredHashtags.length > 0 && (<div className="flex flex-wrap gap-2 mb-4">{profileToDisplay.featuredHashtags.map(tag => (<button onClick={() => onViewHashtag(tag)} key={tag} className={`px-3 py-1 ${cardBg} backdrop-blur-xl rounded-full border ${borderColor} ${textSecondary} text-sm hover:bg-white/10`}>{tag}</button>))}</div>)}
-                    {profileToDisplay.links && profileToDisplay.links.length > 0 && (<div className="flex items-center gap-4 mb-4">{profileToDisplay.links.map(link => (<a href={link.url} target="_blank" rel="noopener noreferrer" key={link.id} title={link.title} className={`${textSecondary} hover:scale-125 ${currentTheme.hoverText} transition-transform duration-200`}>{getLinkIcon(link.url, 24)}</a>))}</div>)}
-
-                    <div className={`flex flex-wrap gap-x-6 gap-y-2 mb-6 ${textSecondary} text-sm`}>
-                        {profileToDisplay.location && <div className="flex items-center gap-2"><MapPin size={16} /><span>{profileToDisplay.location}</span></div>}
-                        {profileToDisplay.website && <a href={profileToDisplay.website} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 hover:underline ${currentTheme.hoverText}`}><Link2 size={16} /><span>{profileToDisplay.website.replace(/https?:\/\//, '')}</span></a>}
-                        {profileToDisplay.work && <div className="flex items-center gap-2"><Briefcase size={16} /><span>{profileToDisplay.work}</span></div>}
-                        {profileToDisplay.education && <div className="flex items-center gap-2"><GraduationCap size={16} /><span>{profileToDisplay.education}</span></div>}
+                    {/* Badges & Tip Jar */}
+                    <div className="flex flex-col md:flex-row gap-6">
+                         {profileToDisplay.badges.length > 0 && (
+                            <div className="flex-1">
+                                <h4 className={`text-sm font-bold ${textSecondary} mb-2 uppercase tracking-wider`}>Achievements</h4>
+                                <div className="flex gap-2">
+                                    {profileToDisplay.badges.map((badge, i) => (
+                                        <button key={i} onClick={() => handleBadgeClick(badge)} className={`text-2xl w-12 h-12 flex items-center justify-center ${cardBg} border ${borderColor} rounded-2xl hover:scale-110 transition-transform shadow-sm`}>
+                                            {badge}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                         )}
+                         {!isOwnProfile && profileToDisplay.creatorMonetization?.tipJar?.enabled && (
+                             <div className="flex-1">
+                                <TipJarComponent tipJar={profileToDisplay.creatorMonetization.tipJar} onTip={onTip} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} />
+                             </div>
+                         )}
                     </div>
-
-                    <div className="flex gap-2 mb-6">
-                        {profileToDisplay.badges.map((badge, i) => (
-                            <button key={i} onClick={() => handleBadgeClick(badge)} className={`text-3xl p-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} hover:scale-110 transition-all cursor-pointer`}>
-                                {badge}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex flex-wrap gap-x-8 gap-y-4 mb-6">
-                        <div><p className={`text-2xl font-bold ${textColor}`}>{profileToDisplay.posts}</p><p className={textSecondary}>Posts</p></div>
-                        <button onClick={onShowFollowers} className="text-left cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold ${textColor}`}>{profileToDisplay.followers.toLocaleString()}</p><p className={textSecondary}>Followers</p></button>
-                        <button onClick={onShowFollowing} className="text-left cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold ${textColor}`}>{profileToDisplay.following.toLocaleString()}</p><p className={textSecondary}>Following</p></button>
-                        <div className="cursor-pointer hover:scale-105 transition-all"><p className={`text-2xl font-bold bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} bg-clip-text text-transparent flex items-center gap-1`}>{profileToDisplay.streak} <Zap size={20} /></p><p className={textSecondary}>Day Streak</p></div>
-                    </div>
-                     {!isOwnProfile && profileToDisplay.creatorMonetization?.tipJar && (
-                        <TipJarComponent tipJar={profileToDisplay.creatorMonetization.tipJar} onTip={onTip} currentTheme={currentTheme} cardBg={cardBg} borderColor={borderColor} />
-                    )}
                 </div>
             </div>
-            <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
-                <div className="flex gap-4 mb-6 border-b border-gray-500/20 overflow-x-auto">
-                    <button onClick={() => onTabChange('posts')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'posts' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Posts</button>
-                    <button onClick={() => onTabChange('comments')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'comments' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Comments</button>
-                    <button onClick={() => onTabChange('media')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'media' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Media</button>
-                    {isOwnProfile && <button onClick={() => onTabChange('bookmarks')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'bookmarks' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Bookmarks</button>}
-                    {isOwnProfile && <button onClick={() => onTabChange('scheduled')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'scheduled' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Scheduled</button>}
-                    {isOwnProfile && profileToDisplay.isCreator && <button onClick={() => onTabChange('monetization')} className={`flex-shrink-0 pb-3 px-4 border-b-2 font-semibold ${activeTab === 'monetization' ? `${currentTheme.border} ${textColor}` : `border-transparent ${textSecondary} hover:${textColor}`}`}>Monetization</button>}
-                </div>
-                <div>
-                    {activeTab === 'posts' && (userPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{userPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No posts yet.</p>)}
-                    {activeTab === 'comments' && (userComments.length > 0 ? <div className="space-y-4">{userComments.map(({ comment, post }) => (<CommentActivityItem key={comment.id} comment={comment} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No comments yet.</p>)}
-                    {activeTab === 'media' && (mediaPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{mediaPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No media yet.</p>)}
-                    {activeTab === 'bookmarks' && isOwnProfile && (bookmarkedPosts.length > 0 ? <div className="grid grid-cols-2 md:grid-cols-3 gap-4">{bookmarkedPosts.map((post) => (<PostGridItem key={post.id} post={post} />))}</div> : <p className={`${textSecondary} text-center py-8`}>No bookmarked posts.</p>)}
-                    {activeTab === 'scheduled' && isOwnProfile && (scheduledPosts.length > 0 ? (
-                        <div className="space-y-4">
-                            {scheduledPosts.map((sp) => (
-                                <div key={sp.scheduledId} className={`p-4 rounded-2xl border ${borderColor} flex justify-between items-start`}>
-                                    <div className="flex-1">
-                                        <p className={`text-sm font-semibold ${textSecondary}`}>Scheduled for: <span className={textColor}>{new Date(sp.scheduledTime).toLocaleString()}</span></p>
-                                        <p className={`${textColor} mt-2 line-clamp-3`}>{sp.postData.content}</p>
+
+            {/* --- Sticky Tab Navigation --- */}
+            <div className="sticky top-4 z-30 -mx-2 sm:mx-0 mb-6">
+                 <div className={`${cardBg} backdrop-blur-xl rounded-[2.5rem] border ${borderColor} shadow-lg py-4 px-2 sm:px-6`}>
+                    <div className="flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar px-2 sm:justify-center pb-2 pt-2 snap-x">
+                        {TABS.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => onTabChange(tab.id)}
+                                    className={`group flex flex-col items-center gap-2 flex-shrink-0 transition-all duration-300 snap-center outline-none`}
+                                >
+                                    <div className={`
+                                        relative w-16 h-16 sm:w-18 sm:h-18 rounded-full flex items-center justify-center transition-all duration-500
+                                        ${isActive 
+                                            ? `text-white shadow-xl scale-110` 
+                                            : `${textSecondary} bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 hover:scale-105`
+                                        }
+                                    `}>
+                                        {isActive && (
+                                            <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${currentTheme.from} ${currentTheme.to} opacity-100`} />
+                                        )}
+                                        <tab.icon size={26} className="relative z-10" strokeWidth={isActive ? 2.5 : 2} />
+                                        
                                     </div>
-                                    <button onClick={() => onDeleteScheduledPost(sp.scheduledId)} className={`p-2 ml-2 ${textSecondary} hover:text-red-500 rounded-full hover:bg-red-500/10`}>
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
+                                    <span className={`text-xs font-bold tracking-wide transition-all duration-300 ${isActive ? `${textColor} scale-105` : `${textSecondary} group-hover:${textColor}`}`}>
+                                        {tab.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                 </div>
+            </div>
+
+            {/* --- Tab Content Area --- */}
+            <div className="min-h-[400px]">
+                {activeTab === 'posts' && (
+                    userPosts.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {userPosts.map(post => (
+                                <PostGridItem key={post.id} post={post} onViewPost={onViewPost} currentTheme={currentTheme} textColor={textColor} />
                             ))}
                         </div>
-                    ) : <p className={`${textSecondary} text-center py-8`}>You have no scheduled posts.</p>)}
-                    {activeTab === 'monetization' && isOwnProfile && profileToDisplay.creatorMonetization && (
-                        <CreatorMonetizationDashboard 
-                            monetization={profileToDisplay.creatorMonetization} 
-                            onUpdate={onUpdateProfileMonetization || (() => {})} 
-                            currentTheme={currentTheme} 
-                            cardBg={cardBg} 
-                            borderColor={borderColor} 
-                            textColor={textColor} 
-                            textSecondary={textSecondary} 
-                            onAddNewProductClick={onShowAddProductModal}
-                            emberBalance={profileToDisplay.emberBalance || 0}
-                        />
-                    )}
-                </div>
-            </div>
-            <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
-                <button onClick={onViewAchievements} className={`w-full text-left text-xl font-bold ${textColor} mb-4 flex items-center gap-2 rounded-lg -ml-2 p-2 hover:bg-black/5 dark:hover:bg-white/10 transition-colors`}>
-                    <Award size={24} /> Achievements
-                </button>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {allAchievements.map((achievement) => {
-                        const isUnlocked = profileToDisplay.unlockedAchievements.includes(achievement.id);
-                        return (
-                            <div key={achievement.id} className={`${cardBg} backdrop-blur-xl rounded-2xl p-4 border ${borderColor} text-center hover:scale-105 transition-all cursor-pointer ${!isUnlocked ? 'opacity-40' : ''}`}>
-                                <div className="text-4xl mb-2">{isUnlocked ? achievement.icon : '🔒'}</div>
-                                <p className={`${textColor} font-semibold text-sm`}>{achievement.name}</p>
-                                <p className={`${textSecondary} text-xs mt-1`}>{achievement.description}</p>
-                            </div>
-                        );
-                    })}
-                </div>
+                    ) : <EmptyState icon={Grid} text="No posts yet" textSecondary={textSecondary} />
+                )}
+
+                {activeTab === 'comments' && (
+                    <div className="space-y-6 relative pl-4">
+                         {userComments.length > 0 ? (
+                            userComments.map(({ comment, post }) => (
+                                <CommentTimelineItem key={comment.id} comment={comment} post={post} onViewPost={onViewPost} textColor={textColor} textSecondary={textSecondary} currentTheme={currentTheme} borderColor={borderColor} />
+                            ))
+                        ) : <EmptyState icon={MessageSquare} text="No comments yet" textSecondary={textSecondary} />}
+                    </div>
+                )}
+
+                {activeTab === 'media' && (
+                     mediaPosts.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {mediaPosts.map(post => (
+                                <PostGridItem key={post.id} post={post} onViewPost={onViewPost} currentTheme={currentTheme} textColor={textColor} />
+                            ))}
+                        </div>
+                    ) : <EmptyState icon={ImageIcon} text="No media shared yet" textSecondary={textSecondary} />
+                )}
+
+                {activeTab === 'bookmarks' && isOwnProfile && (
+                    bookmarkedPosts.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {bookmarkedPosts.map(post => (
+                                <PostGridItem key={post.id} post={post} onViewPost={onViewPost} currentTheme={currentTheme} textColor={textColor} />
+                            ))}
+                        </div>
+                    ) : <EmptyState icon={Star} text="No saved posts" textSecondary={textSecondary} />
+                )}
+
+                {activeTab === 'scheduled' && isOwnProfile && (
+                    <div className="space-y-6">
+                         {scheduledPosts.length > 0 ? (
+                            scheduledPosts.map(sp => (
+                                <ScheduledPostItem 
+                                    key={sp.scheduledId} 
+                                    scheduledPost={sp} 
+                                    onDelete={onDeleteScheduledPost} 
+                                    borderColor={borderColor}
+                                    textColor={textColor}
+                                    textSecondary={textSecondary}
+                                    cardBg={cardBg}
+                                    currentTheme={currentTheme}
+                                />
+                            ))
+                        ) : <EmptyState icon={Calendar} text="No scheduled posts" textSecondary={textSecondary} />}
+                    </div>
+                )}
+
+                {activeTab === 'monetization' && isOwnProfile && profileToDisplay.creatorMonetization && (
+                    <CreatorMonetizationDashboard 
+                        monetization={profileToDisplay.creatorMonetization} 
+                        onUpdate={onUpdateProfileMonetization || (() => {})} 
+                        currentTheme={currentTheme} 
+                        cardBg={cardBg} 
+                        borderColor={borderColor} 
+                        textColor={textColor} 
+                        textSecondary={textSecondary} 
+                        onAddNewProductClick={onShowAddProductModal}
+                        emberBalance={profileToDisplay.emberBalance || 0}
+                    />
+                )}
             </div>
         </div>
     );
 }
+
+const EmptyState = ({ icon: Icon, text, textSecondary }: { icon: any, text: string, textSecondary: string }) => (
+    <div className="flex flex-col items-center justify-center py-16 opacity-60">
+        <div className="p-6 rounded-full bg-black/5 dark:bg-white/5 mb-4">
+            <Icon size={48} className={textSecondary} />
+        </div>
+        <p className={`${textSecondary} text-lg font-medium`}>{text}</p>
+    </div>
+);
 
 export default ProfilePage;

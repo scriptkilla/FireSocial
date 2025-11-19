@@ -1,6 +1,4 @@
 
-
-
 import React, { useState } from 'react';
 import { Comment, Theme, Profile } from '../types';
 import { Heart, Edit, Trash2, Paperclip } from 'lucide-react';
@@ -68,7 +66,7 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
             <button onClick={() => onViewProfile(comment.username)} className="hover:scale-105 transition-transform">
                 <AvatarDisplay avatar={comment.avatar} size="w-10 h-10" fontSize="text-xl" />
             </button>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
                 <div className="bg-black/5 dark:bg-white/5 p-3 rounded-2xl">
                     <div className="flex items-center justify-between">
                         <button onClick={() => onViewProfile(comment.username)} className={`font-semibold text-sm ${textColor} hover:underline`}>
@@ -89,7 +87,7 @@ const CommentComponent: React.FC<CommentComponentProps> = ({ comment, profile, o
                             autoFocus
                         />
                     ) : (
-                        <p className={`text-sm ${textColor} mt-1 whitespace-pre-wrap`}>
+                        <p className={`text-sm ${textColor} mt-1 whitespace-pre-wrap break-words`}>
                             {comment.replyTo && <span className={`font-semibold ${currentTheme.text} mr-1`}>{comment.replyTo}</span>}
                             {comment.text}
                         </p>

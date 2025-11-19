@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Theme, Comment, UserListItem, CommentAttachment } from '../types';
 import { X, Send, Sparkles, Loader2, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, Paperclip, Search } from 'lucide-react';
@@ -30,13 +26,14 @@ interface CommentModalProps {
 }
 
 const EMOJIS = ['😀', '😂', '😍', '🔥', '👍', '🙌', '😭', '🤔', '🥳', '👀'];
+const MAX_COMMENT_LENGTH = 300;
 
 const CommentModal: React.FC<CommentModalProps> = (props) => {
     const { post, profile, onClose, onAddComment, onLikeComment, onDeleteComment, onEditComment, currentTheme, cardBg, textColor, textSecondary, borderColor, allUsers, onViewProfile } = props;
     const [commentInput, setCommentInput] = useState('');
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
     const [commentMentionQuery, setCommentMentionQuery] = useState<string | null>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Attachments & Tools State
     const [attachment, setAttachment] = useState<CommentAttachment | null>(null);
@@ -134,8 +131,10 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
         setCommentMentionQuery(null);
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
+        if (value.length > MAX_COMMENT_LENGTH) return;
+
         if (replyingTo && !value.startsWith(`@${replyingTo} `)) {
             setReplyingTo(null);
         }
@@ -187,7 +186,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
              else if (action === 'expand') prompt = `Expand on this comment: "${commentInput || 'Nice work'}"`;
 
              const result = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt });
-             setCommentInput(result.text.trim());
+             setCommentInput(result.text.trim().substring(0, MAX_COMMENT_LENGTH));
         } catch (e) {
             console.error(e);
             alert("AI generation failed");
@@ -208,7 +207,7 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
             }
 
             const ai = new GoogleGenAI({ apiKey });
-            const prompt = `Read this post: "${post.content}". Generate 3 short engaging replies. Return JSON array of strings.`;
+            const prompt = `Read this post: "${post.content}". Generate 3 short engaging replies (max 200 chars each). Return JSON array of strings.`;
 
             const response = await ai.models.generateContent({
                 model: 'gemini-2.5-flash',
@@ -327,19 +326,22 @@ const CommentModal: React.FC<CommentModalProps> = (props) => {
                         <AvatarDisplay avatar={profile.avatar} size="w-10 h-10" fontSize="text-xl" className="mb-1"/>
                         <div className="flex-1">
                             <div className={`bg-black/5 dark:bg-white/5 rounded-2xl border ${borderColor} relative`}>
-                                <input
+                                <textarea
                                     ref={inputRef}
-                                    type="text"
                                     value={commentInput}
                                     onChange={handleInputChange}
                                     placeholder="Add a comment..."
-                                    className={`w-full pl-4 pr-10 py-3 bg-transparent rounded-2xl ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                                    rows={2}
+                                    className={`w-full pl-4 pr-10 py-3 bg-transparent rounded-2xl ${textColor} placeholder-gray-400 focus:outline-none focus:ring-2 ${currentTheme.ring} resize-none scrollbar-hide`}
                                 />
+                                <div className={`absolute bottom-1 left-4 text-[10px] ${textSecondary}`}>
+                                    {commentInput.length}/{MAX_COMMENT_LENGTH}
+                                </div>
                                 <button 
                                     type="button"
                                     onClick={handleGenerateReplies}
                                     disabled={isGeneratingReplies}
-                                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-white/10 transition-colors ${isGeneratingReplies ? 'opacity-50' : 'text-purple-400'}`}
+                                    className={`absolute right-2 top-2 p-1.5 rounded-full hover:bg-white/10 transition-colors ${isGeneratingReplies ? 'opacity-50' : 'text-purple-400'}`}
                                     title="AI Suggest Reply"
                                 >
                                     {isGeneratingReplies ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
