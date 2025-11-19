@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon } from 'lucide-react';
 
 // Types and Constants
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction } from '../types';
@@ -64,6 +64,32 @@ import TipModal from './TipModal';
 
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
+
+// --- Mock Data Generators for Widgets ---
+const generateStockData = (symbol: string) => {
+    const basePrice = Math.random() * 1000 + 10;
+    const changePercent = (Math.random() * 5) - 2.5;
+    return {
+        sym: symbol.toUpperCase(),
+        name: symbol.toUpperCase(), // Simplified name mapping
+        price: basePrice.toFixed(2),
+        change: (changePercent > 0 ? '+' : '') + changePercent.toFixed(2) + '%',
+        up: changePercent > 0
+    };
+};
+
+const generateCryptoData = (symbol: string) => {
+    const basePrice = Math.random() * 5000 + 1;
+    const changePercent = (Math.random() * 10) - 5;
+    return {
+        sym: symbol.toUpperCase(),
+        name: symbol.toUpperCase(),
+        price: basePrice.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+        change: (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%',
+        up: changePercent > 0,
+        icon: symbol.toUpperCase()[0] // Simple icon proxy
+    };
+};
 
 export const FireSocial: React.FC = () => {
     // --- AUTH CONTEXT ---
@@ -140,6 +166,18 @@ export const FireSocial: React.FC = () => {
     const [dragEnabledIndex, setDragEnabledIndex] = useState<number | null>(null);
     const dragItem = useRef<number | null>(null);
     const dragNode = useRef<HTMLDivElement | null>(null);
+
+    // Widget Settings State
+    const [widgetSettings, setWidgetSettings] = useState({
+        weather: { location: 'San Francisco, CA' },
+        stocks: { symbols: ['AAPL', 'TSLA', 'NVDA'] },
+        crypto: { symbols: ['BTC', 'ETH', 'SOL'] },
+        trending: { count: 3, showCount: true },
+        suggestions: { count: 3, showMutuals: true },
+        communities: { count: 3, showMembers: true }
+    });
+    const [editingWidget, setEditingWidget] = useState<string | null>(null);
+    const [tempWidgetInput, setTempWidgetInput] = useState('');
 
 
     // --- DERIVED STATE & MEMOS ---
@@ -326,6 +364,37 @@ export const FireSocial: React.FC = () => {
         if (dragNode.current) dragNode.current.classList.remove('opacity-50');
         dragNode.current = null;
         setDragEnabledIndex(null);
+    };
+
+    // Widget Settings Handlers
+    const updateWidgetSetting = (widget: string, key: string, value: any) => {
+         setWidgetSettings(prev => ({
+             ...prev,
+             [widget]: { ...prev[widget as keyof typeof prev], [key]: value }
+         }));
+    };
+
+    const handleWidgetSettingSave = (widgetId: string) => {
+        if (widgetId === 'weather') {
+            setWidgetSettings(prev => ({ ...prev, weather: { location: tempWidgetInput || prev.weather.location } }));
+        } else if (widgetId === 'stocks') {
+             if (tempWidgetInput && !widgetSettings.stocks.symbols.includes(tempWidgetInput.toUpperCase())) {
+                setWidgetSettings(prev => ({ ...prev, stocks: { symbols: [...prev.stocks.symbols, tempWidgetInput.toUpperCase()] } }));
+             }
+        } else if (widgetId === 'crypto') {
+             if (tempWidgetInput && !widgetSettings.crypto.symbols.includes(tempWidgetInput.toUpperCase())) {
+                setWidgetSettings(prev => ({ ...prev, crypto: { symbols: [...prev.crypto.symbols, tempWidgetInput.toUpperCase()] } }));
+             }
+        }
+        setTempWidgetInput('');
+        if (widgetId === 'weather') setEditingWidget(null); // Close weather immediately on save
+    };
+
+    const removeWidgetSymbol = (widgetId: 'stocks' | 'crypto', symbol: string) => {
+        setWidgetSettings(prev => ({
+            ...prev,
+            [widgetId]: { symbols: prev[widgetId].symbols.filter(s => s !== symbol) }
+        }));
     };
 
 
@@ -848,13 +917,27 @@ export const FireSocial: React.FC = () => {
     // --- Sidebar Widget Rendering ---
     const renderWidget = (widgetId: string, index: number) => {
         const Grip = (
-            <div 
-                className={`p-2 rounded-lg hover:bg-white/10 cursor-grab active:cursor-grabbing ${textSecondary} transition-colors`}
-                onMouseEnter={() => setDragEnabledIndex(index)}
-                onMouseLeave={() => setDragEnabledIndex(null)}
-                title="Drag to reorder"
-            >
-                <GripVertical size={20} />
+            <div className="flex items-center gap-1">
+                {/* Settings Button */}
+                <button
+                    onClick={() => { 
+                        setEditingWidget(editingWidget === widgetId ? null : widgetId); 
+                        setTempWidgetInput(''); 
+                    }}
+                    className={`p-2 rounded-lg hover:bg-white/10 ${textSecondary} transition-colors`}
+                    title="Settings"
+                >
+                    <Settings size={16} />
+                </button>
+                {/* Drag Handle */}
+                <div 
+                    className={`p-2 rounded-lg hover:bg-white/10 cursor-grab active:cursor-grabbing ${textSecondary} transition-colors`}
+                    onMouseEnter={() => setDragEnabledIndex(index)}
+                    onMouseLeave={() => setDragEnabledIndex(null)}
+                    title="Drag to reorder"
+                >
+                    <GripVertical size={20} />
+                </div>
             </div>
         );
 
@@ -865,179 +948,364 @@ export const FireSocial: React.FC = () => {
                         {/* Background gradient based on time/weather */}
                         <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-600 opacity-80 dark:opacity-40"></div>
                         <div className="relative z-10">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="font-bold text-lg flex items-center gap-2"><MapPin size={16}/> San Francisco</h3>
-                                    <p className="text-xs opacity-80">California, USA</p>
+                            {editingWidget === 'weather' ? (
+                                <div className="mb-2">
+                                    <h3 className="font-bold text-lg mb-2">Weather Settings</h3>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Enter Location" 
+                                        defaultValue={widgetSettings.weather.location}
+                                        onChange={(e) => setTempWidgetInput(e.target.value)}
+                                        className={`w-full px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 mb-2 focus:outline-none`}
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        <button onClick={() => setEditingWidget(null)} className="px-3 py-1 text-sm rounded-lg hover:bg-white/10">Cancel</button>
+                                        <button onClick={() => handleWidgetSettingSave('weather')} className="px-3 py-1 text-sm bg-white text-blue-600 rounded-lg font-bold">Save</button>
+                                    </div>
                                 </div>
-                                {Grip}
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-4xl font-bold">72°</span>
-                                    <span className="text-sm font-medium">Sunny</span>
-                                </div>
-                                <Sun size={48} className="text-yellow-300 animate-pulse" />
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20">
-                                <div className="text-center">
-                                    <Wind size={16} className="mx-auto mb-1 opacity-80"/>
-                                    <span className="text-xs">8 mph</span>
-                                </div>
-                                <div className="text-center">
-                                    <Droplets size={16} className="mx-auto mb-1 opacity-80"/>
-                                    <span className="text-xs">42%</span>
-                                </div>
-                                <div className="text-center">
-                                    <CloudRain size={16} className="mx-auto mb-1 opacity-80"/>
-                                    <span className="text-xs">0%</span>
-                                </div>
-                            </div>
+                            ) : (
+                                <>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="font-bold text-lg flex items-center gap-2"><MapPin size={16}/> {widgetSettings.weather.location.split(',')[0]}</h3>
+                                            <p className="text-xs opacity-80">{widgetSettings.weather.location}</p>
+                                        </div>
+                                        {Grip}
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-4xl font-bold">72°</span>
+                                            <span className="text-sm font-medium">Sunny</span>
+                                        </div>
+                                        <Sun size={48} className="text-yellow-300 animate-pulse" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20">
+                                        <div className="text-center">
+                                            <Wind size={16} className="mx-auto mb-1 opacity-80"/>
+                                            <span className="text-xs">8 mph</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <Droplets size={16} className="mx-auto mb-1 opacity-80"/>
+                                            <span className="text-xs">42%</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <CloudRain size={16} className="mx-auto mb-1 opacity-80"/>
+                                            <span className="text-xs">0%</span>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 );
             case 'stocks':
                 return (
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold flex items-center gap-2"><Activity size={18} /> Live Stocks</h3>
-                            {Grip}
-                        </div>
-                        <div className="space-y-3">
-                            {[
-                                { sym: 'AAPL', name: 'Apple', price: '182.50', change: '+1.25%', up: true },
-                                { sym: 'TSLA', name: 'Tesla', price: '175.30', change: '-2.40%', up: false },
-                                { sym: 'NVDA', name: 'Nvidia', price: '890.00', change: '+3.10%', up: true },
-                            ].map(stock => (
-                                <div key={stock.sym} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${stock.up ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                            {stock.sym}
-                                        </div>
-                                        <div>
-                                            <p className={`font-bold text-sm ${textColor}`}>{stock.name}</p>
-                                            <p className={`text-xs ${textSecondary}`}>{stock.price}</p>
-                                        </div>
-                                    </div>
-                                    <div className={`text-right ${stock.up ? 'text-green-500' : 'text-red-500'}`}>
-                                        <p className="font-bold text-sm">{stock.change}</p>
-                                        <p className="text-xs flex items-center justify-end gap-0.5">
-                                            {stock.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
-                                        </p>
-                                    </div>
+                        {editingWidget === 'stocks' ? (
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold">Stock Settings</h3>
+                                    <button onClick={() => setEditingWidget(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={16}/></button>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="flex gap-2 mb-3">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Symbol (e.g. GOOG)" 
+                                        value={tempWidgetInput} 
+                                        onChange={(e) => setTempWidgetInput(e.target.value)}
+                                        className={`flex-1 px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border ${borderColor} focus:outline-none text-sm`}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleWidgetSettingSave('stocks')}
+                                    />
+                                    <button onClick={() => handleWidgetSettingSave('stocks')} className={`p-2 rounded-lg bg-green-500 text-white`}><Plus size={16}/></button>
+                                </div>
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {widgetSettings.stocks.symbols.map(sym => (
+                                        <div key={sym} className="flex justify-between items-center p-2 bg-black/5 dark:bg-white/5 rounded-lg text-sm">
+                                            <span>{sym}</span>
+                                            <button onClick={() => removeWidgetSymbol('stocks', sym)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><Trash2 size={14}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold flex items-center gap-2"><Activity size={18} /> Live Stocks</h3>
+                                    {Grip}
+                                </div>
+                                <div className="space-y-3">
+                                    {widgetSettings.stocks.symbols.map(sym => {
+                                        const stock = generateStockData(sym);
+                                        return (
+                                            <div key={stock.sym} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${stock.up ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                        {stock.sym}
+                                                    </div>
+                                                    <div>
+                                                        <p className={`font-bold text-sm ${textColor}`}>{stock.name}</p>
+                                                        <p className={`text-xs ${textSecondary}`}>{stock.price}</p>
+                                                    </div>
+                                                </div>
+                                                <div className={`text-right ${stock.up ? 'text-green-500' : 'text-red-500'}`}>
+                                                    <p className="font-bold text-sm">{stock.change}</p>
+                                                    <p className="text-xs flex items-center justify-end gap-0.5">
+                                                        {stock.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {widgetSettings.stocks.symbols.length === 0 && <p className={`text-center text-sm ${textSecondary}`}>No stocks added.</p>}
+                                </div>
+                            </>
+                        )}
                     </div>
                 );
             case 'crypto':
                 return (
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold flex items-center gap-2"><Bitcoin size={18} /> Crypto</h3>
-                            {Grip}
-                        </div>
-                        <div className="space-y-3">
-                            {[
-                                { sym: 'BTC', name: 'Bitcoin', price: '68,400', change: '+5.2%', up: true, icon: '₿' },
-                                { sym: 'ETH', name: 'Ethereum', price: '3,500', change: '+2.1%', up: true, icon: 'Ξ' },
-                                { sym: 'SOL', name: 'Solana', price: '145.20', change: '-0.8%', up: false, icon: '◎' },
-                            ].map(coin => (
-                                <div key={coin.sym} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${coin.sym === 'BTC' ? 'from-orange-400 to-yellow-500' : coin.sym === 'ETH' ? 'from-blue-400 to-purple-500' : 'from-purple-500 to-indigo-600'} text-white`}>
-                                            {coin.icon}
-                                        </div>
-                                        <div>
-                                            <p className={`font-bold text-sm ${textColor}`}>{coin.name}</p>
-                                            <p className={`text-xs ${textSecondary}`}>{coin.sym}</p>
-                                        </div>
-                                    </div>
-                                    <div className={`text-right ${coin.up ? 'text-green-500' : 'text-red-500'}`}>
-                                        <p className="font-bold text-sm">${coin.price}</p>
-                                        <p className="text-xs flex items-center justify-end gap-0.5">
-                                            {coin.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
-                                            {coin.change}
-                                        </p>
-                                    </div>
+                        {editingWidget === 'crypto' ? (
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold">Crypto Settings</h3>
+                                    <button onClick={() => setEditingWidget(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={16}/></button>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="flex gap-2 mb-3">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Symbol (e.g. DOGE)" 
+                                        value={tempWidgetInput} 
+                                        onChange={(e) => setTempWidgetInput(e.target.value)}
+                                        className={`flex-1 px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border ${borderColor} focus:outline-none text-sm`}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleWidgetSettingSave('crypto')}
+                                    />
+                                    <button onClick={() => handleWidgetSettingSave('crypto')} className={`p-2 rounded-lg bg-blue-500 text-white`}><Plus size={16}/></button>
+                                </div>
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {widgetSettings.crypto.symbols.map(sym => (
+                                        <div key={sym} className="flex justify-between items-center p-2 bg-black/5 dark:bg-white/5 rounded-lg text-sm">
+                                            <span>{sym}</span>
+                                            <button onClick={() => removeWidgetSymbol('crypto', sym)} className="text-red-500 hover:bg-red-500/10 p-1 rounded"><Trash2 size={14}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold flex items-center gap-2"><Bitcoin size={18} /> Crypto</h3>
+                                    {Grip}
+                                </div>
+                                <div className="space-y-3">
+                                    {widgetSettings.crypto.symbols.map(sym => {
+                                        const coin = generateCryptoData(sym);
+                                        return (
+                                            <div key={coin.sym} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${['BTC','ETH','SOL'].includes(coin.sym) ? 'from-blue-400 to-purple-500' : 'from-gray-500 to-gray-700'} text-white`}>
+                                                        {coin.icon}
+                                                    </div>
+                                                    <div>
+                                                        <p className={`font-bold text-sm ${textColor}`}>{coin.name}</p>
+                                                        <p className={`text-xs ${textSecondary}`}>{coin.sym}</p>
+                                                    </div>
+                                                </div>
+                                                <div className={`text-right ${coin.up ? 'text-green-500' : 'text-red-500'}`}>
+                                                    <p className="font-bold text-sm">${coin.price}</p>
+                                                    <p className="text-xs flex items-center justify-end gap-0.5">
+                                                        {coin.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                                        {coin.change}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                    {widgetSettings.crypto.symbols.length === 0 && <p className={`text-center text-sm ${textSecondary}`}>No crypto added.</p>}
+                                </div>
+                            </>
+                        )}
                     </div>
                 );
             case 'trending':
                 return (
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
-                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold">Trending Topics</h3>
-                            {Grip}
-                        </div>
-                        <div className="space-y-4">
-                            {INITIAL_TRENDING_HASHTAGS.map(hashtag => (
-                                <button key={hashtag.tag} onClick={() => alert(`Viewing ${hashtag.tag}`)} className="w-full flex items-center justify-between group">
-                                    <div className="text-left">
-                                        <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{hashtag.tag}</p>
-                                        <p className={`text-xs ${textSecondary}`}>{hashtag.posts.toLocaleString()} posts</p>
+                         {editingWidget === 'trending' ? (
+                            <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold">Trending Settings</h3>
+                                    <button onClick={() => setEditingWidget(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={16}/></button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Items to Show</label>
+                                        <input 
+                                            type="range" 
+                                            min="1" max="10" 
+                                            value={widgetSettings.trending.count} 
+                                            onChange={(e) => updateWidgetSetting('trending', 'count', parseInt(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <div className="text-right text-xs mt-1">{widgetSettings.trending.count}</div>
                                     </div>
-                                    <div className={`p-2 rounded-full bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white transition-colors`}>
-                                        <TrendingUp size={16} />
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm">Show View Count</span>
+                                        <button 
+                                            onClick={() => updateWidgetSetting('trending', 'showCount', !widgetSettings.trending.showCount)}
+                                            className={`w-10 h-5 rounded-full transition-all ${widgetSettings.trending.showCount ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}
+                                        >
+                                            <div className={`w-3 h-3 bg-white rounded-full transition-transform m-1 ${widgetSettings.trending.showCount ? 'translate-x-5' : ''}`} />
+                                        </button>
                                     </div>
-                                </button>
-                            ))}
-                        </div>
+                                    <button onClick={() => setEditingWidget(null)} className={`w-full py-2 rounded-lg bg-white/10 text-sm font-bold`}>Done</button>
+                                </div>
+                            </div>
+                         ) : (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-bold">Trending Topics</h3>
+                                    {Grip}
+                                </div>
+                                <div className="space-y-4">
+                                    {INITIAL_TRENDING_HASHTAGS.slice(0, widgetSettings.trending.count).map(hashtag => (
+                                        <button key={hashtag.tag} onClick={() => alert(`Viewing ${hashtag.tag}`)} className="w-full flex items-center justify-between group">
+                                            <div className="text-left">
+                                                <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{hashtag.tag}</p>
+                                                {widgetSettings.trending.showCount && <p className={`text-xs ${textSecondary}`}>{hashtag.posts.toLocaleString()} posts</p>}
+                                            </div>
+                                            <div className={`p-2 rounded-full bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white transition-colors`}>
+                                                <TrendingUp size={16} />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 );
             case 'suggestions':
                 return (
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
-                        <div className="flex justify-between items-center mb-4">
-                             <h3 className="font-bold">Suggestions</h3>
-                             {Grip}
-                        </div>
-                        <div className="space-y-3">
-                            {INITIAL_FRIEND_SUGGESTIONS.slice(0, 3).map(s => (
-                                <div key={s.id} className="flex items-center justify-between">
-                                    <button onClick={() => handleViewProfile(s.username)} className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">{s.avatar}</div>
-                                        <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-gray-400">{s.username}</p></div>
-                                    </button>
-                                    <button className={`px-4 py-1.5 text-sm font-semibold rounded-full bg-white/10 text-white`}>Follow</button>
+                        {editingWidget === 'suggestions' ? (
+                             <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold">Suggestions Settings</h3>
+                                    <button onClick={() => setEditingWidget(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={16}/></button>
                                 </div>
-                            ))}
-                        </div>
-                        <button onClick={() => setShowSuggestions(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>View All</button>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Items to Show</label>
+                                        <input 
+                                            type="range" 
+                                            min="1" max="5" 
+                                            value={widgetSettings.suggestions.count} 
+                                            onChange={(e) => updateWidgetSetting('suggestions', 'count', parseInt(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <div className="text-right text-xs mt-1">{widgetSettings.suggestions.count}</div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm">Show Mutuals</span>
+                                        <button 
+                                            onClick={() => updateWidgetSetting('suggestions', 'showMutuals', !widgetSettings.suggestions.showMutuals)}
+                                            className={`w-10 h-5 rounded-full transition-all ${widgetSettings.suggestions.showMutuals ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}
+                                        >
+                                            <div className={`w-3 h-3 bg-white rounded-full transition-transform m-1 ${widgetSettings.suggestions.showMutuals ? 'translate-x-5' : ''}`} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setEditingWidget(null)} className={`w-full py-2 rounded-lg bg-white/10 text-sm font-bold`}>Done</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                     <h3 className="font-bold">Suggestions</h3>
+                                     {Grip}
+                                </div>
+                                <div className="space-y-3">
+                                    {INITIAL_FRIEND_SUGGESTIONS.slice(0, widgetSettings.suggestions.count).map(s => (
+                                        <div key={s.id} className="flex items-center justify-between">
+                                            <button onClick={() => handleViewProfile(s.username)} className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xl">{s.avatar}</div>
+                                                <div className="text-left">
+                                                    <p className="font-semibold text-sm">{s.name}</p>
+                                                    <p className="text-xs text-gray-400">{s.username}</p>
+                                                    {widgetSettings.suggestions.showMutuals && <p className="text-[10px] text-gray-500">{s.mutualFriends} mutuals</p>}
+                                                </div>
+                                            </button>
+                                            <button className={`px-4 py-1.5 text-sm font-semibold rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors`}>Follow</button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setShowSuggestions(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>View All</button>
+                            </>
+                        )}
                     </div>
                 );
             case 'communities':
                 return (
                     <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} mb-4`}>
-                         <div className="flex justify-between items-center mb-4">
-                             <h3 className="font-bold flex items-center gap-2"><Users size={18} /> Communities</h3>
-                             {Grip}
-                        </div>
-                        <div className="space-y-4">
-                            {communities.slice(0, 3).map(group => (
-                                <div key={group.id} 
-                                     onClick={() => handleViewCommunity(group)}
-                                     className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <img src={group.image} alt={group.name} className="w-10 h-10 rounded-lg object-cover" />
-                                        <div>
-                                            <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{group.name}</p>
-                                            <p className={`text-xs ${textSecondary}`}>{group.members.toLocaleString()} members</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); toggleJoinCommunity(group.id); }} 
-                                        className={`p-2 rounded-full transition-all ${group.joined ? `${cardBg} border ${borderColor} ${textSecondary}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}
-                                    >
-                                        {group.joined ? <Check size={14} /> : <Plus size={14} />}
-                                    </button>
+                        {editingWidget === 'communities' ? (
+                             <div>
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="font-bold">Community Settings</h3>
+                                    <button onClick={() => setEditingWidget(null)} className="p-1 hover:bg-white/10 rounded-full"><X size={16}/></button>
                                 </div>
-                            ))}
-                        </div>
-                        <button onClick={() => setShowCommunitiesModal(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>Explore More</button>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs text-gray-400 mb-1">Items to Show</label>
+                                        <input 
+                                            type="range" 
+                                            min="1" max="10" 
+                                            value={widgetSettings.communities.count} 
+                                            onChange={(e) => updateWidgetSetting('communities', 'count', parseInt(e.target.value))}
+                                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <div className="text-right text-xs mt-1">{widgetSettings.communities.count}</div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm">Show Members</span>
+                                        <button 
+                                            onClick={() => updateWidgetSetting('communities', 'showMembers', !widgetSettings.communities.showMembers)}
+                                            className={`w-10 h-5 rounded-full transition-all ${widgetSettings.communities.showMembers ? `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}` : 'bg-gray-600'}`}
+                                        >
+                                            <div className={`w-3 h-3 bg-white rounded-full transition-transform m-1 ${widgetSettings.communities.showMembers ? 'translate-x-5' : ''}`} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setEditingWidget(null)} className={`w-full py-2 rounded-lg bg-white/10 text-sm font-bold`}>Done</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                 <div className="flex justify-between items-center mb-4">
+                                     <h3 className="font-bold flex items-center gap-2"><Users size={18} /> Communities</h3>
+                                     {Grip}
+                                </div>
+                                <div className="space-y-4">
+                                    {communities.slice(0, widgetSettings.communities.count).map(group => (
+                                        <div key={group.id} 
+                                             onClick={() => handleViewCommunity(group)}
+                                             className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <img src={group.image} alt={group.name} className="w-10 h-10 rounded-lg object-cover" />
+                                                <div>
+                                                    <p className={`font-semibold text-sm ${textColor} group-hover:${currentTheme.text} transition-colors`}>{group.name}</p>
+                                                    {widgetSettings.communities.showMembers && <p className={`text-xs ${textSecondary}`}>{group.members.toLocaleString()} members</p>}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleJoinCommunity(group.id); }} 
+                                                className={`p-2 rounded-full transition-all ${group.joined ? `${cardBg} border ${borderColor} ${textSecondary}` : `bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white`}`}
+                                            >
+                                                {group.joined ? <Check size={14} /> : <Plus size={14} />}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setShowCommunitiesModal(true)} className={`mt-4 w-full text-center text-sm font-semibold ${currentTheme.text}`}>Explore More</button>
+                            </>
+                        )}
                     </div>
                 );
             default: return null;
