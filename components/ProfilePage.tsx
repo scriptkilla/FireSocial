@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail, Youtube, Twitch, Store } from 'lucide-react';
+import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod, Game } from '../types';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail, Youtube, Twitch, Store, Gamepad2 } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELPER COMPONENTS ---
@@ -222,16 +222,16 @@ const CreatorMonetizationDashboard: React.FC<{ monetization: CreatorMonetization
                                 {monetization.wallet?.transactions.slice(0, 3).map(txn => (
                                     <div key={txn.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-full ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
+                                            <div className={`p-2 rounded-full ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' || txn.type === 'game_revenue' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' || txn.type === 'game_revenue' ? <ArrowDownLeft size={14} /> : <ArrowUpRight size={14} />}
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-sm">{txn.description}</p>
                                                 <p className="text-xs opacity-50">{txn.date}</p>
                                             </div>
                                         </div>
-                                        <span className={`font-bold text-sm ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? 'text-green-500' : 'text-red-500'}`}>
-                                            {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' ? '+' : '-'}${txn.amount.toFixed(2)}
+                                        <span className={`font-bold text-sm ${txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' || txn.type === 'game_revenue' ? 'text-green-500' : 'text-red-500'}`}>
+                                            {txn.type === 'deposit' || txn.type === 'earning' || txn.type === 'tip_received' || txn.type === 'game_revenue' ? '+' : '-'}${txn.amount.toFixed(2)}
                                         </span>
                                     </div>
                                 ))}
@@ -499,7 +499,8 @@ interface ProfilePageProps {
     onPin?: (postId: number) => void;
     onFeature?: (postId: number) => void;
     onViewMyStore: () => void;
-    onVisitStore?: () => void; // Add this prop
+    onVisitStore?: () => void;
+    onPlayGame?: (game: Game) => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -510,7 +511,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage, onPin, onFeature, onViewMyStore, onVisitStore } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage, onPin, onFeature, onViewMyStore, onVisitStore, onPlayGame } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -550,6 +551,7 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
     
     const userPosts = posts.filter(p => p.username === profileToDisplay.username);
     const hasFeatured = userPosts.some(p => p.isFeatured);
+    const creatorGames = profileToDisplay.creatorMonetization?.games || [];
 
     const TABS = [
         { id: 'posts', label: 'Posts', icon: Grid },
@@ -557,6 +559,10 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         { id: 'media', label: 'Media', icon: ImageIcon },
     ];
     
+    if (creatorGames.length > 0) {
+        TABS.push({ id: 'games', label: 'Games', icon: Gamepad2 });
+    }
+
     if (isOwnProfile || hasFeatured) {
         // Insert 'Featured' tab at the start or after posts
         TABS.splice(1, 0, { id: 'featured', label: 'Featured', icon: Sparkles });
@@ -809,6 +815,36 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                             ))}
                         </div>
                     ) : <EmptyState icon={ImageIcon} text="No media shared yet" textSecondary={textSecondary} />
+                )}
+
+                {activeTab === 'games' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {creatorGames.map(game => (
+                            <div key={game.id} className={`${cardBg} rounded-2xl border ${borderColor} overflow-hidden group flex flex-col`}>
+                                <div className="aspect-video bg-black relative overflow-hidden">
+                                    <img src={game.previewImage} alt={game.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <button 
+                                            onClick={() => onPlayGame && onPlayGame(game)}
+                                            className={`px-6 py-2 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2`}
+                                        >
+                                            <Play size={16} fill="currentColor" /> Play
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-4 flex-1 flex flex-col">
+                                    <h3 className={`font-bold text-lg ${textColor}`}>{game.title}</h3>
+                                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1"><Play size={12} /> {game.playCount.toLocaleString()} Plays</span>
+                                        {isOwnProfile && (
+                                            <span className="flex items-center gap-1 text-orange-500"><Flame size={12} fill="currentColor" /> {game.earnings.toLocaleString()} Earned</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {creatorGames.length === 0 && <EmptyState icon={Gamepad2} text="No games created yet" textSecondary={textSecondary} />}
+                    </div>
                 )}
 
                 {activeTab === 'bookmarks' && isOwnProfile && (

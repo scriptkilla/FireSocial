@@ -119,6 +119,7 @@ export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
   products: [
     INITIAL_MARKETPLACE_PRODUCTS.find(p => p.id === 'prod_user_1')!
   ],
+  games: [],
   analytics: {
     totalEarnings: 892.25,
     monthlyEarnings: [245, 312, 178, 157],

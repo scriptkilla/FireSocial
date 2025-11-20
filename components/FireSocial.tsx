@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon, Cloud, CloudLightning, CloudSnow, Umbrella } from 'lucide-react';
 
 // Types and Constants
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction } from '../types';
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction, Game } from '../types';
 import { THEMES, REACTIONS, ALL_ACHIEVEMENTS } from '../constants';
 
 // Data
@@ -55,6 +55,7 @@ import ProductDetailModal from './ProductDetailModal';
 import AddProductModal from './AddProductModal';
 import AICreatorModal from './AICreatorModal';
 import GameCreatorModal from './GameCreatorModal';
+import GamePlayerModal from './GamePlayerModal';
 import AIChatbotModal from './AIChatbotModal';
 import AvatarDisplay from './AvatarDisplay';
 import CommunitiesModal from './CommunitiesModal';
@@ -113,6 +114,10 @@ export const FireSocial: React.FC = () => {
         if (!p.storeConfig) {
             p.storeConfig = { banner: '', themeColor: '#f97316', layout: 'grid', welcomeMessage: 'Welcome to my store!' };
         }
+        // Initialize creator games array if missing
+        if (p.creatorMonetization && !p.creatorMonetization.games) {
+            p.creatorMonetization.games = [];
+        }
         return p;
     }); 
     const [allUsers, setAllUsers] = useState<Profile[]>(ALL_USERS_DATA);
@@ -163,6 +168,7 @@ export const FireSocial: React.FC = () => {
     const [showAddProductModal, setShowAddProductModal] = useState(false);
     const [showAICreator, setShowAICreator] = useState(false);
     const [showGameCreator, setShowGameCreator] = useState(false);
+    const [viewingGame, setViewingGame] = useState<Game | null>(null);
     const [showAIChatbot, setShowAIChatbot] = useState(false);
     const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
     const [showCartModal, setShowCartModal] = useState(false);
@@ -789,6 +795,104 @@ export const FireSocial: React.FC = () => {
             }
         }
     }
+    
+    const handleDeployGame = (gameIdea: string, previewImage: string, code: string) => {
+        if (!profile.creatorMonetization) return;
+        
+        const newGame: Game = {
+            id: `game_${Date.now()}`,
+            title: gameIdea.substring(0, 30) + (gameIdea.length > 30 ? '...' : ''),
+            description: gameIdea,
+            previewImage,
+            code,
+            playCount: 0,
+            earnings: 0,
+            creatorId: profile.id,
+            creatorUsername: profile.username
+        };
+
+        const updatedMonetization = {
+            ...profile.creatorMonetization,
+            games: [newGame, ...(profile.creatorMonetization.games || [])]
+        };
+        
+        setProfile(p => ({ ...p, creatorMonetization: updatedMonetization }));
+        setShowGameCreator(false);
+        
+        // Also update global allUsers if the current user is in it, to reflect changes when viewed by others
+        setAllUsers(prevUsers => prevUsers.map(u => u.id === profile.id ? { ...u, creatorMonetization: updatedMonetization } : u));
+        
+        showToast("Game deployed successfully to your profile!");
+        setViewingProfileUsername(profile.username);
+        setActivePage('profile');
+        setProfileTab('games');
+    };
+    
+    const handlePlayGame = (game: Game) => {
+        setViewingGame(game);
+        
+        // Simulate play count increase and earnings for the creator
+        const EARNINGS_PER_PLAY = 5; // 5 embers per play
+        
+        // Update the game stats locally within the viewing session first
+        const updatedGame = { ...game, playCount: game.playCount + 1, earnings: game.earnings + EARNINGS_PER_PLAY };
+        setViewingGame(updatedGame); // Update the modal immediately if possible, or rely on it updating on close/re-render
+        
+        // Update the actual creator's profile (whether it's self or another user)
+        setAllUsers(prevUsers => prevUsers.map(user => {
+            if (user.id === game.creatorId) {
+                const existingGames = user.creatorMonetization?.games || [];
+                const updatedGames = existingGames.map(g => g.id === game.id ? { ...g, playCount: g.playCount + 1, earnings: g.earnings + EARNINGS_PER_PLAY } : g);
+                
+                // Add transaction to wallet
+                const newTransaction: WalletTransaction = {
+                    id: `tx_game_${Date.now()}`,
+                    type: 'game_revenue',
+                    amount: EARNINGS_PER_PLAY / 10, // Convert embers to currency value if needed, or keep separate
+                    date: new Date().toLocaleDateString(),
+                    status: 'completed',
+                    description: `Revenue from game: ${game.title}`
+                };
+                
+                const currentWallet = user.creatorMonetization?.wallet;
+                const updatedWallet = currentWallet ? {
+                    ...currentWallet,
+                    transactions: [newTransaction, ...(currentWallet.transactions || [])]
+                } : undefined;
+
+                return {
+                    ...user,
+                    creatorMonetization: {
+                        ...user.creatorMonetization!,
+                        games: updatedGames,
+                        wallet: updatedWallet
+                    }
+                };
+            }
+            return user;
+        }));
+
+        // If it's the current user, update their profile state too
+        if (game.creatorId === profile.id) {
+             setProfile(prev => {
+                const existingGames = prev.creatorMonetization?.games || [];
+                 const updatedGames = existingGames.map(g => g.id === game.id ? { ...g, playCount: g.playCount + 1, earnings: g.earnings + EARNINGS_PER_PLAY } : g);
+                 return {
+                     ...prev,
+                     creatorMonetization: {
+                         ...prev.creatorMonetization!,
+                         games: updatedGames
+                     }
+                 };
+             });
+        }
+        
+        // Notify creator (mock)
+        if (game.creatorId !== profile.id) {
+             // This would push a notification in a real backend
+             console.log(`Notification: Someone played ${game.title} by ${game.creatorUsername}`);
+        }
+    };
 
     const handleAddToCart = (product: Product) => {
         setCart(prev => [...prev, product]);
@@ -1660,6 +1764,7 @@ export const FireSocial: React.FC = () => {
                     onFeature={handleFeaturePost}
                     onViewMyStore={() => setActivePage('my-store')}
                     onVisitStore={handleVisitStore}
+                    onPlayGame={handlePlayGame}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
@@ -1911,7 +2016,8 @@ export const FireSocial: React.FC = () => {
             {viewingProduct && <ProductDetailModal product={viewingProduct} onClose={() => setViewingProduct(null)} profile={profile} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} {...uiProps} />}
             {showAddProductModal && <AddProductModal show={showAddProductModal} onClose={() => setShowAddProductModal(false)} onAddProduct={handleAddNewProduct} {...uiProps} />}
             {showAICreator && <AICreatorModal show={showAICreator} onClose={() => setShowAICreator(false)} {...uiProps} />}
-            {showGameCreator && <GameCreatorModal show={showGameCreator} onClose={() => setShowGameCreator(false)} onDeployGame={() => {}} {...uiProps} />}
+            {showGameCreator && <GameCreatorModal show={showGameCreator} onClose={() => setShowGameCreator(false)} onDeployGame={handleDeployGame} {...uiProps} />}
+            {viewingGame && <GamePlayerModal game={viewingGame} onClose={() => setViewingGame(null)} {...uiProps} />}
             {showAIChatbot && <AIChatbotModal show={showAIChatbot} onClose={() => setShowAIChatbot(false)} {...uiProps} />}
             {showCommunitiesModal && <CommunitiesModal show={showCommunitiesModal} onClose={() => setShowCommunitiesModal(false)} communities={communities} onJoinToggle={toggleJoinCommunity} onViewCommunity={handleViewCommunity} {...uiProps} />}
             {showCartModal && <CartModal show={showCartModal} onClose={() => setShowCartModal(false)} cartItems={cart} onRemoveItem={handleRemoveFromCart} onCheckout={handleCheckout} {...uiProps} />}

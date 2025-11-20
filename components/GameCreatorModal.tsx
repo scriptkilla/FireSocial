@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Bot, Wand2, Users, FileText, Palette, Cpu, Music, ShieldCheck, Play, UploadCloud, Code, Copy, Check } from 'lucide-react';
 import { Theme } from '../types';
@@ -13,7 +15,7 @@ import { API_CONFIG } from '../constants';
 interface GameCreatorModalProps {
     show: boolean;
     onClose: () => void;
-    onDeployGame: (gameIdea: string, previewImage: string) => void;
+    onDeployGame: (gameIdea: string, previewImage: string, code: string) => void;
     currentTheme: Theme;
     cardBg: string;
     textColor: string;
@@ -266,7 +268,7 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
                 } catch (e) { /* ignore */ }
                 
                 if (!hasKey) {
-                    const envKey = (typeof process !== 'undefined' ? process.env.API_KEY : undefined);
+                    const envKey = (typeof process.env !== 'undefined' ? process.env.API_KEY : undefined);
                     const storageKey = localStorage.getItem('apiKey_google_ai');
                     if (envKey || storageKey) hasKey = true;
                 }
@@ -308,8 +310,8 @@ const GameCreatorModal: React.FC<GameCreatorModalProps> = (props) => {
     };
     
     const handleDeploy = () => {
-        if (gameIdea && generatedPreview) {
-            onDeployGame(gameIdea, generatedPreview);
+        if (gameIdea && generatedPreview && generatedCode) {
+            onDeployGame(gameIdea, generatedPreview, generatedCode);
         }
     };
     

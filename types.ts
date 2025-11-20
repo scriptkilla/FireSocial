@@ -165,6 +165,18 @@ export interface Product {
   affiliateCommission?: number; // Percentage
 }
 
+export interface Game {
+  id: string;
+  title: string;
+  description: string;
+  previewImage: string;
+  code: string;
+  playCount: number;
+  earnings: number; // Total embers earned from plays
+  creatorId: number;
+  creatorUsername: string;
+}
+
 export interface CreatorAnalytics {
   totalEarnings: number;
   monthlyEarnings: number[];
@@ -183,7 +195,7 @@ export interface PaymentMethod {
 
 export interface WalletTransaction {
   id: string;
-  type: 'deposit' | 'withdrawal' | 'tip_received' | 'tip_sent' | 'earning';
+  type: 'deposit' | 'withdrawal' | 'tip_received' | 'tip_sent' | 'earning' | 'game_revenue';
   amount: number;
   date: string;
   status: 'completed' | 'pending' | 'failed';
@@ -196,6 +208,7 @@ export interface CreatorMonetization {
   tipJar: TipJar;
   paidPosts: PaidPostAnalytics[];
   products: Product[];
+  games: Game[];
   analytics: CreatorAnalytics;
   payoutMethod: 'stripe' | 'paypal' | 'bank';
   payoutEmail?: string;
@@ -294,7 +307,7 @@ export interface ScheduledPost {
 
 export interface Notification {
   id: number;
-  type: 'like' | 'comment' | 'follow' | 'tag' | 'schedule' | 'tip';
+  type: 'like' | 'comment' | 'follow' | 'tag' | 'schedule' | 'tip' | 'game_play';
   user: string;
   username: string;
   content: string;
