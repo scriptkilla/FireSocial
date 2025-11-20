@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail, Youtube, Twitch } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail, Youtube, Twitch, Store } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELPER COMPONENTS ---
@@ -498,6 +498,8 @@ interface ProfilePageProps {
     onMessage: (user: Profile) => void;
     onPin?: (postId: number) => void;
     onFeature?: (postId: number) => void;
+    onViewMyStore: () => void;
+    onVisitStore?: () => void; // Add this prop
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -508,7 +510,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage, onPin, onFeature } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage, onPin, onFeature, onViewMyStore, onVisitStore } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -613,9 +615,14 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                         
                         <div className="flex items-center gap-3 pb-2">
                             {isOwnProfile ? (
-                                <button onClick={onEditProfile} className={`px-6 py-2.5 bg-white dark:bg-white/10 border ${borderColor} hover:bg-gray-50 dark:hover:bg-white/20 rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2`}>
-                                    <Edit3 size={18} /> Edit Profile
-                                </button>
+                                <>
+                                    <button onClick={onViewMyStore} className={`px-4 py-2.5 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2 hover:scale-105`}>
+                                        <Store size={18} /> My Store
+                                    </button>
+                                    <button onClick={onEditProfile} className={`px-6 py-2.5 bg-white dark:bg-white/10 border ${borderColor} hover:bg-gray-50 dark:hover:bg-white/20 rounded-xl font-semibold transition-all shadow-sm flex items-center gap-2`}>
+                                        <Edit3 size={18} /> Edit Profile
+                                    </button>
+                                </>
                             ) : (
                                 <>
                                     {isFollowing ? (
@@ -629,6 +636,16 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                                         <button onClick={() => onFollow(profileToDisplay.id, profileToDisplay.username)} className={`px-8 py-2.5 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all`}>Follow</button>
                                     )}
                                     
+                                    {profileToDisplay.isCreator && onVisitStore && (
+                                        <button 
+                                            onClick={onVisitStore}
+                                            className={`px-4 py-2.5 rounded-xl font-semibold border ${borderColor} ${cardBg} hover:bg-white/10 transition-all shadow-sm flex items-center gap-2`}
+                                        >
+                                            <Store size={18} />
+                                            <span className="hidden sm:inline">Visit Shop</span>
+                                        </button>
+                                    )}
+
                                     <button 
                                         onClick={() => onMessage(profileToDisplay)} 
                                         className={`px-4 py-2.5 rounded-xl font-semibold border ${borderColor} ${cardBg} hover:bg-white/10 transition-all shadow-sm flex items-center gap-2`}

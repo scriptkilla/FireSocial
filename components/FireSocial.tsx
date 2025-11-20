@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon, Cloud, CloudLightning, CloudSnow, Umbrella } from 'lucide-react';
 
@@ -54,6 +50,7 @@ import NotificationsModal from './NotificationsModal';
 import NotificationDetailModal from './NotificationDetailModal';
 import MarketplacePage from './MarketplacePage';
 import MyStorePage from './MyStorePage';
+import PublicStorePage from './PublicStorePage';
 import ProductDetailModal from './ProductDetailModal';
 import AddProductModal from './AddProductModal';
 import AICreatorModal from './AICreatorModal';
@@ -67,7 +64,7 @@ import ShareModal from './ShareModal';
 import TipModal from './TipModal';
 
 
-type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'my-store' | 'achievements' | 'trophies' | 'streaks' | 'community';
+type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'my-store' | 'public-store' | 'achievements' | 'trophies' | 'streaks' | 'community';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
 // --- Real Data Types ---
@@ -172,6 +169,7 @@ export const FireSocial: React.FC = () => {
     const [sharePost, setSharePost] = useState<Post | null>(null);
     const [quotingPost, setQuotingPost] = useState<Post | null>(null);
     const [tipModalRecipient, setTipModalRecipient] = useState<Profile | null>(null);
+    const [viewingStoreOwner, setViewingStoreOwner] = useState<Profile | null>(null);
 
     // Widget Layout State
     const [widgetOrder, setWidgetOrder] = useState<string[]>(['weather', 'stocks', 'crypto', 'trending', 'suggestions', 'communities']);
@@ -1028,6 +1026,12 @@ export const FireSocial: React.FC = () => {
         setViewingProfileUsername(null);
     };
     
+    const handleVisitStore = () => {
+        setViewingStoreOwner(viewingProfile);
+        setActivePage('public-store');
+        window.scrollTo(0, 0);
+    };
+    
     const renderStoriesBar = () => {
         const userStory = INITIAL_STORIES.find(s => s.isYours);
         const otherStories = INITIAL_STORIES.filter(s => !s.isYours);
@@ -1596,6 +1600,26 @@ export const FireSocial: React.FC = () => {
                     textSecondary={textSecondary}
                     borderColor={borderColor}
                 />;
+            case 'public-store':
+                return viewingStoreOwner ? (
+                    <PublicStorePage
+                        storeOwner={viewingStoreOwner}
+                        products={marketplaceProducts.filter(p => p.creatorId === viewingStoreOwner.id)}
+                        onBack={() => {
+                            setActivePage('profile');
+                            setViewingProfileUsername(viewingStoreOwner.username);
+                        }}
+                        onViewProduct={setViewingProduct}
+                        onAddToCart={handleAddToCart}
+                        onOpenCart={() => setShowCartModal(true)}
+                        cartItemCount={cart.length}
+                        textColor={textColor}
+                        textSecondary={textSecondary}
+                        cardBg={cardBg}
+                        borderColor={borderColor}
+                        currentTheme={currentTheme}
+                    />
+                ) : <div>Store not found</div>;
             case 'profile':
                 return <ProfilePage 
                     profileToDisplay={viewingProfile} 
@@ -1634,6 +1658,8 @@ export const FireSocial: React.FC = () => {
                     onMessage={handleMessageFromProfile}
                     onPin={handlePinPost}
                     onFeature={handleFeaturePost}
+                    onViewMyStore={() => setActivePage('my-store')}
+                    onVisitStore={handleVisitStore}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
