@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon } from 'lucide-react';
+import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon, Cloud, CloudLightning, CloudSnow, Umbrella } from 'lucide-react';
 
 // Types and Constants
 import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ScheduledPost, ThemeColor, ChatMessage, ActiveCall, Product, MediaItem, Community, CommentAttachment, WalletTransaction } from '../types';
@@ -65,7 +65,23 @@ import TipModal from './TipModal';
 type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
-// --- Mock Data Generators for Widgets ---
+// --- Real Data Types ---
+interface WeatherData {
+    temp: number;
+    condition: string;
+    windSpeed: number;
+    humidity: number;
+    code: number; // WMO code
+}
+
+interface CryptoData {
+    [key: string]: {
+        usd: number;
+        usd_24h_change: number;
+    }
+}
+
+// --- Mock Data Generators for Widgets (Fallback) ---
 const generateStockData = (symbol: string) => {
     const basePrice = Math.random() * 1000 + 10;
     const changePercent = (Math.random() * 5) - 2.5;
@@ -75,19 +91,6 @@ const generateStockData = (symbol: string) => {
         price: basePrice.toFixed(2),
         change: (changePercent > 0 ? '+' : '') + changePercent.toFixed(2) + '%',
         up: changePercent > 0
-    };
-};
-
-const generateCryptoData = (symbol: string) => {
-    const basePrice = Math.random() * 5000 + 1;
-    const changePercent = (Math.random() * 10) - 5;
-    return {
-        sym: symbol.toUpperCase(),
-        name: symbol.toUpperCase(),
-        price: basePrice.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-        change: (changePercent > 0 ? '+' : '') + changePercent.toFixed(1) + '%',
-        up: changePercent > 0,
-        icon: symbol.toUpperCase()[0] // Simple icon proxy
     };
 };
 
@@ -167,17 +170,23 @@ export const FireSocial: React.FC = () => {
     const dragItem = useRef<number | null>(null);
     const dragNode = useRef<HTMLDivElement | null>(null);
 
-    // Widget Settings State
+    // Widget Settings & Data State
     const [widgetSettings, setWidgetSettings] = useState({
         weather: { location: 'San Francisco, CA' },
-        stocks: { symbols: ['AAPL', 'TSLA', 'NVDA'] },
-        crypto: { symbols: ['BTC', 'ETH', 'SOL'] },
+        stocks: { symbols: ['AAPL', 'TSLA', 'NVDA', 'GOOGL'] },
+        crypto: { symbols: ['BTC', 'ETH', 'SOL', 'DOGE'] },
         trending: { count: 3, showCount: true },
         suggestions: { count: 3, showMutuals: true },
         communities: { count: 3, showMembers: true }
     });
     const [editingWidget, setEditingWidget] = useState<string | null>(null);
     const [tempWidgetInput, setTempWidgetInput] = useState('');
+
+    // Real Data State
+    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [weatherLoading, setWeatherLoading] = useState(false);
+    const [cryptoData, setCryptoData] = useState<CryptoData | null>(null);
+    const [stockData, setStockData] = useState<Record<string, { price: number, change: number }>>({});
 
 
     // --- DERIVED STATE & MEMOS ---
@@ -234,7 +243,7 @@ export const FireSocial: React.FC = () => {
         document.documentElement.classList.toggle('dark', darkMode);
     }, [darkMode]);
     
-    // Sync local profile state if auth user changes (though usually we just unmount)
+    // Sync local profile state if auth user changes
     useEffect(() => {
         if (authUser) setProfile(authUser);
     }, [authUser]);
@@ -243,6 +252,122 @@ export const FireSocial: React.FC = () => {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [activePage, viewingProfileUsername, viewingCommunity]);
+
+    // --- WEATHER DATA FETCHING ---
+    useEffect(() => {
+        const fetchWeather = async () => {
+            setWeatherLoading(true);
+            try {
+                // 1. Geocoding to get Lat/Lon
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${widgetSettings.weather.location}&count=1&language=en&format=json`);
+                const geoData = await geoRes.json();
+                
+                if (geoData.results && geoData.results.length > 0) {
+                    const { latitude, longitude } = geoData.results[0];
+                    
+                    // 2. Get Weather
+                    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&temperature_unit=fahrenheit`);
+                    const weatherJson = await weatherRes.json();
+                    
+                    if (weatherJson.current) {
+                        setWeatherData({
+                            temp: weatherJson.current.temperature_2m,
+                            condition: getWeatherCondition(weatherJson.current.weather_code),
+                            windSpeed: weatherJson.current.wind_speed_10m,
+                            humidity: weatherJson.current.relative_humidity_2m,
+                            code: weatherJson.current.weather_code
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Weather fetch error", e);
+            } finally {
+                setWeatherLoading(false);
+            }
+        };
+
+        fetchWeather();
+    }, [widgetSettings.weather.location]);
+
+    const getWeatherCondition = (code: number): string => {
+        if (code === 0) return 'Clear';
+        if (code <= 3) return 'Partly Cloudy';
+        if (code <= 48) return 'Foggy';
+        if (code <= 67) return 'Rainy';
+        if (code <= 77) return 'Snowy';
+        if (code <= 82) return 'Heavy Rain';
+        if (code <= 99) return 'Thunderstorm';
+        return 'Unknown';
+    };
+    
+    const WeatherIcon = ({ code, size=48, className="" }: {code: number, size?: number, className?: string}) => {
+         if (code === 0) return <Sun size={size} className={`text-yellow-300 animate-pulse ${className}`} />;
+         if (code <= 3) return <CloudSun size={size} className={`text-gray-300 ${className}`} />;
+         if (code <= 48) return <Cloud size={size} className={`text-gray-400 ${className}`} />;
+         if (code <= 67) return <CloudRain size={size} className={`text-blue-300 ${className}`} />;
+         if (code <= 77) return <CloudSnow size={size} className={`text-white ${className}`} />;
+         if (code <= 99) return <CloudLightning size={size} className={`text-purple-400 ${className}`} />;
+         return <Sun size={size} className={className} />;
+    };
+
+    // --- CRYPTO DATA FETCHING (CoinGecko) ---
+    useEffect(() => {
+        const fetchCrypto = async () => {
+            try {
+                // Map symbols to CoinGecko IDs
+                const idMap: Record<string, string> = {
+                    'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'ADA': 'cardano', 'DOT': 'polkadot'
+                };
+                
+                const ids = widgetSettings.crypto.symbols.map(s => idMap[s]).filter(Boolean).join(',');
+                if (!ids) return;
+
+                const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`);
+                const data = await res.json();
+                setCryptoData(data);
+            } catch (e) {
+                console.error("Crypto fetch error", e);
+            }
+        };
+        
+        fetchCrypto();
+        const interval = setInterval(fetchCrypto, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [widgetSettings.crypto.symbols]);
+
+    // --- STOCK DATA SIMULATION (Real-time Simulation) ---
+    useEffect(() => {
+        // Initialize mock prices
+        const initialData: Record<string, { price: number, change: number }> = {};
+        widgetSettings.stocks.symbols.forEach(sym => {
+            if (!stockData[sym]) {
+                 initialData[sym] = { price: Math.random() * 200 + 50, change: (Math.random() * 4) - 2 };
+            }
+        });
+        if (Object.keys(initialData).length > 0) {
+             setStockData(prev => ({ ...prev, ...initialData }));
+        }
+
+        const interval = setInterval(() => {
+            setStockData(prev => {
+                const next = { ...prev };
+                widgetSettings.stocks.symbols.forEach(sym => {
+                    const current = next[sym] || { price: 100, change: 0 };
+                    // Random walk
+                    const change = (Math.random() - 0.5) * 0.5; // small fluctuation
+                    const newPrice = Math.max(0.01, current.price + change);
+                    // Accumulate daily change simulation (simplified)
+                    const newDailyChange = current.change + (change / newPrice) * 100;
+                    
+                    next[sym] = { price: newPrice, change: newDailyChange };
+                });
+                return next;
+            });
+        }, 3000); // 3-second ticks
+
+        return () => clearInterval(interval);
+    }, [widgetSettings.stocks.symbols]);
+
 
     // --- HANDLERS ---
     
@@ -972,27 +1097,35 @@ export const FireSocial: React.FC = () => {
                                         </div>
                                         {Grip}
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-4xl font-bold">72°</span>
-                                            <span className="text-sm font-medium">Sunny</span>
-                                        </div>
-                                        <Sun size={48} className="text-yellow-300 animate-pulse" />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20">
-                                        <div className="text-center">
-                                            <Wind size={16} className="mx-auto mb-1 opacity-80"/>
-                                            <span className="text-xs">8 mph</span>
-                                        </div>
-                                        <div className="text-center">
-                                            <Droplets size={16} className="mx-auto mb-1 opacity-80"/>
-                                            <span className="text-xs">42%</span>
-                                        </div>
-                                        <div className="text-center">
-                                            <CloudRain size={16} className="mx-auto mb-1 opacity-80"/>
-                                            <span className="text-xs">0%</span>
-                                        </div>
-                                    </div>
+                                    {weatherLoading ? (
+                                        <div className="flex justify-center items-center h-24"><Loader2 className="animate-spin" size={32}/></div>
+                                    ) : weatherData ? (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-4xl font-bold">{weatherData.temp.toFixed(1)}°</span>
+                                                    <span className="text-sm font-medium">{weatherData.condition}</span>
+                                                </div>
+                                                <WeatherIcon code={weatherData.code} />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20">
+                                                <div className="text-center">
+                                                    <Wind size={16} className="mx-auto mb-1 opacity-80"/>
+                                                    <span className="text-xs">{weatherData.windSpeed} km/h</span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <Droplets size={16} className="mx-auto mb-1 opacity-80"/>
+                                                    <span className="text-xs">{weatherData.humidity}%</span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <CloudRain size={16} className="mx-auto mb-1 opacity-80"/>
+                                                    <span className="text-xs">--</span>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <p className="text-sm text-center opacity-80">Data unavailable.</p>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -1030,27 +1163,28 @@ export const FireSocial: React.FC = () => {
                         ) : (
                             <>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-bold flex items-center gap-2"><Activity size={18} /> Live Stocks</h3>
+                                    <h3 className="font-bold flex items-center gap-2"><Activity size={18} /> Market Simulator</h3>
                                     {Grip}
                                 </div>
                                 <div className="space-y-3">
                                     {widgetSettings.stocks.symbols.map(sym => {
-                                        const stock = generateStockData(sym);
+                                        const data = stockData[sym] || { price: 0, change: 0 };
+                                        const isUp = data.change >= 0;
                                         return (
-                                            <div key={stock.sym} className="flex items-center justify-between">
+                                            <div key={sym} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${stock.up ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                        {stock.sym}
+                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs ${isUp ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'} transition-colors duration-300`}>
+                                                        {sym}
                                                     </div>
                                                     <div>
-                                                        <p className={`font-bold text-sm ${textColor}`}>{stock.name}</p>
-                                                        <p className={`text-xs ${textSecondary}`}>{stock.price}</p>
+                                                        <p className={`font-bold text-sm ${textColor}`}>{sym}</p>
+                                                        <p className={`text-xs ${textSecondary} font-mono`}>{data.price > 0 ? data.price.toFixed(2) : 'Loading...'}</p>
                                                     </div>
                                                 </div>
-                                                <div className={`text-right ${stock.up ? 'text-green-500' : 'text-red-500'}`}>
-                                                    <p className="font-bold text-sm">{stock.change}</p>
+                                                <div className={`text-right ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+                                                    <p className="font-bold text-sm">{isUp ? '+' : ''}{data.change.toFixed(2)}%</p>
                                                     <p className="text-xs flex items-center justify-end gap-0.5">
-                                                        {stock.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                                        {isUp ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1099,23 +1233,29 @@ export const FireSocial: React.FC = () => {
                                 </div>
                                 <div className="space-y-3">
                                     {widgetSettings.crypto.symbols.map(sym => {
-                                        const coin = generateCryptoData(sym);
+                                        // Map common symbols to IDs for data lookup
+                                        const idMap: Record<string, string> = {
+                                            'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'DOGE': 'dogecoin', 'ADA': 'cardano', 'DOT': 'polkadot'
+                                        };
+                                        const coinId = idMap[sym];
+                                        const coinData = coinId && cryptoData ? cryptoData[coinId] : null;
+                                        const isUp = coinData ? coinData.usd_24h_change >= 0 : true;
+
                                         return (
-                                            <div key={coin.sym} className="flex items-center justify-between">
+                                            <div key={sym} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${['BTC','ETH','SOL'].includes(coin.sym) ? 'from-blue-400 to-purple-500' : 'from-gray-500 to-gray-700'} text-white`}>
-                                                        {coin.icon}
+                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-br ${['BTC','ETH','SOL'].includes(sym) ? 'from-blue-400 to-purple-500' : 'from-gray-500 to-gray-700'} text-white`}>
+                                                        {sym[0]}
                                                     </div>
                                                     <div>
-                                                        <p className={`font-bold text-sm ${textColor}`}>{coin.name}</p>
-                                                        <p className={`text-xs ${textSecondary}`}>{coin.sym}</p>
+                                                        <p className={`font-bold text-sm ${textColor}`}>{sym}</p>
+                                                        <p className={`text-xs ${textSecondary}`}>{coinData ? `$${coinData.usd.toLocaleString()}` : 'Loading...'}</p>
                                                     </div>
                                                 </div>
-                                                <div className={`text-right ${coin.up ? 'text-green-500' : 'text-red-500'}`}>
-                                                    <p className="font-bold text-sm">${coin.price}</p>
+                                                <div className={`text-right ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+                                                     <p className="font-bold text-sm">{coinData ? `${coinData.usd_24h_change.toFixed(2)}%` : '...'}</p>
                                                     <p className="text-xs flex items-center justify-end gap-0.5">
-                                                        {coin.up ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
-                                                        {coin.change}
+                                                        {isUp ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
                                                     </p>
                                                 </div>
                                             </div>
