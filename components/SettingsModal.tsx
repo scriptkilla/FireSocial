@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
@@ -368,7 +369,7 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                     <select
                         value={selectedService}
                         onChange={(e) => setSelectedService(e.target.value as ApiService)}
-                        className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
+                        className={`w-full px-4 py-3 rounded-xl border ${borderColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none bg-white text-gray-900 dark:bg-black dark:text-white`}
                     >
                         {Object.keys(API_CONFIG).map(service => (
                             <option key={service} value={service}>{service}</option>
@@ -404,7 +405,7 @@ const ApiConfigView: React.FC<Pick<ViewProps, 'currentTheme' | 'borderColor' | '
                         <select
                             value={apiVersion}
                             onChange={handleApiVersionChange}
-                            className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}
+                            className={`w-full px-4 py-3 rounded-xl border ${borderColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none bg-white text-gray-900 dark:bg-black dark:text-white`}
                             disabled={availableVersions.length === 0}
                         >
                             {availableVersions.map(version => (
