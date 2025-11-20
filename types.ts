@@ -31,6 +31,7 @@ export interface Link {
   id: number;
   title: string;
   url: string;
+  icon?: string;
 }
 
 export interface PrivacySettings {
@@ -152,13 +153,16 @@ export interface Product {
   price: number;
   currency: string;
   images: string[];
-  category: 'Digital' | 'Art' | 'Templates' | 'Physical';
+  category: 'Physical' | 'Digital' | 'Service' | 'Rental' | 'Experience';
   creatorId: number;
   creatorUsername: string;
   creatorAvatar: string;
   stock: number; // -1 for infinite/digital
   sales: number;
   rating: number; // 0-5
+  promotionId?: string;
+  isAffiliate?: boolean;
+  affiliateCommission?: number; // Percentage
 }
 
 export interface CreatorAnalytics {
@@ -202,6 +206,28 @@ export interface CreatorMonetization {
     paymentMethods: PaymentMethod[];
     transactions: WalletTransaction[];
   };
+}
+
+export interface StoreConfig {
+    banner: string;
+    themeColor: string;
+    layout: 'grid' | 'list';
+    welcomeMessage: string;
+}
+
+export interface Promotion {
+    id: string;
+    code: string;
+    discountPercent: number;
+    expiresAt: string;
+    active: boolean;
+}
+
+export interface AffiliateStats {
+    clicks: number;
+    conversions: number;
+    earnings: number;
+    activeLinks: number;
 }
 
 export interface Profile {
@@ -254,6 +280,10 @@ export interface Profile {
   isCreator?: boolean;
   purchasedPostIds?: number[];
   emberBalance: number;
+  // New Store Fields
+  storeConfig?: StoreConfig;
+  promotions?: Promotion[];
+  affiliateStats?: AffiliateStats;
 }
 
 export interface ScheduledPost {

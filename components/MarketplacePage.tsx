@@ -1,9 +1,13 @@
 
 
 
+
+
+
+
 import React, { useState, useMemo } from 'react';
 import { Product, Theme } from '../types';
-import { Search, ShoppingBag, Plus } from 'lucide-react';
+import { Search, ShoppingBag, Plus, Store } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 interface MarketplacePageProps {
@@ -12,6 +16,7 @@ interface MarketplacePageProps {
     onViewProfile: (username: string) => void;
     onAddToCart: (product: Product) => void;
     onOpenCart: () => void;
+    onOpenMyStore: () => void;
     cartItemCount: number;
     textColor: string;
     textSecondary: string;
@@ -20,11 +25,11 @@ interface MarketplacePageProps {
     currentTheme: Theme;
 }
 
-const CATEGORIES: (Product['category'] | 'All')[] = ['All', 'Digital', 'Art', 'Templates', 'Physical'];
+const CATEGORIES: (Product['category'] | 'All')[] = ['All', 'Physical', 'Digital', 'Service', 'Rental', 'Experience'];
 const SORT_OPTIONS = ['Newest', 'Popular', 'Price: High to Low', 'Price: Low to High'];
 
 const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
-    const { products, onViewProduct, onViewProfile, onAddToCart, onOpenCart, cartItemCount, textColor, textSecondary, cardBg, borderColor, currentTheme } = props;
+    const { products, onViewProduct, onViewProfile, onAddToCart, onOpenCart, onOpenMyStore, cartItemCount, textColor, textSecondary, cardBg, borderColor, currentTheme } = props;
     
     const [searchQuery, setSearchQuery] = useState('');
     const [category, setCategory] = useState<(Product['category'] | 'All')>('All');
@@ -74,17 +79,26 @@ const MarketplacePage: React.FC<MarketplacePageProps> = (props) => {
             <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className={`text-3xl font-bold ${textColor}`}>FireShop</h2>
-                    <button 
-                        onClick={onOpenCart}
-                        className={`relative p-3 rounded-xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-lg hover:scale-105 transition-transform`}
-                    >
-                        <ShoppingBag size={20} />
-                        {cartItemCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs font-bold flex items-center justify-center border-2 border-white dark:border-gray-900">
-                                {cartItemCount}
-                            </span>
-                        )}
-                    </button>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={onOpenMyStore}
+                            className={`flex items-center gap-2 px-4 py-3 rounded-xl border ${borderColor} ${textSecondary} hover:${textColor} hover:bg-white/5 transition-all font-semibold`}
+                        >
+                            <Store size={20} />
+                            <span className="hidden sm:inline">My Store</span>
+                        </button>
+                        <button 
+                            onClick={onOpenCart}
+                            className={`relative p-3 rounded-xl bg-gradient-to-r ${currentTheme.from} ${currentTheme.to} text-white shadow-lg hover:scale-105 transition-transform`}
+                        >
+                            <ShoppingBag size={20} />
+                            {cartItemCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs font-bold flex items-center justify-center border-2 border-white dark:border-gray-900">
+                                    {cartItemCount}
+                                </span>
+                            )}
+                        </button>
+                    </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">

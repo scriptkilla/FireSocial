@@ -1,6 +1,7 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
-import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail } from 'lucide-react';
+import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail, Youtube, Twitch } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 
 // --- HELPER COMPONENTS ---
@@ -530,6 +531,21 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         }
     };
     
+    const getLinkIcon = (iconName?: string) => {
+        switch(iconName) {
+            case 'github': return Github;
+            case 'twitter': return Twitter;
+            case 'linkedin': return Linkedin;
+            case 'instagram': return Instagram;
+            case 'facebook': return Facebook;
+            case 'youtube': return Youtube;
+            case 'twitch': return Twitch;
+            case 'website': return Globe;
+            case 'email': return Mail;
+            default: return Link2;
+        }
+    };
+    
     const userPosts = posts.filter(p => p.username === profileToDisplay.username);
     const hasFeatured = userPosts.some(p => p.isFeatured);
 
@@ -655,6 +671,14 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
                             {profileToDisplay.location && <div className="flex items-center gap-1.5"><MapPin size={16} /> {profileToDisplay.location}</div>}
                             {profileToDisplay.website && <a href={profileToDisplay.website} target="_blank" rel="noreferrer" className={`flex items-center gap-1.5 hover:${currentTheme.text} transition-colors`}><Link2 size={16} /> {profileToDisplay.website.replace(/^https?:\/\//, '')}</a>}
                             {profileToDisplay.work && <div className="flex items-center gap-1.5"><Briefcase size={16} /> {profileToDisplay.work}</div>}
+                             {profileToDisplay.links && profileToDisplay.links.map(link => {
+                                const Icon = getLinkIcon(link.icon);
+                                return (
+                                    <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className={`flex items-center gap-1.5 hover:${currentTheme.text} transition-colors`}>
+                                        <Icon size={16} /> {link.title}
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
 

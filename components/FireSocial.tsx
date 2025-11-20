@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon, Cloud, CloudLightning, CloudSnow, Umbrella } from 'lucide-react';
 
@@ -51,6 +53,7 @@ import SuggestionsModal from './SuggestionsModal';
 import NotificationsModal from './NotificationsModal';
 import NotificationDetailModal from './NotificationDetailModal';
 import MarketplacePage from './MarketplacePage';
+import MyStorePage from './MyStorePage';
 import ProductDetailModal from './ProductDetailModal';
 import AddProductModal from './AddProductModal';
 import AICreatorModal from './AICreatorModal';
@@ -64,7 +67,7 @@ import ShareModal from './ShareModal';
 import TipModal from './TipModal';
 
 
-type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'achievements' | 'trophies' | 'streaks' | 'community';
+type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'my-store' | 'achievements' | 'trophies' | 'streaks' | 'community';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
 // --- Real Data Types ---
@@ -108,6 +111,10 @@ export const FireSocial: React.FC = () => {
         // Ensure messagingSettings exists even for older data
         if (!p.messagingSettings) {
             p.messagingSettings = { allowDirectMessages: 'everyone', readReceipts: true };
+        }
+        // Initialize store config if missing
+        if (!p.storeConfig) {
+            p.storeConfig = { banner: '', themeColor: '#f97316', layout: 'grid', welcomeMessage: 'Welcome to my store!' };
         }
         return p;
     }); 
@@ -771,6 +778,19 @@ export const FireSocial: React.FC = () => {
 
         setShowAddProductModal(false);
     };
+
+    const handleDeleteProduct = (productId: string) => {
+        if (confirm('Are you sure you want to delete this product?')) {
+            setMarketplaceProducts(prev => prev.filter(p => p.id !== productId));
+            if(profile.creatorMonetization) {
+                 const updatedMonetization = {
+                    ...profile.creatorMonetization,
+                    products: profile.creatorMonetization.products.filter(p => p.id !== productId),
+                };
+                setProfile(p => ({ ...p, creatorMonetization: updatedMonetization }));
+            }
+        }
+    }
 
     const handleAddToCart = (product: Product) => {
         setCart(prev => [...prev, product]);
@@ -1547,7 +1567,35 @@ export const FireSocial: React.FC = () => {
             case 'messages':
                 return <MessagesPage messages={INITIAL_MESSAGES} groupChats={INITIAL_GROUP_CHATS} onViewMessage={setMessageUser} currentTheme={currentTheme} cardBg={cardBg} textColor={textColor} textSecondary={textSecondary} borderColor={borderColor} />;
             case 'marketplace':
-                return <MarketplacePage products={marketplaceProducts} onViewProduct={setViewingProduct} onViewProfile={handleViewProfile} onAddToCart={handleAddToCart} onOpenCart={() => setShowCartModal(true)} cartItemCount={cart.length} textColor={textColor} textSecondary={textSecondary} cardBg={cardBg} borderColor={borderColor} currentTheme={currentTheme} />;
+                return <MarketplacePage 
+                    products={marketplaceProducts} 
+                    onViewProduct={setViewingProduct} 
+                    onViewProfile={handleViewProfile} 
+                    onAddToCart={handleAddToCart} 
+                    onOpenCart={() => setShowCartModal(true)} 
+                    onOpenMyStore={() => setActivePage('my-store')}
+                    cartItemCount={cart.length} 
+                    textColor={textColor} 
+                    textSecondary={textSecondary} 
+                    cardBg={cardBg} 
+                    borderColor={borderColor} 
+                    currentTheme={currentTheme} 
+                />;
+            case 'my-store':
+                return <MyStorePage 
+                    profile={profile}
+                    userProducts={marketplaceProducts.filter(p => p.creatorId === profile.id)}
+                    onBack={() => setActivePage('marketplace')}
+                    onAddProduct={() => setShowAddProductModal(true)}
+                    onUpdateStoreConfig={(config) => setProfile(prev => ({ ...prev, storeConfig: config }))}
+                    onDeleteProduct={handleDeleteProduct}
+                    onUpdateProfile={(p) => setProfile(p)}
+                    currentTheme={currentTheme}
+                    cardBg={cardBg}
+                    textColor={textColor}
+                    textSecondary={textSecondary}
+                    borderColor={borderColor}
+                />;
             case 'profile':
                 return <ProfilePage 
                     profileToDisplay={viewingProfile} 

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { X, UploadCloud, DollarSign } from 'lucide-react';
 import { Theme, Product } from '../types';
@@ -22,15 +23,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ show, onClose, onAddP
     const [image, setImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const isDigital = category === 'Digital' || category === 'Templates';
+    // Digital and Services are typically infinite stock/availability in this simplified model
+    const isInfiniteStock = category === 'Digital' || category === 'Service';
 
     useEffect(() => {
-        if (isDigital) {
+        if (isInfiniteStock) {
             setStock('-1');
         } else if (stock === '-1') {
             setStock('1');
         }
-    }, [category, isDigital, stock]);
+    }, [category, isInfiniteStock, stock]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -118,18 +120,19 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ show, onClose, onAddP
                         <div>
                             <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Category</label>
                              <select value={category} onChange={e => setCategory(e.target.value as Product['category'])} className={`w-full px-4 py-3 bg-transparent bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} appearance-none`}>
-                                <option value="Digital">Digital</option>
-                                <option value="Art">Art</option>
-                                <option value="Templates">Templates</option>
-                                <option value="Physical">Physical</option>
+                                <option value="Physical">Physical Product</option>
+                                <option value="Digital">Digital Download</option>
+                                <option value="Service">Service</option>
+                                <option value="Rental">Rental</option>
+                                <option value="Experience">Experience</option>
                             </select>
                         </div>
                     </div>
 
                      <div>
                         <label className={`block text-sm font-medium ${textSecondary} mb-2`}>Stock</label>
-                        <input type="number" value={stock} onChange={e => setStock(e.target.value)} disabled={isDigital} className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} disabled:opacity-50 disabled:cursor-not-allowed`} />
-                        {isDigital && <p className={`text-xs ${textSecondary} mt-1`}>Digital products have infinite stock.</p>}
+                        <input type="number" value={stock} onChange={e => setStock(e.target.value)} disabled={isInfiniteStock} className={`w-full px-4 py-3 bg-black/5 dark:bg-white/5 rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring} disabled:opacity-50 disabled:cursor-not-allowed`} />
+                        {isInfiniteStock && <p className={`text-xs ${textSecondary} mt-1`}>Digital products and services have infinite stock.</p>}
                     </div>
 
                     <div className="flex gap-2 pt-4">

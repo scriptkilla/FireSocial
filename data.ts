@@ -28,7 +28,7 @@ export const INITIAL_MARKETPLACE_PRODUCTS: Product[] = [
     price: 35,
     currency: 'USD',
     images: ['https://images.unsplash.com/photo-1588626242450-496225a02422?auto=format&fit=crop&w=800&q=60'],
-    category: 'Art',
+    category: 'Physical',
     creatorId: 1003,
     creatorUsername: '@jordanlee',
     creatorAvatar: '🚀',
@@ -43,7 +43,7 @@ export const INITIAL_MARKETPLACE_PRODUCTS: Product[] = [
     price: 79,
     currency: 'USD',
     images: ['https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=800&q=60'],
-    category: 'Templates',
+    category: 'Digital',
     creatorId: 1004,
     creatorUsername: '@taylorkim',
     creatorAvatar: '💼',
@@ -58,13 +58,43 @@ export const INITIAL_MARKETPLACE_PRODUCTS: Product[] = [
       price: 49,
       currency: 'USD',
       images: ['https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=60'],
-      category: 'Templates',
+      category: 'Digital',
       creatorId: LOGGED_IN_USER_ID,
       creatorUsername: LOGGED_IN_USER_USERNAME,
       creatorAvatar: '👤',
       stock: -1,
       sales: 32,
       rating: 4.9,
+    },
+    {
+      id: 'prod_4',
+      name: '1-on-1 Design Consultation',
+      description: 'One hour video call to review your portfolio, discuss career growth, or get feedback on your designs.',
+      price: 150,
+      currency: 'USD',
+      images: ['https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=60'],
+      category: 'Service',
+      creatorId: 1002,
+      creatorUsername: '@alexrivera',
+      creatorAvatar: '🎨',
+      stock: -1,
+      sales: 15,
+      rating: 5.0,
+    },
+    {
+        id: 'prod_5',
+        name: 'Photography Workshop Ticket',
+        description: 'Join us for a weekend workshop in the mountains to learn landscape photography techniques. Food and lodging included.',
+        price: 499,
+        currency: 'USD',
+        images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=60'],
+        category: 'Experience',
+        creatorId: 1003,
+        creatorUsername: '@jordanlee',
+        creatorAvatar: '🚀',
+        stock: 10,
+        sales: 8,
+        rating: 4.7,
     }
 ];
 
@@ -499,4 +529,3 @@ export const INITIAL_FOLLOWING: UserListItem[] = ALL_USERS_DATA
 export const INITIAL_FOLLOWERS: UserListItem[] = ALL_USERS_DATA
     .filter(u => loggedInUserFollowersIds.has(u.id))
     .map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: loggedInUserFollowingIds.has(u.id), isFireFollowed: false }));
-

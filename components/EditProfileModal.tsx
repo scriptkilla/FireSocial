@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { X, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { X, ChevronUp, ChevronDown, Trash2, Link2, Github, Twitter, Linkedin, Instagram, Facebook, Youtube, Twitch, Globe, Mail } from 'lucide-react';
 import { Profile, Link, PrivacySettings, Theme } from '../types';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -14,11 +15,37 @@ interface EditProfileModalProps {
     borderColor: string;
 }
 
+const PRESET_LINK_ICONS: { id: string, icon: React.ElementType }[] = [
+    { id: 'link', icon: Link2 },
+    { id: 'website', icon: Globe },
+    { id: 'email', icon: Mail },
+    { id: 'github', icon: Github },
+    { id: 'twitter', icon: Twitter },
+    { id: 'linkedin', icon: Linkedin },
+    { id: 'instagram', icon: Instagram },
+    { id: 'facebook', icon: Facebook },
+    { id: 'youtube', icon: Youtube },
+    { id: 'twitch', icon: Twitch },
+];
+
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onClose, onSave, currentTheme, cardBg, textColor, textSecondary, borderColor }) => {
     const [editedProfile, setEditedProfile] = useState(profile);
     const [hashtagInput, setHashtagInput] = useState('');
+    const [openIconPickerId, setOpenIconPickerId] = useState<number | null>(null);
+    
     const avatarFileInputRef = useRef<HTMLInputElement>(null);
     const coverPhotoFileInputRef = useRef<HTMLInputElement>(null);
+    const iconPickerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (openIconPickerId !== null && iconPickerRef.current && !iconPickerRef.current.contains(event.target as Node)) {
+                setOpenIconPickerId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openIconPickerId]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'avatar' | 'cover') => {
         const file = e.target.files?.[0];
@@ -36,14 +63,17 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onClose, o
         }
     };
 
-    const handleLinkChange = (index: number, field: 'title' | 'url', value: string) => {
+    const handleLinkChange = (index: number, field: 'title' | 'url' | 'icon', value: string) => {
         const newLinks = [...(editedProfile.links || [])];
         newLinks[index] = { ...newLinks[index], [field]: value };
         setEditedProfile({ ...editedProfile, links: newLinks });
+        if (field === 'icon') {
+            setOpenIconPickerId(null);
+        }
     };
 
     const handleAddLink = () => {
-        const newLink = { id: Date.now(), title: '', url: '' };
+        const newLink = { id: Date.now(), title: '', url: '', icon: 'link' };
         setEditedProfile({ ...editedProfile, links: [...(editedProfile.links || []), newLink] });
     };
 
@@ -92,6 +122,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onClose, o
         setEditedProfile({ ...editedProfile, featuredHashtags: (editedProfile.featuredHashtags || []).filter(tag => tag !== tagToRemove) });
     };
 
+    const getIconComponent = (iconName?: string) => {
+        const preset = PRESET_LINK_ICONS.find(p => p.id === iconName);
+        return preset ? preset.icon : Link2;
+    };
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-start justify-center p-4 pt-16">
@@ -223,17 +257,51 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ profile, onClose, o
                      <div>
                         <label className={`block ${textSecondary} mb-2`}>Links</label>
                         <div className="space-y-3">
-                            {(editedProfile.links || []).map((link, index) => (
-                                <div key={link.id} className="flex items-center gap-2">
-                                    <div className="flex flex-col justify-center">
-                                      <button onClick={() => handleMoveLink(index, 'up')} disabled={index === 0} className="disabled:opacity-20 disabled:cursor-not-allowed"><ChevronUp size={16} /></button>
-                                      <button onClick={() => handleMoveLink(index, 'down')} disabled={index === (editedProfile.links || []).length - 1} className="disabled:opacity-20 disabled:cursor-not-allowed"><ChevronDown size={16} /></button>
+                            {(editedProfile.links || []).map((link, index) => {
+                                const IconComponent = getIconComponent(link.icon);
+                                return (
+                                    <div key={link.id} className="flex items-center gap-2">
+                                        <div className="flex flex-col justify-center">
+                                          <button onClick={() => handleMoveLink(index, 'up')} disabled={index === 0} className="disabled:opacity-20 disabled:cursor-not-allowed"><ChevronUp size={16} /></button>
+                                          <button onClick={() => handleMoveLink(index, 'down')} disabled={index === (editedProfile.links || []).length - 1} className="disabled:opacity-20 disabled:cursor-not-allowed"><ChevronDown size={16} /></button>
+                                        </div>
+                                        
+                                        <div className="relative">
+                                            <button 
+                                                onClick={() => setOpenIconPickerId(openIconPickerId === link.id ? null : link.id)} 
+                                                className={`p-2.5 ${cardBg} backdrop-blur-xl rounded-xl border ${borderColor} ${textColor} hover:bg-white/10`}
+                                            >
+                                                <IconComponent size={20} />
+                                            </button>
+                                            
+                                            {openIconPickerId === link.id && (
+                                                <div 
+                                                    ref={iconPickerRef}
+                                                    className={`absolute top-full left-0 mt-2 w-48 p-2 rounded-xl border ${borderColor} bg-white dark:bg-gray-900 shadow-xl z-50 grid grid-cols-5 gap-1`}
+                                                >
+                                                    {PRESET_LINK_ICONS.map(preset => {
+                                                        const PIcon = preset.icon;
+                                                        return (
+                                                            <button 
+                                                                key={preset.id} 
+                                                                onClick={() => handleLinkChange(index, 'icon', preset.id)} 
+                                                                className={`p-2 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 ${link.icon === preset.id ? 'bg-black/10 dark:bg-white/10 text-blue-500' : ''}`}
+                                                                title={preset.id}
+                                                            >
+                                                                <PIcon size={18} />
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <input type="text" placeholder="Title" value={link.title} onChange={(e) => handleLinkChange(index, 'title', e.target.value)} className={`w-1/3 px-3 py-2 ${cardBg} backdrop-blur-xl rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
+                                        <input type="url" placeholder="URL" value={link.url} onChange={(e) => handleLinkChange(index, 'url', e.target.value)} className={`flex-grow px-3 py-2 ${cardBg} backdrop-blur-xl rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
+                                        <button onClick={() => handleRemoveLink(link.id)} className={`${textSecondary} hover:text-red-500 p-2`}><Trash2 size={18} /></button>
                                     </div>
-                                    <input type="text" placeholder="Title" value={link.title} onChange={(e) => handleLinkChange(index, 'title', e.target.value)} className={`w-1/3 px-3 py-2 ${cardBg} backdrop-blur-xl rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
-                                    <input type="url" placeholder="URL" value={link.url} onChange={(e) => handleLinkChange(index, 'url', e.target.value)} className={`flex-grow px-3 py-2 ${cardBg} backdrop-blur-xl rounded-xl border ${borderColor} ${textColor} focus:outline-none focus:ring-1 ${currentTheme.ring}`} />
-                                    <button onClick={() => handleRemoveLink(link.id)} className={`${textSecondary} hover:text-red-500 p-2`}><Trash2 size={18} /></button>
-                                </div>
-                            ))}
+                                );
+                            })}
                             <button onClick={handleAddLink} className={`w-full py-2 ${cardBg} backdrop-blur-xl rounded-2xl border ${borderColor} ${textColor} hover:bg-white/10`}>+ Add Link</button>
                         </div>
                     </div>
