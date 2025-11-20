@@ -261,7 +261,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                             <select 
                                 value={selectedService}
                                 onChange={(e) => setSelectedService(e.target.value)}
-                                className={`text-xs font-semibold py-1.5 px-2 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white border ${borderColor} outline-none cursor-pointer`}
+                                className={`text-xs font-semibold py-1.5 px-2 rounded-lg border ${borderColor} outline-none cursor-pointer bg-white text-gray-900 dark:bg-black dark:text-white`}
                             >
                                 {Object.keys(API_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
@@ -269,7 +269,7 @@ const AICreatorModal: React.FC<AICreatorModalProps> = (props) => {
                             <select 
                                 value={selectedModel}
                                 onChange={(e) => setSelectedModel(e.target.value)}
-                                className={`text-xs font-semibold py-1.5 px-2 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white border ${borderColor} outline-none cursor-pointer max-w-[150px] truncate`}
+                                className={`text-xs font-semibold py-1.5 px-2 rounded-lg border ${borderColor} outline-none cursor-pointer max-w-[150px] truncate bg-white text-gray-900 dark:bg-black dark:text-white`}
                             >
                                 {API_VERSIONS[selectedService]?.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
                             </select>

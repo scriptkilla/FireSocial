@@ -63,9 +63,10 @@ import CommunityPage from './CommunityPage';
 import CartModal from './CartModal';
 import ShareModal from './ShareModal';
 import TipModal from './TipModal';
+import GamesPage from './GamesPage';
 
 
-type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'my-store' | 'public-store' | 'achievements' | 'trophies' | 'streaks' | 'community';
+type Page = 'home' | 'explore' | 'notifications' | 'messages' | 'profile' | 'marketplace' | 'my-store' | 'public-store' | 'achievements' | 'trophies' | 'streaks' | 'community' | 'games';
 type FollowListType = { type: 'followers' | 'following', user: Profile };
 
 // --- Real Data Types ---
@@ -212,6 +213,8 @@ export const FireSocial: React.FC = () => {
     const hoverBg = useMemo(() => darkMode ? 'hover:bg-white/5' : 'hover:bg-black/5', [darkMode]);
     
     const allUserListItems: UserListItem[] = useMemo(() => allUsers.map(u => ({ id: u.id, name: u.name, username: u.username, avatar: u.avatar, followedByYou: following.some(f => f.id === u.id) })), [allUsers, following]);
+    
+    const allGames = useMemo(() => allUsers.flatMap(u => u.creatorMonetization?.games || []), [allUsers]);
 
     const blockedUserIds = useMemo(() => new Set(profile.blockedAccounts.map(u => u.id)), [profile.blockedAccounts]);
     
@@ -1797,6 +1800,14 @@ export const FireSocial: React.FC = () => {
                         {...uiProps}
                     />
                 ) : <div>Community not found</div>;
+            case 'games':
+                return <GamesPage
+                    games={allGames}
+                    onPlay={handlePlayGame}
+                    onCreateGame={() => setShowGameCreator(true)}
+                    onViewProfile={handleViewProfile}
+                    {...uiProps}
+                />;
             default: return <div>Not implemented</div>;
         }
     };
@@ -1901,6 +1912,7 @@ export const FireSocial: React.FC = () => {
                             <NavItem page="notifications" label="Notifications" icon={Bell} current={activePage} onClick={() => setShowNotifications(true)} />
                             <NavItem page="messages" label="Messages" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
                             <NavItem page="marketplace" label="FireShop" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
+                            <NavItem page="games" label="Games" icon={Gamepad2} current={activePage} onClick={() => setActivePage('games')} />
                             <NavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                         </nav>
 
@@ -1916,9 +1928,6 @@ export const FireSocial: React.FC = () => {
                      <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-4 border ${borderColor} space-y-2`}>
                         <button onClick={() => setShowAICreator(true)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-gray-400 hover:text-white hover:bg-white/5`}>
                            <Bot size={24} /> <span className="font-semibold text-lg">AI Creator</span>
-                        </button>
-                         <button onClick={() => setShowGameCreator(true)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors text-gray-400 hover:text-white hover:bg-white/5`}>
-                           <Gamepad2 size={24} /> <span className="font-semibold text-lg">Game Studio</span>
                         </button>
                     </div>
                 </aside>
@@ -1973,7 +1982,7 @@ export const FireSocial: React.FC = () => {
                     <MobileNavItem page="messages" label="DMs" icon={Mail} current={activePage} onClick={() => setActivePage('messages')} />
                     <MobileNavItem page="marketplace" label="FireShop" icon={ShoppingBag} current={activePage} onClick={() => setActivePage('marketplace')} />
                     <MobileNavItem page="ai-creator" label="AI Create" icon={Bot} current={activePage} onClick={() => setShowAICreator(true)} />
-                    <MobileNavItem page="game-studio" label="Games" icon={Gamepad2} current={activePage} onClick={() => setShowGameCreator(true)} />
+                    <MobileNavItem page="games" label="Games" icon={Gamepad2} current={activePage} onClick={() => setActivePage('games')} />
                     <MobileNavItem page="profile" label="Profile" icon={User} current={activePage} onClick={() => handleViewProfile(profile.username)} />
                 </nav>
             </footer>

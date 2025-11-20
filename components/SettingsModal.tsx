@@ -1,6 +1,12 @@
 
 
 
+
+
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import { Palette, UserMinus, X, ChevronLeft, ChevronRight, Search, User, KeyRound, Bell, Eye, Shield, Lock, Users, MessageSquare, List, Heart, VolumeX, FileText, HelpCircle, AlertTriangle, Info, LogOut, Download, Trash2, Globe, CheckCircle, Circle, PlusCircle, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { Profile, ThemeColor, Themes, UserListItem, Theme } from '../types';
@@ -234,7 +240,7 @@ const MessagingSettingsView: React.FC<Pick<ViewProps, 'profile' | 'setProfile' |
                  <select 
                     value={messagingSettings.allowDirectMessages}
                     onChange={(e) => handleMessagingChange('allowDirectMessages', e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg bg-black/5 dark:bg-white/5 border ${borderColor} ${textColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
+                    className={`w-full px-3 py-2 rounded-lg bg-white text-gray-900 dark:bg-black dark:text-white border ${borderColor} focus:outline-none focus:ring-2 ${currentTheme.ring}`}
                  >
                      <option value="everyone">Everyone</option>
                      <option value="followers">Followers Only</option>

@@ -1,5 +1,6 @@
 
 
+
 export interface Theme {
   from: string;
   to: string;
@@ -175,6 +176,27 @@ export interface Game {
   earnings: number; // Total embers earned from plays
   creatorId: number;
   creatorUsername: string;
+  category?: string;
+}
+
+export interface Tournament {
+  id: string;
+  title: string;
+  game: string;
+  prizePool: number;
+  participants: number;
+  maxParticipants: number;
+  timeLeft: string;
+  image: string;
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  reward: number;
 }
 
 export interface CreatorAnalytics {
@@ -243,6 +265,15 @@ export interface AffiliateStats {
     activeLinks: number;
 }
 
+export interface GamingStats {
+    level: number;
+    xp: number;
+    nextLevelXp: number;
+    wins: number;
+    losses: number;
+    gamesPlayed: number;
+}
+
 export interface Profile {
   id: number;
   name: string;
@@ -293,6 +324,9 @@ export interface Profile {
   isCreator?: boolean;
   purchasedPostIds?: number[];
   emberBalance: number;
+  // Gaming Fields
+  sparks: number;
+  gamingStats?: GamingStats;
   // New Store Fields
   storeConfig?: StoreConfig;
   promotions?: Promotion[];

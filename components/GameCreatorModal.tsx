@@ -1,9 +1,4 @@
 
-
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gamepad2, Sparkles, AlertTriangle, KeyRound, Bot, Wand2, Users, FileText, Palette, Cpu, Music, ShieldCheck, Play, UploadCloud, Code, Copy, Check } from 'lucide-react';
 import { Theme } from '../types';
@@ -160,7 +155,7 @@ const AutonomousDevelopmentView: React.FC<AutonomousDevelopmentViewProps> = (pro
     const { cardBg, borderColor, currentTheme, textColor, textSecondary, currentStageName, gameProgress, agentActivities, liveConversations, generatedPreview, playableGameUrl, generatedCode, developmentStage, copied, handleDeploy, handleCopyCode, isGenerating } = props;
     return (
         <div className="flex-1 flex flex-col p-4 overflow-hidden gap-4">
-            <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 flex flex-col justify-center`}>
+            <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 flex flex-col justify-center flex-shrink-0`}>
                  <div className="flex justify-between items-center mb-1">
                     <p className="font-semibold">{currentStageName}</p>
                     <p className={`font-bold text-lg ${currentTheme.text}`}>{gameProgress}%</p>
@@ -170,20 +165,27 @@ const AutonomousDevelopmentView: React.FC<AutonomousDevelopmentViewProps> = (pro
                 </div>
             </div>
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-7 gap-4 overflow-hidden">
-                <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 lg:col-span-2 flex flex-col`}>
+            {/* Main Content Area - Stacked Vertically */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                
+                {/* 1. Agent Activity */}
+                <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 flex flex-col h-64`}>
                      <h3 className="font-semibold mb-2 flex-shrink-0">AI Team Activity</h3>
                      <div className="flex-1 overflow-y-auto pr-1 -mr-2 space-y-1">
                         {agentActivities.map((act, i) => <ActivityItem key={i} activity={act} textColor={textColor} textSecondary={textSecondary} isActive={i === 0 && isGenerating} />)}
                     </div>
                 </div>
-                <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 lg:col-span-3 flex flex-col`}>
+                
+                {/* 2. Discussions */}
+                <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 flex flex-col h-64`}>
                      <h3 className="font-semibold mb-2 flex-shrink-0">Team Discussions</h3>
                      <div className="flex-1 overflow-y-auto pr-1 -mr-2">
                         {liveConversations.map(convo => <ConversationThread key={convo.id} conversation={convo} borderColor={borderColor} textColor={textColor} textSecondary={textSecondary} currentTheme={currentTheme} />)}
                      </div>
                 </div>
-                 <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 lg:col-span-2 flex flex-col gap-4`}>
+
+                {/* 3. Game Preview & Code */}
+                <div className={`${cardBg} rounded-2xl border ${borderColor} p-4 flex flex-col gap-4`}>
                     <div>
                         <h3 className="font-semibold mb-2 flex-shrink-0">Game Preview</h3>
                         <div className="flex-1 flex flex-col items-center justify-center bg-black/20 rounded-lg aspect-video">
@@ -206,7 +208,7 @@ const AutonomousDevelopmentView: React.FC<AutonomousDevelopmentViewProps> = (pro
                                 {copied ? <Check size={16} className={currentTheme.text} /> : <Copy size={16} />}
                             </button>
                         </div>
-                        <div className="flex-1 bg-black/20 rounded-lg overflow-hidden">
+                        <div className="flex-1 bg-black/20 rounded-lg overflow-hidden h-48">
                             <pre className="w-full h-full overflow-auto text-xs p-2 text-gray-300">
                                 {generatedCode ? <code>{generatedCode}</code> : <span className="flex items-center justify-center h-full text-gray-400">Code will appear here...</span>}
                             </pre>

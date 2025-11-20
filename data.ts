@@ -1,6 +1,10 @@
 
 
-import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community } from './types';
+
+
+
+
+import { Post, Profile, Notification, Message, GroupChat, Story, FriendSuggestion, TrendingHashtag, LiveUser, UserListItem, Comment, ChatMessage, CreatorMonetization, Product, Community, Tournament, Challenge } from './types';
 
 export const LOGGED_IN_USER_USERNAME = '@pimpslap';
 const LOGGED_IN_USER_ID = 1001;
@@ -96,6 +100,18 @@ export const INITIAL_MARKETPLACE_PRODUCTS: Product[] = [
         sales: 8,
         rating: 4.7,
     }
+];
+
+export const INITIAL_TOURNAMENTS: Tournament[] = [
+  { id: 't1', title: 'Weekend Trivia Bash', game: 'Trivia Battle', prizePool: 10000, participants: 2450, maxParticipants: 5000, timeLeft: '24h', image: 'https://images.unsplash.com/photo-1606318801954-d46d46d3360a?w=400&q=80' },
+  { id: 't2', title: 'Speed Drawing League', game: 'Quick Draw', prizePool: 5000, participants: 890, maxParticipants: 1000, timeLeft: '2d 5h', image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80' },
+  { id: 't3', title: 'Word Race Championship', game: 'Word Race', prizePool: 25000, participants: 1200, maxParticipants: 10000, timeLeft: '5d', image: 'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=400&q=80' },
+];
+
+export const INITIAL_CHALLENGES: Challenge[] = [
+  { id: 'c1', title: 'Trivia Master', description: 'Answer 50 questions correctly in Trivia Battle', target: 50, progress: 12, reward: 500 },
+  { id: 'c2', title: 'Social Gamer', description: 'Play 5 multiplayer games with friends', target: 5, progress: 2, reward: 250 },
+  { id: 'c3', title: 'Winning Streak', description: 'Win 3 games in a row', target: 3, progress: 1, reward: 1000 },
 ];
 
 export const INITIAL_CREATOR_MONETIZATION: CreatorMonetization = {
@@ -196,7 +212,16 @@ const BASE_USERS: Profile[] = [
         searchHistory: ['#design', 'ReactJS', '@alexrivera'],
         purchasedPostIds: [],
         creatorMonetization: INITIAL_CREATOR_MONETIZATION,
-        emberBalance: 1000
+        emberBalance: 1000,
+        sparks: 1250,
+        gamingStats: {
+            level: 5,
+            xp: 1250,
+            nextLevelXp: 2500,
+            wins: 12,
+            losses: 4,
+            gamesPlayed: 16
+        }
     },
     {
         id: 1002,
@@ -227,7 +252,9 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [10],
-        emberBalance: 1000
+        emberBalance: 1000,
+        sparks: 500,
+        gamingStats: { level: 2, xp: 500, nextLevelXp: 1000, wins: 3, losses: 2, gamesPlayed: 5 }
     },
     {
         id: 1003,
@@ -258,7 +285,9 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000,
+        sparks: 800,
+        gamingStats: { level: 3, xp: 800, nextLevelXp: 1500, wins: 5, losses: 5, gamesPlayed: 10 }
     },
     {
         id: 1004,
@@ -288,7 +317,9 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000,
+        sparks: 200,
+        gamingStats: { level: 1, xp: 200, nextLevelXp: 500, wins: 1, losses: 1, gamesPlayed: 2 }
     },
     {
         id: 1005,
@@ -319,31 +350,32 @@ const BASE_USERS: Profile[] = [
         unlockedAchievements: ['first_post', '10_posts', '100_followers', '10_day_streak', 'popular_post'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000,
+        sparks: 0
     },
     {
         id: 2001, name: 'Chris Brown', username: '@chrisbrown', avatar: '🎭', email: 'chris@example.com', bio: 'Actor and director.', followers: 1500, following: 200, posts: 45, badges: ['🎬'], streak: 22, online: true, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000, sparks: 0
     },
     {
         id: 2002, name: 'Sam Wilson', username: '@samwilson', avatar: '🎪', email: 'sam@example.com', bio: 'Photographer.', followers: 900, following: 150, posts: 120, badges: ['📸'], streak: 12, online: false, verified: false, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following', '10_day_streak'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000, sparks: 0
     },
     {
         id: 2003, name: 'Maya Patel', username: '@mayapatel', avatar: '🎯', email: 'maya@example.com', bio: 'AI researcher.', followers: 3200, following: 80, posts: 25, badges: ['🧠'], streak: 8, online: true, verified: true, privacySettings: { profilePublic: true, showOnlineStatus: true, allowTagging: true, showActivity: true, privateAccount: false, suggestAccount: true, activityStatus: true }, notificationSettings: { push: true, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'allow' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: ['first_post', '10_posts', '100_followers', '50_following'],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 1000
+        emberBalance: 1000, sparks: 0
     },
     {
         id: 201, name: 'Blocked User 1', username: '@blocked1', avatar: '🚫', email: 'blocked@example.com', bio: 'This user is blocked.', followers: 0, following: 0, posts: 0, badges: [], streak: 0, online: false, verified: false, privacySettings: { profilePublic: false, showOnlineStatus: false, allowTagging: false, showActivity: false, privateAccount: true, suggestAccount: false, activityStatus: false }, notificationSettings: { push: false, email: false }, messagingSettings: { allowDirectMessages: 'everyone', readReceipts: true }, contentPreferences: { favoriteTopics: [], hiddenWords: [], sensitiveContent: 'hide' }, language: 'en-US', twoFactorEnabled: false, mutedAccounts: [], restrictedAccounts: [], blockedAccounts: [], unlockedAchievements: [],
         searchHistory: [],
         purchasedPostIds: [],
-        emberBalance: 0
+        emberBalance: 0, sparks: 0
     }
 ];
 
