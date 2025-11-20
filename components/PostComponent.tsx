@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, Profile, Reaction, Theme, Message, UserListItem, CommentAttachment } from '../types';
-import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket, Repeat, PenSquare, DollarSign } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Bookmark, UserMinus, EyeOff, VolumeX, AlertTriangle, Share2, Link as LinkIcon, UserCheck, Heart, MessageSquare, Send, Eye, Lock, Image as ImageIcon, Video, FileText, Sticker, Bot, Smile, X, Paperclip, Loader2, Search, Rocket, Repeat, PenSquare, DollarSign, Pin, Star } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
 import PostMedia from './PostMedia';
 import { GoogleGenAI } from "@google/genai";
@@ -43,6 +43,8 @@ interface PostComponentProps {
     onPurchasePost: (postId: number) => void;
     onBoost?: (postId: number) => void;
     onTip?: (userId: number) => void;
+    onPin?: (postId: number) => void;
+    onFeature?: (postId: number) => void;
     isFollowing: boolean;
     isBlocked: boolean;
 }
@@ -79,7 +81,7 @@ const ParsedContent: React.FC<{content: string, textColor: string, currentTheme:
 
 
 const PostComponent: React.FC<PostComponentProps> = (props) => {
-    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onRepost, onQuote, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost, onTip } = props;
+    const { post, profile, currentTheme, cardBg, textColor, textSecondary, borderColor, reactions, messages, onReaction, onBookmark, onDelete, onViewPost, onViewComments, onAddComment, onHide, onMute, onReport, onShare, onRepost, onQuote, onCopyLink, onFollowToggle, onBlockToggle, onVotePoll, onViewProfile, onViewHashtag, isFollowing, isBlocked, allUsers, onPurchasePost, onBoost, onTip, onPin, onFeature } = props;
     const [showPostOptions, setShowPostOptions] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [showRepostMenu, setShowRepostMenu] = useState(false);
@@ -264,7 +266,18 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
     const isLocked = post.isPaid && !isOwnPost && !hasPurchased;
 
     return (
-        <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg`}>
+        <div className={`${cardBg} backdrop-blur-xl rounded-3xl p-6 border ${borderColor} shadow-lg relative overflow-hidden`}>
+            {/* Pinned Indicator */}
+            {post.isPinned && (
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${currentTheme.from} ${currentTheme.to}`} />
+            )}
+            {post.isPinned && (
+                <div className={`text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-3 pl-1`}>
+                    <Pin size={14} fill="currentColor" className="rotate-45" /> 
+                    <span>Pinned Post</span>
+                </div>
+            )}
+
             {/* Post Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -277,6 +290,7 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                             {post.user}
                             {post.username === profile.username && profile.verified && <span className="text-blue-500 text-lg">✓</span>}
                             {post.isBoosted && <span className="text-xs font-bold px-2 py-0.5 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full ml-2 flex items-center gap-1"><Rocket size={10} /> Boosted</span>}
+                            {post.isFeatured && <span className="text-xs font-bold px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full ml-2 flex items-center gap-1"><Star size={10} fill="currentColor"/> Featured</span>}
                         </button>
                         <div className={`text-sm ${textSecondary} flex items-center gap-2`}>
                             <span>{post.time}</span>
@@ -289,10 +303,12 @@ const PostComponent: React.FC<PostComponentProps> = (props) => {
                         <MoreHorizontal size={20} />
                     </button>
                     {showPostOptions && (
-                        <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-xl w-52 z-10 overflow-hidden`}>
+                        <div className={`absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border ${borderColor} shadow-xl w-56 z-10 overflow-hidden`}>
                             {isOwnPost ? (
                                 <>
-                                    <MenuItem icon={Edit} label="Edit Post" onClick={(e) => handleMenuClick(e, () => alert('Edit functionality not implemented yet.'))} className="rounded-t-2xl" />
+                                    <MenuItem icon={Pin} label={post.isPinned ? "Unpin from Profile" : "Pin to Profile"} onClick={(e) => handleMenuClick(e, () => onPin && onPin(post.id))} className="rounded-t-2xl" />
+                                    <MenuItem icon={Star} label={post.isFeatured ? "Remove from Featured" : "Add to Featured"} onClick={(e) => handleMenuClick(e, () => onFeature && onFeature(post.id))} />
+                                    <MenuItem icon={Edit} label="Edit Post" onClick={(e) => handleMenuClick(e, () => alert('Edit functionality not implemented yet.'))} />
                                     {!post.isBoosted && onBoost && <MenuItem icon={Rocket} label="Boost Post (50 🔥)" onClick={(e) => handleMenuClick(e, () => onBoost(post.id))} className="text-orange-500" />}
                                     <MenuItem icon={Trash2} label="Delete Post" onClick={(e) => handleMenuClick(e, () => onDelete(post.id))} className="text-red-500" />
                                 </>

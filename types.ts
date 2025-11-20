@@ -114,6 +114,8 @@ export interface Post {
     purchasers: number[]; // user IDs
   };
   quotedPost?: Post;
+  isPinned?: boolean;
+  isFeatured?: boolean;
 }
 
 export interface SubscriptionTier {

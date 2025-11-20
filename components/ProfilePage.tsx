@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Profile, Post, Theme, Achievement, Comment, ScheduledPost, CreatorMonetization, SubscriptionTier, TipJar, Product, WalletTransaction, PaymentMethod } from '../types';
 import { Edit3, Camera, Zap, Award, Link2, MapPin, Briefcase, GraduationCap, Github, Twitter, Linkedin, Globe, Heart, MessageSquare, MoreHorizontal, UserMinus, AlertTriangle, Instagram, Facebook, Film, Trash2, DollarSign, Settings, Star, Users, Bell, Wallet, CreditCard, Building, ArrowUpRight, ArrowDownLeft, Plus, Flame, Calendar, Image as ImageIcon, Video, Grid, List as ListIcon, Clock, ChevronRight, ExternalLink, Lock, BarChart3, Sparkles, ShoppingBag, Layers, Play, Mail } from 'lucide-react';
 import AvatarDisplay from './AvatarDisplay';
@@ -496,6 +495,8 @@ interface ProfilePageProps {
     onUpdateProfileMonetization?: (updatedMonetization: CreatorMonetization) => void;
     onTip: (amount: number) => void;
     onMessage: (user: Profile) => void;
+    onPin?: (postId: number) => void;
+    onFeature?: (postId: number) => void;
     allAchievements: Achievement[];
     // UI Props
     cardBg: string;
@@ -506,7 +507,7 @@ interface ProfilePageProps {
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = (props) => {
-    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage } = props;
+    const { profileToDisplay, isOwnProfile, posts, scheduledPosts, onDeleteScheduledPost, activeTab, onTabChange, onEditProfile, onFollow, onFireFollowToggle, isFireFollowed, onBlockToggle, isFollowing, isBlocked, onShowFollowers, onShowFollowing, onViewPost, onViewComments, onViewHashtag, onViewProfile, allAchievements, cardBg, textColor, textSecondary, borderColor, currentTheme, onViewAchievements, onViewTrophies, onViewStreaks, onPurchasePost, onShowAddProductModal, onUpdateProfileMonetization, onTip, onMessage, onPin, onFeature } = props;
     const [showProfileOptions, setShowProfileOptions] = useState(false);
     const optionsRef = useRef<HTMLDivElement>(null);
 
@@ -528,6 +529,9 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
             default: break;
         }
     };
+    
+    const userPosts = posts.filter(p => p.username === profileToDisplay.username);
+    const hasFeatured = userPosts.some(p => p.isFeatured);
 
     const TABS = [
         { id: 'posts', label: 'Posts', icon: Grid },
@@ -535,19 +539,37 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
         { id: 'media', label: 'Media', icon: ImageIcon },
     ];
     
+    if (isOwnProfile || hasFeatured) {
+        // Insert 'Featured' tab at the start or after posts
+        TABS.splice(1, 0, { id: 'featured', label: 'Featured', icon: Sparkles });
+    }
+    
     if (isOwnProfile) {
         TABS.push({ id: 'bookmarks', label: 'Saved', icon: Star }); // Changed Bookmarks to Saved (Star icon is cleaner)
         TABS.push({ id: 'scheduled', label: 'Scheduled', icon: Calendar });
         if(profileToDisplay.isCreator) TABS.push({ id: 'monetization', label: 'Studio', icon: BarChart3 });
     }
 
-    const userPosts = posts.filter(p => p.username === profileToDisplay.username);
     const mediaPosts = userPosts.filter(p => p.media && p.media.length > 0);
     const bookmarkedPosts = posts.filter(p => p.bookmarked);
     const userComments = posts
         .flatMap(post => (post.commentsData || []).map(comment => ({ comment, post })))
         .filter(({ comment }) => comment.username === profileToDisplay.username)
         .sort((a, b) => b.comment.id - a.comment.id);
+
+    // Logic to display posts in the correct order (Pinned first for 'posts' tab)
+    const displayPosts = useMemo(() => {
+        if (activeTab === 'posts') {
+            return [...userPosts].sort((a, b) => {
+                if (a.isPinned === b.isPinned) return 0;
+                return a.isPinned ? -1 : 1;
+            });
+        }
+        if (activeTab === 'featured') {
+            return userPosts.filter(p => p.isFeatured);
+        }
+        return userPosts;
+    }, [userPosts, activeTab]);
 
     return (
         <div className="space-y-6">
@@ -718,14 +740,14 @@ const ProfilePage: React.FC<ProfilePageProps> = (props) => {
 
             {/* --- Tab Content Area --- */}
             <div className="min-h-[400px]">
-                {activeTab === 'posts' && (
-                    userPosts.length > 0 ? (
+                {(activeTab === 'posts' || activeTab === 'featured') && (
+                    displayPosts.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {userPosts.map(post => (
+                            {displayPosts.map(post => (
                                 <PostGridItem key={post.id} post={post} onViewPost={onViewPost} currentTheme={currentTheme} textColor={textColor} />
                             ))}
                         </div>
-                    ) : <EmptyState icon={Grid} text="No posts yet" textSecondary={textSecondary} />
+                    ) : <EmptyState icon={activeTab === 'featured' ? Sparkles : Grid} text={activeTab === 'featured' ? "No featured posts yet" : "No posts yet"} textSecondary={textSecondary} />
                 )}
 
                 {activeTab === 'comments' && (

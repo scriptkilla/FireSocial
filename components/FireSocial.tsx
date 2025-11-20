@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Home, Compass, MessageSquare, User, Settings, Sun, Moon, LogOut, BarChart2, Star, Zap, Award, ShoppingBag, Gamepad2, Bot, PlusSquare, Bell, Mail, Plus, TrendingUp, Search, ArrowRight, Loader2, Users, Check, X, GripVertical, Flame, MapPin, CloudSun, CloudRain, Wind, Droplets, Activity, Bitcoin, ArrowUpRight, ArrowDownRight, Trash2, Save, Sliders, Eye, EyeOff as EyeOffIcon, Cloud, CloudLightning, CloudSnow, Umbrella } from 'lucide-react';
 
@@ -607,6 +609,16 @@ export const FireSocial: React.FC = () => {
 
     const handleBookmark = (postId: number) => {
         setPosts(posts.map(p => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p));
+    };
+
+    const handlePinPost = (postId: number) => {
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, isPinned: !p.isPinned } : p));
+        showToast(posts.find(p => p.id === postId)?.isPinned ? "Post unpinned" : "Post pinned to profile");
+    };
+
+    const handleFeaturePost = (postId: number) => {
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, isFeatured: !p.isFeatured } : p));
+        showToast(posts.find(p => p.id === postId)?.isFeatured ? "Removed from featured" : "Added to featured");
     };
 
     const handleDeletePost = (postId: number) => {
@@ -1572,6 +1584,8 @@ export const FireSocial: React.FC = () => {
                     onUpdateProfileMonetization={(updatedMonetization) => setProfile(prev => ({...prev, creatorMonetization: updatedMonetization}))}
                     onTip={handleTipCreator}
                     onMessage={handleMessageFromProfile}
+                    onPin={handlePinPost}
+                    onFeature={handleFeaturePost}
                 />;
             case 'achievements':
                 return <AchievementsPage profile={viewingProfile} allAchievements={ALL_ACHIEVEMENTS} onBack={() => setActivePage('profile')} {...uiProps} />;
@@ -1647,6 +1661,8 @@ export const FireSocial: React.FC = () => {
         },
         onBoost: handleBoostPost,
         onTip: handlePostTip,
+        onPin: handlePinPost,
+        onFeature: handleFeaturePost,
         // These need to be calculated per-post
         isFollowing: false, 
         isBlocked: false,
